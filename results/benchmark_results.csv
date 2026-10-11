@@ -1,0 +1,167 @@
+n,paradigm,model_variant,solver,status,is_sat,variables_count,clauses_constraints_count,build_time,solve_time,time_seconds,verified,error
+8,SAT,pairwise,glucose3,LICENSE_LIMIT,False,0,0,0.0,0.0,0.0,False,NQueensSAT.solve() got an unexpected keyword argument 'time_limit'
+8,SAT,pairwise,minisat22,LICENSE_LIMIT,False,0,0,0.0,0.0,0.0,False,NQueensSAT.solve() got an unexpected keyword argument 'time_limit'
+8,SAT,pairwise,cadical,LICENSE_LIMIT,False,0,0,0.0,0.0,0.0,False,NQueensSAT.solve() got an unexpected keyword argument 'time_limit'
+8,SAT,pairwise,kissat,LICENSE_LIMIT,False,0,0,0.0,0.0,0.0,False,NQueensSAT.solve() got an unexpected keyword argument 'time_limit'
+8,SAT,pairwise,maplecm,LICENSE_LIMIT,False,0,0,0.0,0.0,0.0,False,NQueensSAT.solve() got an unexpected keyword argument 'time_limit'
+8,SAT,binary,glucose3,LICENSE_LIMIT,False,0,0,0.0,0.0,0.0,False,NQueensSAT.solve() got an unexpected keyword argument 'time_limit'
+8,SAT,binary,minisat22,LICENSE_LIMIT,False,0,0,0.0,0.0,0.0,False,NQueensSAT.solve() got an unexpected keyword argument 'time_limit'
+8,SAT,binary,cadical,LICENSE_LIMIT,False,0,0,0.0,0.0,0.0,False,NQueensSAT.solve() got an unexpected keyword argument 'time_limit'
+8,SAT,binary,kissat,LICENSE_LIMIT,False,0,0,0.0,0.0,0.0,False,NQueensSAT.solve() got an unexpected keyword argument 'time_limit'
+8,SAT,binary,maplecm,LICENSE_LIMIT,False,0,0,0.0,0.0,0.0,False,NQueensSAT.solve() got an unexpected keyword argument 'time_limit'
+8,SAT,sequential,glucose3,LICENSE_LIMIT,False,0,0,0.0,0.0,0.0,False,NQueensSAT.solve() got an unexpected keyword argument 'time_limit'
+8,SAT,sequential,minisat22,LICENSE_LIMIT,False,0,0,0.0,0.0,0.0,False,NQueensSAT.solve() got an unexpected keyword argument 'time_limit'
+8,SAT,sequential,cadical,LICENSE_LIMIT,False,0,0,0.0,0.0,0.0,False,NQueensSAT.solve() got an unexpected keyword argument 'time_limit'
+8,SAT,sequential,kissat,LICENSE_LIMIT,False,0,0,0.0,0.0,0.0,False,NQueensSAT.solve() got an unexpected keyword argument 'time_limit'
+8,SAT,sequential,maplecm,LICENSE_LIMIT,False,0,0,0.0,0.0,0.0,False,NQueensSAT.solve() got an unexpected keyword argument 'time_limit'
+8,SAT,commander,glucose3,LICENSE_LIMIT,False,0,0,0.0,0.0,0.0,False,NQueensSAT.solve() got an unexpected keyword argument 'time_limit'
+8,SAT,commander,minisat22,LICENSE_LIMIT,False,0,0,0.0,0.0,0.0,False,NQueensSAT.solve() got an unexpected keyword argument 'time_limit'
+8,SAT,commander,cadical,LICENSE_LIMIT,False,0,0,0.0,0.0,0.0,False,NQueensSAT.solve() got an unexpected keyword argument 'time_limit'
+8,SAT,commander,kissat,LICENSE_LIMIT,False,0,0,0.0,0.0,0.0,False,NQueensSAT.solve() got an unexpected keyword argument 'time_limit'
+8,SAT,commander,maplecm,LICENSE_LIMIT,False,0,0,0.0,0.0,0.0,False,NQueensSAT.solve() got an unexpected keyword argument 'time_limit'
+8,SAT,product,glucose3,LICENSE_LIMIT,False,0,0,0.0,0.0,0.0,False,NQueensSAT.solve() got an unexpected keyword argument 'time_limit'
+8,SAT,product,minisat22,LICENSE_LIMIT,False,0,0,0.0,0.0,0.0,False,NQueensSAT.solve() got an unexpected keyword argument 'time_limit'
+8,SAT,product,cadical,LICENSE_LIMIT,False,0,0,0.0,0.0,0.0,False,NQueensSAT.solve() got an unexpected keyword argument 'time_limit'
+8,SAT,product,kissat,LICENSE_LIMIT,False,0,0,0.0,0.0,0.0,False,NQueensSAT.solve() got an unexpected keyword argument 'time_limit'
+8,SAT,product,maplecm,LICENSE_LIMIT,False,0,0,0.0,0.0,0.0,False,NQueensSAT.solve() got an unexpected keyword argument 'time_limit'
+16,SAT,pairwise,glucose3,LICENSE_LIMIT,False,0,0,0.0,0.0,0.0,False,NQueensSAT.solve() got an unexpected keyword argument 'time_limit'
+16,SAT,pairwise,minisat22,LICENSE_LIMIT,False,0,0,0.0,0.0,0.0,False,NQueensSAT.solve() got an unexpected keyword argument 'time_limit'
+16,SAT,pairwise,cadical,LICENSE_LIMIT,False,0,0,0.0,0.0,0.0,False,NQueensSAT.solve() got an unexpected keyword argument 'time_limit'
+16,SAT,pairwise,kissat,LICENSE_LIMIT,False,0,0,0.0,0.0,0.0,False,NQueensSAT.solve() got an unexpected keyword argument 'time_limit'
+16,SAT,pairwise,maplecm,LICENSE_LIMIT,False,0,0,0.0,0.0,0.0,False,NQueensSAT.solve() got an unexpected keyword argument 'time_limit'
+16,SAT,binary,glucose3,LICENSE_LIMIT,False,0,0,0.0,0.0,0.0,False,NQueensSAT.solve() got an unexpected keyword argument 'time_limit'
+16,SAT,binary,minisat22,LICENSE_LIMIT,False,0,0,0.0,0.0,0.0,False,NQueensSAT.solve() got an unexpected keyword argument 'time_limit'
+16,SAT,binary,cadical,LICENSE_LIMIT,False,0,0,0.0,0.0,0.0,False,NQueensSAT.solve() got an unexpected keyword argument 'time_limit'
+16,SAT,binary,kissat,LICENSE_LIMIT,False,0,0,0.0,0.0,0.0,False,NQueensSAT.solve() got an unexpected keyword argument 'time_limit'
+16,SAT,binary,maplecm,LICENSE_LIMIT,False,0,0,0.0,0.0,0.0,False,NQueensSAT.solve() got an unexpected keyword argument 'time_limit'
+16,SAT,sequential,glucose3,LICENSE_LIMIT,False,0,0,0.0,0.0,0.0,False,NQueensSAT.solve() got an unexpected keyword argument 'time_limit'
+16,SAT,sequential,minisat22,LICENSE_LIMIT,False,0,0,0.0,0.0,0.0,False,NQueensSAT.solve() got an unexpected keyword argument 'time_limit'
+16,SAT,sequential,cadical,LICENSE_LIMIT,False,0,0,0.0,0.0,0.0,False,NQueensSAT.solve() got an unexpected keyword argument 'time_limit'
+16,SAT,sequential,kissat,LICENSE_LIMIT,False,0,0,0.0,0.0,0.0,False,NQueensSAT.solve() got an unexpected keyword argument 'time_limit'
+16,SAT,sequential,maplecm,LICENSE_LIMIT,False,0,0,0.0,0.0,0.0,False,NQueensSAT.solve() got an unexpected keyword argument 'time_limit'
+16,SAT,commander,glucose3,LICENSE_LIMIT,False,0,0,0.0,0.0,0.0,False,NQueensSAT.solve() got an unexpected keyword argument 'time_limit'
+16,SAT,commander,minisat22,LICENSE_LIMIT,False,0,0,0.0,0.0,0.0,False,NQueensSAT.solve() got an unexpected keyword argument 'time_limit'
+16,SAT,commander,cadical,LICENSE_LIMIT,False,0,0,0.0,0.0,0.0,False,NQueensSAT.solve() got an unexpected keyword argument 'time_limit'
+16,SAT,commander,kissat,LICENSE_LIMIT,False,0,0,0.0,0.0,0.0,False,NQueensSAT.solve() got an unexpected keyword argument 'time_limit'
+16,SAT,commander,maplecm,LICENSE_LIMIT,False,0,0,0.0,0.0,0.0,False,NQueensSAT.solve() got an unexpected keyword argument 'time_limit'
+16,SAT,product,glucose3,LICENSE_LIMIT,False,0,0,0.0,0.0,0.0,False,NQueensSAT.solve() got an unexpected keyword argument 'time_limit'
+16,SAT,product,minisat22,LICENSE_LIMIT,False,0,0,0.0,0.0,0.0,False,NQueensSAT.solve() got an unexpected keyword argument 'time_limit'
+16,SAT,product,cadical,LICENSE_LIMIT,False,0,0,0.0,0.0,0.0,False,NQueensSAT.solve() got an unexpected keyword argument 'time_limit'
+16,SAT,product,kissat,LICENSE_LIMIT,False,0,0,0.0,0.0,0.0,False,NQueensSAT.solve() got an unexpected keyword argument 'time_limit'
+16,SAT,product,maplecm,LICENSE_LIMIT,False,0,0,0.0,0.0,0.0,False,NQueensSAT.solve() got an unexpected keyword argument 'time_limit'
+32,SAT,pairwise,glucose3,LICENSE_LIMIT,False,0,0,0.0,0.0,0.0,False,NQueensSAT.solve() got an unexpected keyword argument 'time_limit'
+32,SAT,pairwise,minisat22,LICENSE_LIMIT,False,0,0,0.0,0.0,0.0,False,NQueensSAT.solve() got an unexpected keyword argument 'time_limit'
+32,SAT,pairwise,cadical,LICENSE_LIMIT,False,0,0,0.0,0.0,0.0,False,NQueensSAT.solve() got an unexpected keyword argument 'time_limit'
+32,SAT,pairwise,kissat,LICENSE_LIMIT,False,0,0,0.0,0.0,0.0,False,NQueensSAT.solve() got an unexpected keyword argument 'time_limit'
+32,SAT,pairwise,maplecm,LICENSE_LIMIT,False,0,0,0.0,0.0,0.0,False,NQueensSAT.solve() got an unexpected keyword argument 'time_limit'
+32,SAT,binary,glucose3,LICENSE_LIMIT,False,0,0,0.0,0.0,0.0,False,NQueensSAT.solve() got an unexpected keyword argument 'time_limit'
+32,SAT,binary,minisat22,LICENSE_LIMIT,False,0,0,0.0,0.0,0.0,False,NQueensSAT.solve() got an unexpected keyword argument 'time_limit'
+32,SAT,binary,cadical,LICENSE_LIMIT,False,0,0,0.0,0.0,0.0,False,NQueensSAT.solve() got an unexpected keyword argument 'time_limit'
+32,SAT,binary,kissat,LICENSE_LIMIT,False,0,0,0.0,0.0,0.0,False,NQueensSAT.solve() got an unexpected keyword argument 'time_limit'
+32,SAT,binary,maplecm,LICENSE_LIMIT,False,0,0,0.0,0.0,0.0,False,NQueensSAT.solve() got an unexpected keyword argument 'time_limit'
+32,SAT,sequential,glucose3,LICENSE_LIMIT,False,0,0,0.0,0.0,0.0,False,NQueensSAT.solve() got an unexpected keyword argument 'time_limit'
+32,SAT,sequential,minisat22,LICENSE_LIMIT,False,0,0,0.0,0.0,0.0,False,NQueensSAT.solve() got an unexpected keyword argument 'time_limit'
+32,SAT,sequential,cadical,LICENSE_LIMIT,False,0,0,0.0,0.0,0.0,False,NQueensSAT.solve() got an unexpected keyword argument 'time_limit'
+32,SAT,sequential,kissat,LICENSE_LIMIT,False,0,0,0.0,0.0,0.0,False,NQueensSAT.solve() got an unexpected keyword argument 'time_limit'
+32,SAT,sequential,maplecm,LICENSE_LIMIT,False,0,0,0.0,0.0,0.0,False,NQueensSAT.solve() got an unexpected keyword argument 'time_limit'
+32,SAT,commander,glucose3,LICENSE_LIMIT,False,0,0,0.0,0.0,0.0,False,NQueensSAT.solve() got an unexpected keyword argument 'time_limit'
+32,SAT,commander,minisat22,LICENSE_LIMIT,False,0,0,0.0,0.0,0.0,False,NQueensSAT.solve() got an unexpected keyword argument 'time_limit'
+32,SAT,commander,cadical,LICENSE_LIMIT,False,0,0,0.0,0.0,0.0,False,NQueensSAT.solve() got an unexpected keyword argument 'time_limit'
+32,SAT,commander,kissat,LICENSE_LIMIT,False,0,0,0.0,0.0,0.0,False,NQueensSAT.solve() got an unexpected keyword argument 'time_limit'
+32,SAT,commander,maplecm,LICENSE_LIMIT,False,0,0,0.0,0.0,0.0,False,NQueensSAT.solve() got an unexpected keyword argument 'time_limit'
+32,SAT,product,glucose3,LICENSE_LIMIT,False,0,0,0.0,0.0,0.0,False,NQueensSAT.solve() got an unexpected keyword argument 'time_limit'
+32,SAT,product,minisat22,LICENSE_LIMIT,False,0,0,0.0,0.0,0.0,False,NQueensSAT.solve() got an unexpected keyword argument 'time_limit'
+32,SAT,product,cadical,LICENSE_LIMIT,False,0,0,0.0,0.0,0.0,False,NQueensSAT.solve() got an unexpected keyword argument 'time_limit'
+32,SAT,product,kissat,LICENSE_LIMIT,False,0,0,0.0,0.0,0.0,False,NQueensSAT.solve() got an unexpected keyword argument 'time_limit'
+32,SAT,product,maplecm,LICENSE_LIMIT,False,0,0,0.0,0.0,0.0,False,NQueensSAT.solve() got an unexpected keyword argument 'time_limit'
+64,SAT,pairwise,glucose3,LICENSE_LIMIT,False,0,0,0.0,0.0,0.0,False,NQueensSAT.solve() got an unexpected keyword argument 'time_limit'
+64,SAT,pairwise,minisat22,LICENSE_LIMIT,False,0,0,0.0,0.0,0.0,False,NQueensSAT.solve() got an unexpected keyword argument 'time_limit'
+64,SAT,pairwise,cadical,LICENSE_LIMIT,False,0,0,0.0,0.0,0.0,False,NQueensSAT.solve() got an unexpected keyword argument 'time_limit'
+64,SAT,pairwise,kissat,LICENSE_LIMIT,False,0,0,0.0,0.0,0.0,False,NQueensSAT.solve() got an unexpected keyword argument 'time_limit'
+64,SAT,pairwise,maplecm,LICENSE_LIMIT,False,0,0,0.0,0.0,0.0,False,NQueensSAT.solve() got an unexpected keyword argument 'time_limit'
+64,SAT,binary,glucose3,LICENSE_LIMIT,False,0,0,0.0,0.0,0.0,False,NQueensSAT.solve() got an unexpected keyword argument 'time_limit'
+64,SAT,binary,minisat22,LICENSE_LIMIT,False,0,0,0.0,0.0,0.0,False,NQueensSAT.solve() got an unexpected keyword argument 'time_limit'
+64,SAT,binary,cadical,LICENSE_LIMIT,False,0,0,0.0,0.0,0.0,False,NQueensSAT.solve() got an unexpected keyword argument 'time_limit'
+64,SAT,binary,kissat,LICENSE_LIMIT,False,0,0,0.0,0.0,0.0,False,NQueensSAT.solve() got an unexpected keyword argument 'time_limit'
+64,SAT,binary,maplecm,LICENSE_LIMIT,False,0,0,0.0,0.0,0.0,False,NQueensSAT.solve() got an unexpected keyword argument 'time_limit'
+64,SAT,sequential,glucose3,LICENSE_LIMIT,False,0,0,0.0,0.0,0.0,False,NQueensSAT.solve() got an unexpected keyword argument 'time_limit'
+64,SAT,sequential,minisat22,LICENSE_LIMIT,False,0,0,0.0,0.0,0.0,False,NQueensSAT.solve() got an unexpected keyword argument 'time_limit'
+64,SAT,sequential,cadical,LICENSE_LIMIT,False,0,0,0.0,0.0,0.0,False,NQueensSAT.solve() got an unexpected keyword argument 'time_limit'
+64,SAT,sequential,kissat,LICENSE_LIMIT,False,0,0,0.0,0.0,0.0,False,NQueensSAT.solve() got an unexpected keyword argument 'time_limit'
+64,SAT,sequential,maplecm,LICENSE_LIMIT,False,0,0,0.0,0.0,0.0,False,NQueensSAT.solve() got an unexpected keyword argument 'time_limit'
+64,SAT,commander,glucose3,LICENSE_LIMIT,False,0,0,0.0,0.0,0.0,False,NQueensSAT.solve() got an unexpected keyword argument 'time_limit'
+64,SAT,commander,minisat22,LICENSE_LIMIT,False,0,0,0.0,0.0,0.0,False,NQueensSAT.solve() got an unexpected keyword argument 'time_limit'
+64,SAT,commander,cadical,LICENSE_LIMIT,False,0,0,0.0,0.0,0.0,False,NQueensSAT.solve() got an unexpected keyword argument 'time_limit'
+64,SAT,commander,kissat,LICENSE_LIMIT,False,0,0,0.0,0.0,0.0,False,NQueensSAT.solve() got an unexpected keyword argument 'time_limit'
+64,SAT,commander,maplecm,LICENSE_LIMIT,False,0,0,0.0,0.0,0.0,False,NQueensSAT.solve() got an unexpected keyword argument 'time_limit'
+64,SAT,product,glucose3,LICENSE_LIMIT,False,0,0,0.0,0.0,0.0,False,NQueensSAT.solve() got an unexpected keyword argument 'time_limit'
+64,SAT,product,minisat22,LICENSE_LIMIT,False,0,0,0.0,0.0,0.0,False,NQueensSAT.solve() got an unexpected keyword argument 'time_limit'
+64,SAT,product,cadical,LICENSE_LIMIT,False,0,0,0.0,0.0,0.0,False,NQueensSAT.solve() got an unexpected keyword argument 'time_limit'
+64,SAT,product,kissat,LICENSE_LIMIT,False,0,0,0.0,0.0,0.0,False,NQueensSAT.solve() got an unexpected keyword argument 'time_limit'
+64,SAT,product,maplecm,LICENSE_LIMIT,False,0,0,0.0,0.0,0.0,False,NQueensSAT.solve() got an unexpected keyword argument 'time_limit'
+128,SAT,pairwise,glucose3,LICENSE_LIMIT,False,0,0,0.0,0.0,0.0,False,NQueensSAT.solve() got an unexpected keyword argument 'time_limit'
+128,SAT,pairwise,minisat22,LICENSE_LIMIT,False,0,0,0.0,0.0,0.0,False,NQueensSAT.solve() got an unexpected keyword argument 'time_limit'
+128,SAT,pairwise,cadical,LICENSE_LIMIT,False,0,0,0.0,0.0,0.0,False,NQueensSAT.solve() got an unexpected keyword argument 'time_limit'
+128,SAT,pairwise,kissat,LICENSE_LIMIT,False,0,0,0.0,0.0,0.0,False,NQueensSAT.solve() got an unexpected keyword argument 'time_limit'
+128,SAT,pairwise,maplecm,LICENSE_LIMIT,False,0,0,0.0,0.0,0.0,False,NQueensSAT.solve() got an unexpected keyword argument 'time_limit'
+128,SAT,binary,glucose3,LICENSE_LIMIT,False,0,0,0.0,0.0,0.0,False,NQueensSAT.solve() got an unexpected keyword argument 'time_limit'
+128,SAT,binary,minisat22,LICENSE_LIMIT,False,0,0,0.0,0.0,0.0,False,NQueensSAT.solve() got an unexpected keyword argument 'time_limit'
+128,SAT,binary,cadical,LICENSE_LIMIT,False,0,0,0.0,0.0,0.0,False,NQueensSAT.solve() got an unexpected keyword argument 'time_limit'
+128,SAT,binary,kissat,LICENSE_LIMIT,False,0,0,0.0,0.0,0.0,False,NQueensSAT.solve() got an unexpected keyword argument 'time_limit'
+128,SAT,binary,maplecm,LICENSE_LIMIT,False,0,0,0.0,0.0,0.0,False,NQueensSAT.solve() got an unexpected keyword argument 'time_limit'
+128,SAT,sequential,glucose3,LICENSE_LIMIT,False,0,0,0.0,0.0,0.0,False,NQueensSAT.solve() got an unexpected keyword argument 'time_limit'
+128,SAT,sequential,minisat22,LICENSE_LIMIT,False,0,0,0.0,0.0,0.0,False,NQueensSAT.solve() got an unexpected keyword argument 'time_limit'
+128,SAT,sequential,cadical,LICENSE_LIMIT,False,0,0,0.0,0.0,0.0,False,NQueensSAT.solve() got an unexpected keyword argument 'time_limit'
+128,SAT,sequential,kissat,LICENSE_LIMIT,False,0,0,0.0,0.0,0.0,False,NQueensSAT.solve() got an unexpected keyword argument 'time_limit'
+128,SAT,sequential,maplecm,LICENSE_LIMIT,False,0,0,0.0,0.0,0.0,False,NQueensSAT.solve() got an unexpected keyword argument 'time_limit'
+128,SAT,commander,glucose3,LICENSE_LIMIT,False,0,0,0.0,0.0,0.0,False,NQueensSAT.solve() got an unexpected keyword argument 'time_limit'
+128,SAT,commander,minisat22,LICENSE_LIMIT,False,0,0,0.0,0.0,0.0,False,NQueensSAT.solve() got an unexpected keyword argument 'time_limit'
+128,SAT,commander,cadical,LICENSE_LIMIT,False,0,0,0.0,0.0,0.0,False,NQueensSAT.solve() got an unexpected keyword argument 'time_limit'
+128,SAT,commander,kissat,LICENSE_LIMIT,False,0,0,0.0,0.0,0.0,False,NQueensSAT.solve() got an unexpected keyword argument 'time_limit'
+128,SAT,commander,maplecm,LICENSE_LIMIT,False,0,0,0.0,0.0,0.0,False,NQueensSAT.solve() got an unexpected keyword argument 'time_limit'
+128,SAT,product,glucose3,LICENSE_LIMIT,False,0,0,0.0,0.0,0.0,False,NQueensSAT.solve() got an unexpected keyword argument 'time_limit'
+128,SAT,product,minisat22,LICENSE_LIMIT,False,0,0,0.0,0.0,0.0,False,NQueensSAT.solve() got an unexpected keyword argument 'time_limit'
+128,SAT,product,cadical,LICENSE_LIMIT,False,0,0,0.0,0.0,0.0,False,NQueensSAT.solve() got an unexpected keyword argument 'time_limit'
+128,SAT,product,kissat,LICENSE_LIMIT,False,0,0,0.0,0.0,0.0,False,NQueensSAT.solve() got an unexpected keyword argument 'time_limit'
+128,SAT,product,maplecm,LICENSE_LIMIT,False,0,0,0.0,0.0,0.0,False,NQueensSAT.solve() got an unexpected keyword argument 'time_limit'
+8,CP-SAT,integer,ortools-cpsat,OPTIMAL,True,23,3,0.17292094230651855,0.005280017852783203,0.17817401885986328,True,
+8,CP-SAT,boolean,ortools-cpsat,OPTIMAL,True,64,46,0.1723318099975586,0.004856109619140625,0.17718791961669922,True,
+8,CP-SAT,allowed,ortools-cpsat,OPTIMAL,True,8,29,0.17297983169555664,0.008849143981933594,0.18183565139770508,True,
+16,CP-SAT,integer,ortools-cpsat,OPTIMAL,True,47,3,0.17276382446289062,0.00868678092956543,0.18134403228759766,True,
+16,CP-SAT,boolean,ortools-cpsat,OPTIMAL,True,256,94,0.1741466522216797,0.007932901382446289,0.1823575496673584,True,
+16,CP-SAT,allowed,ortools-cpsat,OPTIMAL,True,16,121,0.17747998237609863,0.021114110946655273,0.1985940933227539,True,
+32,CP-SAT,integer,ortools-cpsat,OPTIMAL,True,95,3,0.17372894287109375,0.02267599105834961,0.19640493392944336,True,
+32,CP-SAT,boolean,ortools-cpsat,OPTIMAL,True,1024,190,0.17719316482543945,0.019688129425048828,0.1968238353729248,True,
+32,CP-SAT,allowed,ortools-cpsat,OPTIMAL,True,32,497,0.2307300567626953,0.16120219230651855,0.39193224906921387,True,
+64,CP-SAT,integer,ortools-cpsat,OPTIMAL,True,191,3,0.1732311248779297,0.09396576881408691,0.26772475242614746,True,
+64,CP-SAT,boolean,ortools-cpsat,OPTIMAL,True,4096,382,0.188004732131958,0.08082103729248047,0.2686934471130371,True,
+64,CP-SAT,allowed,ortools-cpsat,OPTIMAL,True,64,2017,1.1600158214569092,2.076369047164917,3.2328789234161377,True,
+128,CP-SAT,integer,ortools-cpsat,OPTIMAL,True,383,3,0.17307400703430176,0.4731180667877197,0.6461162567138672,True,
+128,CP-SAT,boolean,ortools-cpsat,OPTIMAL,True,16384,766,0.2321019172668457,0.4923880100250244,0.7246968746185303,True,
+128,CP-SAT,allowed,ortools-cpsat,TIMEOUT,False,0,0,30.0,30.0,30.0,False,Hard timeout expired
+8,MIP,binary,cbc,OPTIMAL,True,64,46,0.0342710018157959,0.004535198211669922,0.03880620002746582,True,
+8,MIP,binary,scip,OPTIMAL,True,64,46,0.035407066345214844,0.004945039749145508,0.04035210609436035,True,
+8,MIP,integer,cbc,OPTIMAL,True,72,54,0.034258127212524414,0.0037529468536376953,0.03801608085632324,True,
+8,MIP,integer,scip,OPTIMAL,True,72,54,0.035444021224975586,0.005190849304199219,0.040634870529174805,True,
+16,MIP,binary,cbc,OPTIMAL,True,256,94,0.03463006019592285,0.02076101303100586,0.05539107322692871,True,
+16,MIP,binary,scip,OPTIMAL,True,256,94,0.035565853118896484,0.005216121673583984,0.04078197479248047,True,
+16,MIP,integer,cbc,OPTIMAL,True,272,110,0.034654855728149414,0.014580011367797852,0.049272775650024414,True,
+16,MIP,integer,scip,OPTIMAL,True,272,110,0.03619194030761719,0.005834102630615234,0.042029619216918945,True,
+32,MIP,binary,cbc,OPTIMAL,True,1024,190,0.03724789619445801,0.051190853118896484,0.08843874931335449,True,
+32,MIP,binary,scip,OPTIMAL,True,1024,190,0.03800201416015625,0.6889200210571289,0.7268998622894287,True,
+32,MIP,integer,cbc,OPTIMAL,True,1056,222,0.03826475143432617,0.04832911491394043,0.0865938663482666,True,
+32,MIP,integer,scip,OPTIMAL,True,1056,222,0.039402008056640625,0.6634509563446045,0.7028529644012451,True,
+64,MIP,binary,cbc,OPTIMAL,True,4096,382,0.04548931121826172,0.2972397804260254,0.34339165687561035,True,
+64,MIP,binary,scip,OPTIMAL,True,4096,382,0.046424150466918945,1.2900149822235107,1.336195945739746,True,
+64,MIP,integer,cbc,OPTIMAL,True,4160,446,0.04886889457702637,0.38243818283081055,0.43131494522094727,True,
+64,MIP,integer,scip,OPTIMAL,True,4160,446,0.050386905670166016,3.5213539600372314,3.571208953857422,True,
+8,Gurobi,binary,gurobi,OPTIMAL,True,0,0,0.0009148120880126953,0.00011610984802246094,0.001027822494506836,True,
+16,Gurobi,binary,gurobi,OPTIMAL,True,0,0,0.0013170242309570312,0.00020194053649902344,0.0015211105346679688,True,
+32,Gurobi,binary,gurobi,OPTIMAL,True,0,0,0.003019094467163086,0.008840084075927734,0.011835098266601562,True,
+44,Gurobi,binary,gurobi,OPTIMAL,True,0,0,0.004976987838745117,0.0006079673767089844,0.0055849552154541016,True,
+8,CPLEX-MIP,binary,cplex,OPTIMAL,True,64,0,0.009743928909301758,0.001967191696166992,0.01171112060546875,True,
+16,CPLEX-MIP,binary,cplex,OPTIMAL,True,256,0,0.009764909744262695,0.0023589134216308594,0.012202024459838867,True,
+31,CPLEX-MIP,binary,cplex,OPTIMAL,True,961,0,0.011763811111450195,0.004369020462036133,0.016138076782226562,True,
+8,CPLEX-CP,integer,cplex-cp,ERROR,False,8,0,0.00026798248291015625,0.0006928443908691406,0.0009608268737792969,False,
+16,CPLEX-CP,integer,cplex-cp,ERROR,False,16,0,0.0002770423889160156,0.000476837158203125,0.0007538795471191406,False,
+31,CPLEX-CP,integer,cplex-cp,ERROR,False,31,0,0.0003139972686767578,0.00046062469482421875,0.0007746219635009766,False,

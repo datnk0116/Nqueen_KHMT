@@ -35,7 +35,7 @@ def solve_nqueens(n: int, time_limit: float = None):
     except Exception as e:
         build_time = time.time() - build_start
         err_str = str(e).lower()
-        if "license" in err_str or "limit" in err_str or isinstance(e, gp.GurobiError):
+        if "license" in err_str or "limit" in err_str or "size" in err_str:
             return ("LICENSE_LIMIT", build_time, 0, [], build_time, 0.0)
         return ("ERROR", build_time, 0, [], build_time, 0.0)
 

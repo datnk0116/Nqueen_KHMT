@@ -1,0 +1,5 @@
+n,paradigm,model_variant,solver,status,is_sat,variables_count,clauses_constraints_count,build_time,solve_time,time_seconds,verified,error
+8,Gurobi,binary,gurobi,OPTIMAL,True,0,0,0.0009148120880126953,0.00011610984802246094,0.001027822494506836,True,
+16,Gurobi,binary,gurobi,OPTIMAL,True,0,0,0.0013170242309570312,0.00020194053649902344,0.0015211105346679688,True,
+32,Gurobi,binary,gurobi,OPTIMAL,True,0,0,0.003019094467163086,0.008840084075927734,0.011835098266601562,True,
+44,Gurobi,binary,gurobi,OPTIMAL,True,0,0,0.004976987838745117,0.0006079673767089844,0.0055849552154541016,True,

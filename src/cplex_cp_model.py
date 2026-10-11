@@ -42,9 +42,17 @@ def solve_nqueens(n: int, time_limit: float = None):
             status = sol.get_solve_status() if sol is not None else "NO_SOLUTION"
             return (str(status), total_time, variables_count, [], build_time, solve_time)
             
-        status = sol.get_solve_status()
+        raw_status = str(sol.get_solve_status()) if sol is not None else "NO_SOLUTION"
+        status_upper = raw_status.upper()
+        if "OPTIMAL" in status_upper:
+            status = "OPTIMAL"
+        elif "FEASIBLE" in status_upper:
+            status = "FEASIBLE"
+        else:
+            status = raw_status
+            
         queens = [(i, sol[q[i]]) for i in range(n)]
-        return (str(status), total_time, variables_count, queens, build_time, solve_time)
+        return (status, total_time, variables_count, queens, build_time, solve_time)
     except Exception as e:
         solve_time = time.time() - solve_start
         total_time = build_time + solve_time

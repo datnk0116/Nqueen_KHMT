@@ -47,9 +47,17 @@ def solve_nqueens(n: int, time_limit: float = None):
         if sol is None:
             return ("NO_SOLUTION", total_time, variables_count, [], build_time, solve_time)
             
-        status = sol.solve_details.status if hasattr(sol, 'solve_details') and hasattr(sol.solve_details, 'status') else "OPTIMAL"
+        raw_status = str(sol.solve_details.status) if hasattr(sol, 'solve_details') and hasattr(sol.solve_details, 'status') else "OPTIMAL"
+        status_upper = raw_status.upper()
+        if "OPTIMAL" in status_upper:
+            status = "OPTIMAL"
+        elif "FEASIBLE" in status_upper:
+            status = "FEASIBLE"
+        else:
+            status = raw_status
+            
         queens = [(i, j) for i in range(n) for j in range(n) if sol.get_value(x[i, j]) > 0.5]
-        return (str(status), total_time, variables_count, queens, build_time, solve_time)
+        return (status, total_time, variables_count, queens, build_time, solve_time)
     except Exception as e:
         solve_time = time.time() - solve_start
         total_time = build_time + solve_time

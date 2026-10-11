@@ -5,9 +5,7 @@ __pycache__/
 gurobi.lic
 cplex.lic
 .DS_Store
-results/
 .pytest_cache/
-*.pdf
-*.aux
-*.log
-*.out
+!results/
+!results/*.csv
+
