@@ -9,7 +9,7 @@
 \usepackage[margin=1in]{geometry}
 
 \title{\textbf{Comprehensive Benchmark Report: $N$-Queens Problem Across Six Solver Groups and Paradigms}}
-\author{DatNK0116 \\ Student ID (MSSV): 2212345}
+\author{DatNK0116 \\ Student ID (MSSV): 24021404}
 \date{\today}
 
 \begin{document}
@@ -248,9 +248,21 @@ The empirical results reveal distinct performance characteristics and limitation
 This comprehensive benchmark demonstrates that while modern SAT and CP-SAT engines solve moderate instances efficiently, performance varies significantly at $N = 128$. Performance is heavily dictated by solver and encoding sensitivity: CaDiCaL and Kissat handle large scales effectively without timing out, whereas Glucose3, MiniSat22, and MapleCM encounter frequent timeouts (10/25 at $N = 128$). Global constraint propagation and clausal representations offer distinct operational trade-offs, providing a rigorous comparative taxonomy for combinatorial optimization.
 
 \section{References}
-\begin{thebibliography}{9}
+\begin{thebibliography}{10}
 \bibitem{biere2020cadical}
-A. Biere, ``CaDiCaL at SAT Race 2019,'' \emph{volume B-2019 of Pragmatics \& Resolut.}, pages 51--52, 2019.
+A. Biere, ``CaDiCaL at SAT Race 2019,'' \emph{Proceedings of Pragmatics of SAT}, pages 51--52, 2019.
+
+\bibitem{sinz2005}
+C. Sinz, ``Towards an Optimal CNF Encoding of Boolean Cardinality Constraints,'' In \emph{Principles and Practice of Constraint Programming (CP 2005)}, pp. 827--831, 2005.
+
+\bibitem{klieber2007efficient}
+W. Klieber and G. Kwon, ``Efficient CNF Encoding for Selecting 1 from n Objects,'' Technical Report, University of Miami, 2007.
+
+\bibitem{chen2010new}
+J. Chen, ``A New SAT Encoding for the At-Most-One Constraint,'' In \emph{Workshop on Constraint Satisfaction}, 2010.
+
+\bibitem{ignatiev2018pysat}
+A. Ignatiev, A. Morgado, and J. Marques-Silva, ``PySAT: A Python Toolkit for Prototyping with SAT Oracles,'' In \emph{International Conference on Theory and Applications of Satisfiability Testing (SAT)}, pp. 428--437, 2018.
 
 \bibitem{perron2021ortools}
 L. Perron and V. Furnon, ``OR-Tools,'' Google, 2021. Available: \url{https://developers.google.com/optimization}.

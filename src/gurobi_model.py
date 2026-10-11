@@ -30,6 +30,7 @@ def solve_nqueens(n: int, time_limit: float = None):
             if len(cells) > 1:
                 m.addConstr(gp.quicksum(cells) <= 1)
                 
+        m.update()
         variables_count = m.NumVars
         constraints_count = m.NumConstrs
         build_time = time.time() - build_start
