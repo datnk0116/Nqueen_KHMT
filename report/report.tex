@@ -74,21 +74,21 @@ Table~\ref{tab:sat} summarizes SAT benchmark results across diverse encodings an
 \toprule
 $N$ & Model Variant & Solver & Variables & Clauses & Time (s) \\
 \midrule
-4 & binary & cadical & 48 & 116 & 0.000093 \\
-4 & binary & glucose3 & 48 & 116 & 0.000100 \\
-4 & binary & kissat & 48 & 116 & 0.000471 \\
-4 & binary & maplecm & 48 & 116 & 0.000102 \\
-4 & binary & minisat22 & 48 & 116 & 0.000077 \\
-4 & commander & cadical & 26 & 90 & 0.000070 \\
-4 & commander & glucose3 & 26 & 90 & 0.000068 \\
-4 & commander & kissat & 26 & 90 & 0.000047 \\
-4 & commander & maplecm & 26 & 90 & 0.000079 \\
-4 & commander & minisat22 & 26 & 90 & 0.000074 \\
-4 & pairwise & cadical & 16 & 80 & 0.000141 \\
-4 & pairwise & glucose3 & 16 & 80 & 0.000127 \\
-4 & pairwise & kissat & 16 & 80 & 0.001085 \\
-4 & pairwise & maplecm & 16 & 80 & 0.000136 \\
-4 & pairwise & minisat22 & 16 & 80 & 0.000079 \\
+8 & binary & cadical & 174 & 720 & 0.010812 \\
+8 & binary & glucose3 & 174 & 720 & 0.010800 \\
+8 & binary & kissat & 174 & 720 & 0.015317 \\
+8 & binary & maplecm & 174 & 720 & 0.010627 \\
+8 & binary & minisat22 & 174 & 720 & 0.010925 \\
+8 & commander & cadical & 146 & 528 & 0.010824 \\
+8 & commander & glucose3 & 146 & 528 & 0.010430 \\
+8 & commander & kissat & 146 & 528 & 0.013517 \\
+8 & commander & maplecm & 146 & 528 & 0.010541 \\
+8 & commander & minisat22 & 146 & 528 & 0.010323 \\
+8 & pairwise & cadical & 64 & 736 & 0.010525 \\
+8 & pairwise & glucose3 & 64 & 736 & 0.010681 \\
+8 & pairwise & kissat & 64 & 736 & 0.014094 \\
+8 & pairwise & maplecm & 64 & 736 & 0.010698 \\
+8 & pairwise & minisat22 & 64 & 736 & 0.010565 \\
 \bottomrule
 \end{tabular}
 \end{table}
@@ -103,9 +103,21 @@ Table~\ref{tab:cpsat} outlines OR-Tools CP-SAT performance.
 \toprule
 $N$ & Model Variant & Solver & Variables & Constraints & Time (s) \\
 \midrule
-4 & allowed & ortools-cpsat & 4 & 7 & 0.002202 \\
-4 & boolean & ortools-cpsat & 16 & 22 & 0.002177 \\
-4 & integer & ortools-cpsat & 11 & 3 & 0.004243 \\
+8 & allowed & ortools-cpsat & 8 & 29 & 0.339878 \\
+8 & boolean & ortools-cpsat & 64 & 46 & 0.350075 \\
+8 & integer & ortools-cpsat & 23 & 3 & 0.390507 \\
+16 & allowed & ortools-cpsat & 16 & 121 & 0.344773 \\
+16 & boolean & ortools-cpsat & 256 & 94 & 0.320005 \\
+16 & integer & ortools-cpsat & 47 & 3 & 0.319209 \\
+32 & allowed & ortools-cpsat & 32 & 497 & 0.692970 \\
+32 & boolean & ortools-cpsat & 1024 & 190 & 0.351955 \\
+32 & integer & ortools-cpsat & 95 & 3 & 0.339875 \\
+64 & allowed & ortools-cpsat & 64 & 2017 & 5.905200 \\
+64 & boolean & ortools-cpsat & 4096 & 382 & 0.480966 \\
+64 & integer & ortools-cpsat & 191 & 3 & 0.516410 \\
+128 & allowed & ortools-cpsat & 0 & 0 & 30.000000 \\
+128 & boolean & ortools-cpsat & 16384 & 766 & 1.336261 \\
+128 & integer & ortools-cpsat & 383 & 3 & 1.252745 \\
 \bottomrule
 \end{tabular}
 \end{table}
@@ -120,10 +132,21 @@ Table~\ref{tab:mip} summarizes CBC and SCIP performance.
 \toprule
 $N$ & Model Variant & Solver & Variables & Constraints & Time (s) \\
 \midrule
-4 & binary & cbc & 16 & 22 & 0.002031 \\
-4 & binary & scip & 16 & 22 & 0.001990 \\
-4 & integer & cbc & 20 & 26 & 0.002761 \\
-4 & integer & scip & 20 & 26 & 0.001121 \\
+8 & binary & cbc & 64 & 46 & 0.084118 \\
+8 & binary & scip & 64 & 46 & 0.082440 \\
+8 & integer & cbc & 72 & 54 & 0.074624 \\
+8 & integer & scip & 72 & 54 & 0.080567 \\
+16 & binary & cbc & 256 & 94 & 0.109129 \\
+16 & binary & scip & 256 & 94 & 0.079653 \\
+16 & integer & cbc & 272 & 110 & 0.102178 \\
+16 & integer & scip & 272 & 110 & 0.084915 \\
+32 & binary & cbc & 1024 & 190 & 0.180189 \\
+32 & binary & scip & 1024 & 190 & 1.445862 \\
+32 & integer & cbc & 1056 & 222 & 0.152519 \\
+32 & integer & scip & 1056 & 222 & 1.239208 \\
+64 & binary & cbc & 4096 & 382 & 0.607847 \\
+64 & binary & scip & 4096 & 382 & 2.346051 \\
+64 & integer & cbc & 4160 & 446 & 0.773074 \\
 \bottomrule
 \end{tabular}
 \end{table}
@@ -138,7 +161,10 @@ Tables~\ref{tab:gurobi} and \ref{tab:cplex} present Gurobi and CPLEX results.
 \toprule
 $N$ & Model Variant & Solver & Variables & Constraints & Time (s) \\
 \midrule
-4 & binary & gurobi & 0 & 0 & 0.002515 \\
+8 & binary & gurobi & 0 & 0 & 0.001564 \\
+16 & binary & gurobi & 0 & 0 & 0.002481 \\
+32 & binary & gurobi & 0 & 0 & 0.022991 \\
+44 & binary & gurobi & 0 & 0 & 0.009365 \\
 \bottomrule
 \end{tabular}
 \end{table}
@@ -150,8 +176,12 @@ $N$ & Model Variant & Solver & Variables & Constraints & Time (s) \\
 \toprule
 $N$ & Model Variant & Solver & Variables & Constraints & Time (s) \\
 \midrule
-4 & binary & cplex & 16 & 0 & 0.035246 \\
-4 & integer & cplex-cp & 4 & 0 & 0.002601 \\
+8 & binary & cplex & 64 & 0 & 0.021536 \\
+8 & integer & cplex-cp & 8 & 0 & 0.019669 \\
+16 & binary & cplex & 256 & 0 & 0.022388 \\
+16 & integer & cplex-cp & 16 & 0 & 0.019555 \\
+31 & binary & cplex & 961 & 0 & 0.030256 \\
+31 & integer & cplex-cp & 31 & 0 & 0.022318 \\
 \bottomrule
 \end{tabular}
 \end{table}

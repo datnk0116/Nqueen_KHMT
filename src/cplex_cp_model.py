@@ -2,7 +2,13 @@
 CPLEX CP Optimizer model builder and solver for N-Queens.
 """
 import time
+import os
 from docplex.cp.model import CpoModel
+from docplex.cp.config import context
+
+cp_path = '/Users/dat.vjp.pr0_10x/Applications/CPLEX_Studio222/cpoptimizer/bin/arm64_osx/cpoptimizer'
+if os.path.exists(cp_path):
+    context.solver.local.execfile = cp_path
 
 def solve_nqueens(n: int, time_limit: float = None):
     """
