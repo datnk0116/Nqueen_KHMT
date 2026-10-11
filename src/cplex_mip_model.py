@@ -30,13 +30,14 @@ def solve_nqueens(n: int, time_limit: float = None):
                 m.add_constraint(m.sum(cells) <= 1)
                 
         variables_count = m.number_of_variables
+        constraints_count = m.number_of_constraints
         build_time = time.time() - build_start
     except Exception as e:
         build_time = time.time() - build_start
         err_str = str(e).lower()
         if "1016" in err_str or "license" in err_str or "limit" in err_str:
-            return ("LICENSE_LIMIT", build_time, 0, [], build_time, 0.0)
-        return ("ERROR", build_time, 0, [], build_time, 0.0)
+            return ("LICENSE_LIMIT", build_time, 0, 0, [], build_time, 0.0)
+        return ("ERROR", build_time, 0, 0, [], build_time, 0.0)
 
     solve_start = time.time()
     try:
@@ -45,7 +46,7 @@ def solve_nqueens(n: int, time_limit: float = None):
         total_time = build_time + solve_time
         
         if sol is None:
-            return ("NO_SOLUTION", total_time, variables_count, [], build_time, solve_time)
+            return ("NO_SOLUTION", total_time, variables_count, constraints_count, [], build_time, solve_time)
             
         raw_status = str(sol.solve_details.status) if hasattr(sol, 'solve_details') and hasattr(sol.solve_details, 'status') else "OPTIMAL"
         status_upper = raw_status.upper()
@@ -57,11 +58,11 @@ def solve_nqueens(n: int, time_limit: float = None):
             status = raw_status
             
         queens = [(i, j) for i in range(n) for j in range(n) if sol.get_value(x[i, j]) > 0.5]
-        return (status, total_time, variables_count, queens, build_time, solve_time)
+        return (status, total_time, variables_count, constraints_count, queens, build_time, solve_time)
     except Exception as e:
         solve_time = time.time() - solve_start
         total_time = build_time + solve_time
         err_str = str(e).lower()
         if "1016" in err_str or "license" in err_str or "limit" in err_str:
-            return ("LICENSE_LIMIT", total_time, variables_count, [], build_time, solve_time)
-        return ("ERROR", total_time, variables_count, [], build_time, solve_time)
+            return ("LICENSE_LIMIT", total_time, variables_count, constraints_count, [], build_time, solve_time)
+        return ("ERROR", total_time, variables_count, constraints_count, [], build_time, solve_time)

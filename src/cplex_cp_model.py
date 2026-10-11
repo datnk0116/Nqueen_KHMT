@@ -6,14 +6,26 @@ import os
 from docplex.cp.model import CpoModel
 from docplex.cp.config import context
 
-cp_path = '/Users/dat.vjp.pr0_10x/Applications/CPLEX_Studio222/cpoptimizer/bin/arm64_osx/cpoptimizer'
-if os.path.exists(cp_path):
+cp_path = os.environ.get("CPLEX_CP_EXECUTABLE")
+if not cp_path and os.environ.get("CPLEX_STUDIO_DIR"):
+    cp_path = os.path.join(os.environ.get("CPLEX_STUDIO_DIR"), "cpoptimizer/bin/arm64_osx/cpoptimizer")
+if not cp_path or not os.path.exists(cp_path):
+    for fallback in [
+        '/Applications/CPLEX_Studio222/cpoptimizer/bin/arm64_osx/cpoptimizer',
+        '/Applications/CPLEX_Studio221/cpoptimizer/bin/arm64_osx/cpoptimizer',
+        'cpoptimizer'
+    ]:
+        if (fallback == 'cpoptimizer') or os.path.exists(fallback):
+            cp_path = fallback
+            break
+
+if cp_path and (cp_path == 'cpoptimizer' or os.path.exists(cp_path)):
     context.solver.local.execfile = cp_path
 
 def solve_nqueens(n: int, time_limit: float = None):
     """
     Solves N-Queens using CPLEX CP Optimizer model.
-    Returns: (status, time, variables_count, queens, build_time, solve_time)
+    Returns: (status, time, variables_count, constraints_count, queens, build_time, solve_time)
     """
     build_start = time.time()
     try:
@@ -24,14 +36,18 @@ def solve_nqueens(n: int, time_limit: float = None):
         m.add(m.all_diff([q[i] - i for i in range(n)]))
         
         variables_count = len(q)
+        try:
+            constraints_count = len(m.get_constraint_list())
+        except Exception:
+            constraints_count = 3
         build_time = time.time() - build_start
     except Exception as e:
         build_time = time.time() - build_start
         print(f"CPLEX CP build exception: {e}")
         err_str = str(e).lower()
         if "1016" in err_str or "license" in err_str or "size limit" in err_str:
-            return ("LICENSE_LIMIT", build_time, 0, [], build_time, 0.0)
-        return ("ERROR", build_time, 0, [], build_time, 0.0)
+            return ("LICENSE_LIMIT", build_time, 0, 0, [], build_time, 0.0)
+        return ("ERROR", build_time, 0, 0, [], build_time, 0.0)
 
     solve_start = time.time()
     try:
@@ -47,7 +63,7 @@ def solve_nqueens(n: int, time_limit: float = None):
         
         if sol is None or not sol.is_solution():
             status = sol.get_solve_status() if sol is not None else "NO_SOLUTION"
-            return (str(status), total_time, variables_count, [], build_time, solve_time)
+            return (str(status), total_time, variables_count, constraints_count, [], build_time, solve_time)
             
         raw_status = str(sol.get_solve_status()) if sol is not None else "NO_SOLUTION"
         status_upper = raw_status.upper()
@@ -59,12 +75,12 @@ def solve_nqueens(n: int, time_limit: float = None):
             status = raw_status
             
         queens = [(i, sol[q[i]]) for i in range(n)]
-        return (status, total_time, variables_count, queens, build_time, solve_time)
+        return (status, total_time, variables_count, constraints_count, queens, build_time, solve_time)
     except Exception as e:
         solve_time = time.time() - solve_start
         total_time = build_time + solve_time
         print(f"CPLEX CP solve exception: {e}")
         err_str = str(e).lower()
         if "1016" in err_str or "license" in err_str or "size limit" in err_str:
-            return ("LICENSE_LIMIT", total_time, variables_count, [], build_time, solve_time)
-        return ("ERROR", total_time, variables_count, [], build_time, solve_time)
+            return ("LICENSE_LIMIT", total_time, variables_count, constraints_count, [], build_time, solve_time)
+        return ("ERROR", total_time, variables_count, constraints_count, [], build_time, solve_time)

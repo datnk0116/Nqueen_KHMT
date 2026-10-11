@@ -31,13 +31,14 @@ def solve_nqueens(n: int, time_limit: float = None):
                 m.addConstr(gp.quicksum(cells) <= 1)
                 
         variables_count = m.NumVars
+        constraints_count = m.NumConstrs
         build_time = time.time() - build_start
     except Exception as e:
         build_time = time.time() - build_start
         err_str = str(e).lower()
         if "license" in err_str or "limit" in err_str or "size" in err_str:
-            return ("LICENSE_LIMIT", build_time, 0, [], build_time, 0.0)
-        return ("ERROR", build_time, 0, [], build_time, 0.0)
+            return ("LICENSE_LIMIT", build_time, 0, 0, [], build_time, 0.0)
+        return ("ERROR", build_time, 0, 0, [], build_time, 0.0)
 
     solve_start = time.time()
     try:
@@ -59,15 +60,15 @@ def solve_nqueens(n: int, time_limit: float = None):
         if m.Status in (GRB.OPTIMAL, GRB.SUBOPTIMAL) or (hasattr(m, 'SolCount') and m.SolCount > 0):
             queens = [(i, j) for i in range(n) for j in range(n) if x[i, j].X > 0.5]
             
-        return (status, total_time, variables_count, queens, build_time, solve_time)
+        return (status, total_time, variables_count, constraints_count, queens, build_time, solve_time)
     except gp.GurobiError as e:
         solve_time = time.time() - solve_start
         total_time = build_time + solve_time
         err_str = str(e).lower()
         if "license" in err_str or "limit" in err_str or "size" in err_str:
-            return ("LICENSE_LIMIT", total_time, variables_count, [], build_time, solve_time)
-        return ("ERROR", total_time, variables_count, [], build_time, solve_time)
+            return ("LICENSE_LIMIT", total_time, variables_count, constraints_count, [], build_time, solve_time)
+        return ("ERROR", total_time, variables_count, constraints_count, [], build_time, solve_time)
     except Exception as e:
         solve_time = time.time() - solve_start
         total_time = build_time + solve_time
-        return ("ERROR", total_time, variables_count, [], build_time, solve_time)
+        return ("ERROR", total_time, variables_count, constraints_count, [], build_time, solve_time)

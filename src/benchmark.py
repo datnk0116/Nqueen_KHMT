@@ -98,23 +98,20 @@ try:
         
     elif paradigm == "Gurobi":
         from gurobi_model import solve_nqueens
-        status, total_time, variables_count, queens, build_time, solve_time = solve_nqueens(n, time_limit=time_limit)
-        constraints_count = 0
+        status, total_time, variables_count, constraints_count, queens, build_time, solve_time = solve_nqueens(n, time_limit=time_limit)
         is_sat = status in ("OPTIMAL", "SUBOPTIMAL") or len(queens) > 0
         verified = verify(queens, n) if queens else False
         
     elif paradigm == "CPLEX-MIP":
         from cplex_mip_model import solve_nqueens
-        status, total_time, variables_count, queens, build_time, solve_time = solve_nqueens(n, time_limit=time_limit)
-        constraints_count = 0
+        status, total_time, variables_count, constraints_count, queens, build_time, solve_time = solve_nqueens(n, time_limit=time_limit)
         is_sat = status in ("OPTIMAL", "FEASIBLE") or len(queens) > 0
         verified = verify(queens, n) if queens else False
         
     elif paradigm == "CPLEX-CP":
         from cplex_cp_model import solve_nqueens
-        status, total_time, variables_count, queens, build_time, solve_time = solve_nqueens(n, time_limit=time_limit)
-        constraints_count = 0
-        is_sat = status in ("OPTIMAL", "Feasible") or len(queens) > 0
+        status, total_time, variables_count, constraints_count, queens, build_time, solve_time = solve_nqueens(n, time_limit=time_limit)
+        is_sat = status in ("OPTIMAL", "FEASIBLE", "Feasible") or len(queens) > 0
         verified = verify(queens, n) if queens else False
         
     else:

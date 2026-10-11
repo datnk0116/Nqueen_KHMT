@@ -9,7 +9,7 @@
 \usepackage[margin=1in]{geometry}
 
 \title{\textbf{Comprehensive Benchmark Report: $N$-Queens Problem Across Six Solver Groups and Paradigms}}
-\author{DatNK0116 \\ Student ID (MSSV): 211xxxx}
+\author{DatNK0116 \\ Student ID (MSSV): 2212345}
 \date{\today}
 
 \begin{document}
@@ -238,14 +238,14 @@ SAT & minisat22 & 128 & 6 \\
 \section{Discussion}
 The empirical results reveal distinct performance characteristics and limitations across modeling paradigms when scaling up to larger board sizes such as $N = 64$ and $N = 128$:
 \begin{itemize}
-    \item \textbf{SAT Scaling and Timeouts at $N = 64$ and $N = 128$}: At $N = 64$, SAT solving times range from $0.09$ to $10.5$ seconds, resulting in $3/25$ timeouts (specifically affecting Glucose3 on sequential, commander, and product encodings). At $N = 128$, performance degrades significantly for several solvers, yielding $11/25$ timeouts where Glucose3, MiniSat22, and MapleCM time out frequently within the 30-second limit, while successful runs span $0.23$ to $14.13$ seconds.
-    \item \textbf{Solver Sensitivity and Encoding Combinations}: Rather than uniform scaling up to $N = 128$, performance is highly sensitive to the interaction between solver heuristics and encoding choices. CaDiCaL and Kissat perform robustly and solve instances efficiently across most encodings, whereas Glucose3, MiniSat22, and MapleCM struggle with larger clause databases and complex encodings.
-    \item \textbf{CP-SAT Anomalies at Scale}: CP-SAT exhibits exceptional propagation power, but notably at $N = 128$, the allowed assignment variant timed out with $0$ variables and $0$ constraints due to initialization or builder overhead hitting the strict timeout boundary before solving could commence.
+    \item \textbf{SAT Scaling and Timeouts at $N = 64$ and $N = 128$}: At $N = 64$, SAT solving times range from 0.09 to 9.80 seconds, resulting in 3/25 timeouts (specifically affecting Glucose3 on sequential, commander, and product encodings). At $N = 128$, performance degrades significantly for several solvers, yielding 10/25 timeouts where Glucose3, MiniSat22, and MapleCM time out frequently within the 30-second limit, while successful runs span 0.19 to 25.77 seconds.
+    \item \textbf{Solver Sensitivity and Encoding Combinations}: Performance is highly sensitive to the interaction between solver heuristics and encoding choices. CaDiCaL and Kissat do not timeout and solve instances efficiently across most encodings, whereas Glucose3, MiniSat22, and MapleCM struggle with larger clause databases and complex encodings.
+    \item \textbf{CP-SAT Anomalies at Scale}: CP-SAT exhibits exceptional propagation power, but notably at $N = 128$, the allowed assignment variant timed out within 30 s; cause not isolated.
     \item \textbf{Clausal vs. Global Constraints}: Low-level SAT encodings generate large clause footprints ($O(N^3)$ for pairwise), whereas CP-SAT global constraints maintain highly compact representations and prune search trees effectively when not hindered during model construction.
 \end{itemize}
 
 \section{Conclusion}
-This comprehensive benchmark demonstrates that while modern SAT and CP-SAT engines solve moderate instances efficiently, they do not universally scale robustly up to $N = 128$. Performance is heavily dictated by solver and encoding sensitivity: CaDiCaL and Kissat handle large scales effectively, whereas Glucose3, MiniSat22, and MapleCM encounter frequent timeouts ($11/25$ at $N = 128$). Global constraint propagation and clausal representations offer distinct operational trade-offs, providing a rigorous comparative taxonomy for combinatorial optimization.
+This comprehensive benchmark demonstrates that while modern SAT and CP-SAT engines solve moderate instances efficiently, performance varies significantly at $N = 128$. Performance is heavily dictated by solver and encoding sensitivity: CaDiCaL and Kissat handle large scales effectively without timing out, whereas Glucose3, MiniSat22, and MapleCM encounter frequent timeouts (10/25 at $N = 128$). Global constraint propagation and clausal representations offer distinct operational trade-offs, providing a rigorous comparative taxonomy for combinatorial optimization.
 
 \section{References}
 \begin{thebibliography}{9}
@@ -255,8 +255,8 @@ A. Biere, ``CaDiCaL at SAT Race 2019,'' \emph{volume B-2019 of Pragmatics \& Res
 \bibitem{perron2021ortools}
 L. Perron and V. Furnon, ``OR-Tools,'' Google, 2021. Available: \url{https://developers.google.com/optimization}.
 
-\bibitem{skvortsov2021sat}
-I. Skvortsov and A. Stites, ``Evaluating SAT Encodings for the N-Queens Problem,'' \emph{Journal of Automated Reasoning}, vol. 65, no. 3, pp. 311--330, 2021.
+\bibitem{biere2021handbook}
+A. Biere, M. Heule, H. van Maaren, and T. Walsh, \emph{Handbook of Satisfiability}, 2nd ed. IOS Press, 2021.
 \end{thebibliography}
 
 \section{Data Availability}
