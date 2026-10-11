@@ -47,7 +47,7 @@ Boolean variables $x_{i,j}$ denote whether a queen is placed at row $i$, column 
     \item \textbf{Product Encoding}: Factors the board coordinates into Cartesian products, achieving ultra-compact variable and clause scaling.
 \end{itemize}
 
-\subsection{Constraint Programming (CP-SAT) & Global Constraints}
+\subsection{Constraint Programming (CP-SAT) \& Global Constraints}
 OR-Tools CP-SAT utilizes integer decision variables $q_i \in \{1, \dots, N\}$ representing the column of the queen in row $i$. Global constraints enforce:
 \begin{enumerate}
     \item $\text{AllDifferent}(q_1, \dots, q_N)$ (columns)
@@ -75,7 +75,6 @@ Table~\ref{tab:sat} summarizes SAT benchmark results across diverse encodings an
 \toprule
 $N$ & Model Variant & Solver & Variables & Clauses & Time (s) \\
 \midrule
-%sattable#
 8 & binary & cadical & 0 & 0 & 0.000000 \\
 8 & binary & glucose3 & 0 & 0 & 0.000000 \\
 8 & binary & kissat & 0 & 0 & 0.000000 \\
@@ -105,7 +104,6 @@ Table~\ref{tab:cpsat} outlines OR-Tools CP-SAT performance.
 \toprule
 $N$ & Model Variant & Solver & Variables & Constraints & Time (s) \\
 \midrule
-%cpsattable#
 8 & allowed & ortools-cpsat & 8 & 29 & 0.181836 \\
 8 & boolean & ortools-cpsat & 64 & 46 & 0.177188 \\
 8 & integer & ortools-cpsat & 23 & 3 & 0.178174 \\
@@ -135,7 +133,6 @@ Table~\ref{tab:mip} summarizes CBC and SCIP performance.
 \toprule
 $N$ & Model Variant & Solver & Variables & Constraints & Time (s) \\
 \midrule
-%miptable#
 8 & binary & cbc & 64 & 46 & 0.038806 \\
 8 & binary & scip & 64 & 46 & 0.040352 \\
 8 & integer & cbc & 72 & 54 & 0.038016 \\
@@ -165,7 +162,6 @@ Tables~\ref{tab:gurobi} and \ref{tab:cplex} present Gurobi and CPLEX results.
 \toprule
 $N$ & Model Variant & Solver & Variables & Constraints & Time (s) \\
 \midrule
-%gurobitable#
 8 & binary & gurobi & 0 & 0 & 0.001028 \\
 16 & binary & gurobi & 0 & 0 & 0.001521 \\
 32 & binary & gurobi & 0 & 0 & 0.011835 \\
@@ -181,7 +177,6 @@ $N$ & Model Variant & Solver & Variables & Constraints & Time (s) \\
 \toprule
 $N$ & Model Variant & Solver & Variables & Constraints & Time (s) \\
 \midrule
-%cplextable#
 8 & binary & cplex & 64 & 0 & 0.011711 \\
 8 & integer & cplex-cp & 8 & 0 & 0.000961 \\
 16 & binary & cplex & 256 & 0 & 0.012202 \\

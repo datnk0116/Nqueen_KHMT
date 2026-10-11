@@ -6,6 +6,14 @@ gurobi.lic
 cplex.lic
 .DS_Store
 .pytest_cache/
+*.aux
+*.log
+*.out
+*.pdf
+*.toc
+*.synctex.gz
+*.fls
+*.fdb_latexmk
 !results/
 !results/*.csv
 

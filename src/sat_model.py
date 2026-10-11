@@ -77,7 +77,7 @@ class NQueensSAT:
         self.clauses_count = len(self.clauses)
         return self.clauses
 
-    def solve(self) -> dict:
+    def solve(self, time_limit: float = None) -> dict:
         """Solves the N-Queens problem and returns solving statistics and solution."""
         if not self.clauses:
             self.build()

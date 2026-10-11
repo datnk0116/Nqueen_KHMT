@@ -21,8 +21,9 @@ def solve_nqueens(n: int, time_limit: float = None):
         build_time = time.time() - build_start
     except Exception as e:
         build_time = time.time() - build_start
+        print(f"CPLEX CP build exception: {e}")
         err_str = str(e).lower()
-        if "1016" in err_str or "license" in err_str or "limit" in err_str:
+        if "1016" in err_str or "license" in err_str or "size limit" in err_str:
             return ("LICENSE_LIMIT", build_time, 0, [], build_time, 0.0)
         return ("ERROR", build_time, 0, [], build_time, 0.0)
 
@@ -56,7 +57,8 @@ def solve_nqueens(n: int, time_limit: float = None):
     except Exception as e:
         solve_time = time.time() - solve_start
         total_time = build_time + solve_time
+        print(f"CPLEX CP solve exception: {e}")
         err_str = str(e).lower()
-        if "1016" in err_str or "license" in err_str or "limit" in err_str:
+        if "1016" in err_str or "license" in err_str or "size limit" in err_str:
             return ("LICENSE_LIMIT", total_time, variables_count, [], build_time, solve_time)
         return ("ERROR", total_time, variables_count, [], build_time, solve_time)

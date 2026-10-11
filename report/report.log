@@ -1,4 +1,4 @@
-This is pdfTeX, Version 3.141592653-2.6-1.40.29 (TeX Live 2026) (preloaded format=pdflatex 2026.3.26)  11 OCT 2026 20:38
+This is pdfTeX, Version 3.141592653-2.6-1.40.29 (TeX Live 2026) (preloaded format=pdflatex 2026.3.26)  11 OCT 2026 21:40
 entering extended mode
  restricted \write18 enabled.
  %&-line parsing enabled.
@@ -408,162 +408,121 @@ LaTeX Font Info:    Trying to load font information for U+msb on input line 18.
 File: umsb.fd 2013/01/14 v3.01 AMS symbols B
 ) [1
 
-{/usr/local/texlive/2026basic/texmf-var/fonts/map/pdftex/updmap/pdftex.map}]
-! Misplaced alignment tab character &.
-<argument> Constraint Programming (CP-SAT) &
-                                             Global Constraints
-l.50 ...Programming (CP-SAT) & Global Constraints}
-                                                  
-I can't figure out why you would want to use a tab mark
-here. If you just want an ampersand, the remedy is
-simple: Just type `I\&' now. But if some right brace
-up above has ended a previous alignment prematurely,
-you're probably due for more error messages, and you
-might try typing `S' now just to see what is salvageable.
-
-
-Package hyperref Warning: Token not allowed in a PDF string (Unicode):
-(hyperref)                removing `alignment tab' on input line 50.
-
-[2] [3
+{/usr/local/texlive/2026basic/texmf-var/fonts/map/pdftex/updmap/pdftex.map}] [2
+]
+[3
 pdfTeX warning (ext4): destination with the same identifier (name{table.1}) has
  been already used, duplicate ignored
 <argument> ...shipout:D \box_use:N \l_shipout_box 
                                                   \__shipout_drop_firstpage_...
-l.157 
+l.154 
       
 pdfTeX warning (ext4): destination with the same identifier (name{table.2}) has
  been already used, duplicate ignored
 <argument> ...shipout:D \box_use:N \l_shipout_box 
                                                   \__shipout_drop_firstpage_...
-l.157 
+l.154 
       ]
-<sat_time_cadical.png, id=86, 578.16pt x 361.35pt>
+<sat_time_cadical.png, id=100, 578.16pt x 361.35pt>
 File: sat_time_cadical.png Graphic file (type png)
 <use sat_time_cadical.png>
-Package pdftex.def Info: sat_time_cadical.png  used on input line 199.
+Package pdftex.def Info: sat_time_cadical.png  used on input line 194.
 (pdftex.def)             Requested size: 385.02547pt x 240.63658pt.
  [4
 pdfTeX warning (ext4): destination with the same identifier (name{table.3}) has
  been already used, duplicate ignored
 <argument> ...shipout:D \box_use:N \l_shipout_box 
                                                   \__shipout_drop_firstpage_...
-l.203 
+l.198 
       
 pdfTeX warning (ext4): destination with the same identifier (name{table.4}) has
  been already used, duplicate ignored
 <argument> ...shipout:D \box_use:N \l_shipout_box 
                                                   \__shipout_drop_firstpage_...
-l.203 
+l.198 
       
 pdfTeX warning (ext4): destination with the same identifier (name{table.5}) has
  been already used, duplicate ignored
 <argument> ...shipout:D \box_use:N \l_shipout_box 
                                                   \__shipout_drop_firstpage_...
-l.203 
+l.198 
       ]
-<paradigm_comparison.png, id=95, 578.16pt x 361.35pt>
+<paradigm_comparison.png, id=108, 578.16pt x 361.35pt>
 File: paradigm_comparison.png Graphic file (type png)
 <use paradigm_comparison.png>
-Package pdftex.def Info: paradigm_comparison.png  used on input line 206.
+Package pdftex.def Info: paradigm_comparison.png  used on input line 201.
 (pdftex.def)             Requested size: 385.02547pt x 240.63658pt.
-<variables_scaling.png, id=96, 578.16pt x 361.35pt>
+<variables_scaling.png, id=109, 578.16pt x 361.35pt>
 File: variables_scaling.png Graphic file (type png)
 <use variables_scaling.png>
-Package pdftex.def Info: variables_scaling.png  used on input line 213.
+Package pdftex.def Info: variables_scaling.png  used on input line 208.
 (pdftex.def)             Requested size: 385.02547pt x 240.63658pt.
  [5
 pdfTeX warning (ext4): destination with the same identifier (name{figure.1}) ha
 s been already used, duplicate ignored
 <argument> ...shipout:D \box_use:N \l_shipout_box 
                                                   \__shipout_drop_firstpage_...
-l.217 
+l.212 
       
 pdfTeX warning (ext4): destination with the same identifier (name{figure.2}) ha
 s been already used, duplicate ignored
 <argument> ...shipout:D \box_use:N \l_shipout_box 
                                                   \__shipout_drop_firstpage_...
-l.217 
+l.212 
        <./sat_time_cadical.png> <./paradigm_comparison.png>]
-<build_vs_solve.png, id=105, 578.16pt x 361.35pt>
+<build_vs_solve.png, id=118, 578.16pt x 361.35pt>
 File: build_vs_solve.png Graphic file (type png)
 <use build_vs_solve.png>
-Package pdftex.def Info: build_vs_solve.png  used on input line 220.
+Package pdftex.def Info: build_vs_solve.png  used on input line 215.
 (pdftex.def)             Requested size: 385.02547pt x 240.63658pt.
  [6
 pdfTeX warning (ext4): destination with the same identifier (name{figure.3}) ha
 s been already used, duplicate ignored
 <argument> ...shipout:D \box_use:N \l_shipout_box 
                                                   \__shipout_drop_firstpage_...
-l.230     \item \textbf
+l.225     \item \textbf
                        {Commercial vs. Open-Source}: Commercial engines (Gur...
 
 pdfTeX warning (ext4): destination with the same identifier (name{figure.4}) ha
 s been already used, duplicate ignored
 <argument> ...shipout:D \box_use:N \l_shipout_box 
                                                   \__shipout_drop_firstpage_...
-l.230     \item \textbf
+l.225     \item \textbf
                        {Commercial vs. Open-Source}: Commercial engines (Gur...
  <./variables_scaling.png> <./build_vs_solve.png>] [7] (./report.aux)
  ***********
 LaTeX2e <2025-11-01>
 L3 programming layer <2026-01-19>
  ***********
-
-
-LaTeX Warning: Label(s) may have changed. Rerun to get cross-references right.
-
-
-Package rerunfilecheck Warning: File `report.out' has changed.
-(rerunfilecheck)                Rerun to get outlines right
-(rerunfilecheck)                or use package `bookmark'.
-
-Package rerunfilecheck Info: Checksums for `report.out':
-(rerunfilecheck)             Before: 15D356B283E8C1A0653880B3A586131B;1670
-(rerunfilecheck)             After:  C58506AC3E815E8073916DE9C3F7F8B1;2826.
+Package rerunfilecheck Info: File `report.out' has not changed.
+(rerunfilecheck)             Checksum: 73BD90F06FFA03A3AEA900A127D3155E;2834.
  ) 
 Here is how much of TeX's memory you used:
- 10006 strings out of 469006
- 154208 string characters out of 5454813
- 588253 words of memory out of 5000000
- 38546 multiletter control sequences out of 15000+600000
+ 10007 strings out of 469006
+ 154222 string characters out of 5454813
+ 588256 words of memory out of 5000000
+ 38551 multiletter control sequences out of 15000+600000
  639503 words of font info for 86 fonts, out of 8000000 for 9000
  319 hyphenation exceptions out of 8191
  75i,9n,79p,784b,520s stack positions out of 10000i,1000n,20000p,200000b,200000s
-
-pdfTeX warning (dest): name{subsection.3.4} has been referenced but does not ex
-ist, replaced by a fixed one
-
-
-pdfTeX warning (dest): name{subsection.3.3} has been referenced but does not ex
-ist, replaced by a fixed one
-
-
-pdfTeX warning (dest): name{subsection.3.2} has been referenced but does not ex
-ist, replaced by a fixed one
-
-
-pdfTeX warning (dest): name{subsection.3.1} has been referenced but does not ex
-ist, replaced by a fixed one
-
- </Users/dat.vjp.pr0_10x/Library/texlive/2026basic/texmf-var/fonts/pk/ljfour/jk
-nappen/ec/tcrm1095.600pk></usr/local/texlive/2026basic/texmf-dist/fonts/type1/p
-ublic/amsfonts/cm/cmbx10.pfb></usr/local/texlive/2026basic/texmf-dist/fonts/typ
-e1/public/amsfonts/cm/cmbx12.pfb></usr/local/texlive/2026basic/texmf-dist/fonts
-/type1/public/amsfonts/cm/cmex10.pfb></usr/local/texlive/2026basic/texmf-dist/f
-onts/type1/public/amsfonts/cm/cmmi10.pfb></usr/local/texlive/2026basic/texmf-di
-st/fonts/type1/public/amsfonts/cm/cmmi12.pfb></usr/local/texlive/2026basic/texm
-f-dist/fonts/type1/public/amsfonts/cm/cmmi8.pfb></usr/local/texlive/2026basic/t
-exmf-dist/fonts/type1/public/amsfonts/cm/cmr10.pfb></usr/local/texlive/2026basi
-c/texmf-dist/fonts/type1/public/amsfonts/cm/cmr12.pfb></usr/local/texlive/2026b
-asic/texmf-dist/fonts/type1/public/amsfonts/cm/cmr8.pfb></usr/local/texlive/202
-6basic/texmf-dist/fonts/type1/public/amsfonts/cm/cmsy10.pfb></usr/local/texlive
-/2026basic/texmf-dist/fonts/type1/public/amsfonts/cm/cmsy8.pfb></usr/local/texl
-ive/2026basic/texmf-dist/fonts/type1/public/amsfonts/cm/cmtt10.pfb>
-Output written on report.pdf (7 pages, 591495 bytes).
+ </Users/dat.vjp.pr0_10x/Library/texlive/2026basic/texmf-var/fonts/pk/ljfour/
+jknappen/ec/tcrm1095.600pk></usr/local/texlive/2026basic/texmf-dist/fonts/type1
+/public/amsfonts/cm/cmbx10.pfb></usr/local/texlive/2026basic/texmf-dist/fonts/t
+ype1/public/amsfonts/cm/cmbx12.pfb></usr/local/texlive/2026basic/texmf-dist/fon
+ts/type1/public/amsfonts/cm/cmex10.pfb></usr/local/texlive/2026basic/texmf-dist
+/fonts/type1/public/amsfonts/cm/cmmi10.pfb></usr/local/texlive/2026basic/texmf-
+dist/fonts/type1/public/amsfonts/cm/cmmi12.pfb></usr/local/texlive/2026basic/te
+xmf-dist/fonts/type1/public/amsfonts/cm/cmmi8.pfb></usr/local/texlive/2026basic
+/texmf-dist/fonts/type1/public/amsfonts/cm/cmr10.pfb></usr/local/texlive/2026ba
+sic/texmf-dist/fonts/type1/public/amsfonts/cm/cmr12.pfb></usr/local/texlive/202
+6basic/texmf-dist/fonts/type1/public/amsfonts/cm/cmr8.pfb></usr/local/texlive/2
+026basic/texmf-dist/fonts/type1/public/amsfonts/cm/cmsy10.pfb></usr/local/texli
+ve/2026basic/texmf-dist/fonts/type1/public/amsfonts/cm/cmsy8.pfb></usr/local/te
+xlive/2026basic/texmf-dist/fonts/type1/public/amsfonts/cm/cmtt10.pfb>
+Output written on report.pdf (7 pages, 591856 bytes).
 PDF statistics:
- 191 PDF objects out of 1000 (max. 8388607)
- 147 compressed objects within 2 object streams
- 39 named destinations out of 1000 (max. 500000)
- 101 words of extra memory for PDF output out of 10000 (max. 10000000)
+ 199 PDF objects out of 1000 (max. 8388607)
+ 155 compressed objects within 2 object streams
+ 35 named destinations out of 1000 (max. 500000)
+ 141 words of extra memory for PDF output out of 10000 (max. 10000000)
 

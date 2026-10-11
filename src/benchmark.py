@@ -135,7 +135,7 @@ try:
     print("RESULT_JSON:" + json.dumps(out))
 except Exception as e:
     err_str = str(e).lower()
-    status = "LICENSE_LIMIT" if ("license" in err_str or "limit" in err_str or "size" in err_str) else "ERROR"
+    status = "LICENSE_LIMIT" if ("license" in err_str or "size limit" in err_str or "trial" in err_str or "community limit" in err_str) else "ERROR"
     out = {{
         "status": status,
         "is_sat": False,
