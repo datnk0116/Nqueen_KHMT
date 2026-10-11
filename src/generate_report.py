@@ -37,6 +37,9 @@ def main():
     except Exception:
         cplex_df = pd.DataFrame()
 
+    all_dfs = [df, sat_df, cpsat_df, mip_df, gurobi_df, cplex_df]
+    combined_df = pd.concat([d for d in all_dfs if not d.empty], ignore_index=True) if any(not d.empty for d in all_dfs) else pd.DataFrame()
+
     has_mpl = False
     try:
         import matplotlib.pyplot as plt
@@ -44,7 +47,7 @@ def main():
     except ImportError:
         pass
 
-    if has_mpl and not df.empty:
+    if has_mpl and not combined_df.empty:
         plt.style.use('seaborn-v0_8-whitegrid' if 'seaborn-v0_8-whitegrid' in plt.style.available else 'default')
         
         # Plot 1: SAT Solvers time vs n by encoding (CaDiCaL)
@@ -65,8 +68,8 @@ def main():
 
         # Plot 2: Paradigm comparison across all solver groups
         fig, ax = plt.subplots(figsize=(8, 5))
-        for paradigm in df['paradigm'].unique():
-            sub = df[df['paradigm'] == paradigm]
+        for paradigm in combined_df['paradigm'].unique():
+            sub = combined_df[combined_df['paradigm'] == paradigm]
             if not sub.empty:
                 grouped = sub.groupby('n')['time_seconds'].mean()
                 ax.plot(grouped.index, grouped.values, marker='s', label=paradigm)
@@ -81,8 +84,8 @@ def main():
 
         # Plot 3: Variable scaling across paradigms
         fig, ax = plt.subplots(figsize=(8, 5))
-        for paradigm in df['paradigm'].unique():
-            sub = df[df['paradigm'] == paradigm]
+        for paradigm in combined_df['paradigm'].unique():
+            sub = combined_df[combined_df['paradigm'] == paradigm]
             if not sub.empty:
                 grouped = sub.groupby('n')['variables_count'].mean()
                 if grouped.max() > 0:
@@ -97,9 +100,9 @@ def main():
 
         # Plot 4: Build vs Solve time breakdown
         fig, ax = plt.subplots(figsize=(8, 5))
-        if 'build_time' in df.columns and 'solve_time' in df.columns:
-            build_grp = df.groupby('paradigm')['build_time'].mean()
-            solve_grp = df.groupby('paradigm')['solve_time'].mean()
+        if 'build_time' in combined_df.columns and 'solve_time' in combined_df.columns:
+            build_grp = combined_df.groupby('paradigm')['build_time'].mean()
+            solve_grp = combined_df.groupby('paradigm')['solve_time'].mean()
             paradigms = build_grp.index
             x = np.arange(len(paradigms))
             width = 0.35
@@ -135,6 +138,18 @@ def main():
     gurobi_table_tex = make_table_rows(gurobi_df)
     cplex_table_tex = make_table_rows(cplex_df)
 
+    # Generate timeout analysis table data
+    timeout_rows = []
+    if not combined_df.empty:
+        timeouts_df = combined_df[combined_df['status'] == 'TIMEOUT']
+        if not timeouts_df.empty:
+            grouped_to = timeouts_df.groupby(['paradigm', 'solver', 'n']).size().reset_index(name='timeout_count')
+            for _, row in grouped_to.iterrows():
+                timeout_rows.append(f"{row['paradigm']} & {row['solver']} & {row['n']} & {row['timeout_count']} \\\\")
+        else:
+            timeout_rows.append("No timeouts recorded & - & - & - \\\\")
+    timeout_table_tex = "\n".join(timeout_rows)
+
     latex_content = r"""\documentclass[a4paper,11pt]{article}
 \usepackage[utf8]{inputenc}
 \usepackage{booktabs}
@@ -154,7 +169,7 @@ def main():
 \maketitle
 
 \begin{abstract}
-This report presents an exhaustive empirical evaluation of solving the classic $N$-Queens problem across six major solver groups and modeling paradigms: Propositional Satisfiability (SAT with CaDiCaL, Glucose3, MiniSat22, Kissat, MapleCM), Constraint Programming via CP-SAT (OR-Tools), Mixed-Integer Programming (MIP with CBC, SCIP), High-Performance Commercial MIP (Gurobi), and Commercial CPLEX (MIP and CP engines). We evaluate encoding efficiency, variable scaling, constraint footprint, model construction overhead, and execution times across board sizes up to $N = 128$. Detailed performance metrics and visualizations highlight the trade-offs between expressive global constraints and low-level clausal representations.
+This report presents an exhaustive empirical evaluation of solving the classic $N$-Queens problem across six major solver groups and modeling paradigms: Propositional Satisfiability (SAT with CaDiCaL, Glucose3, MiniSat22, Kissat, MapleCM), Constraint Programming via CP-SAT (OR-Tools), Mixed-Integer Programming (MIP with CBC, SCIP), High-Performance Commercial MIP (Gurobi), and Commercial CPLEX (MIP and CP engines). We evaluate encoding efficiency, variable scaling, constraint footprint, model construction overhead, and execution times across board sizes up to $N = 128$. Detailed performance metrics and visualizations highlight the trade-offs between expressive global constraints and low-level clausal representations, alongside comprehensive timeout analyses.
 \end{abstract}
 
 \section{Introduction}
@@ -273,6 +288,21 @@ $N$ & Model Variant & Solver & Variables & Constraints & Time (s) \\
 \end{tabular}
 \end{table}
 
+\section{Timeout Analysis}
+Table~\ref{tab:timeouts} details the timeout counts encountered across solver paradigms and board sizes under the strict 30-second limit.
+
+\begin{table}[H]
+\centering
+\caption{Timeout Analysis Across Solvers and Board Sizes} \label{tab:timeouts}
+\begin{tabular}{llrr}
+\toprule
+Paradigm & Solver & Board Size ($N$) & Timeout Count \\
+\midrule
+% {timeout_table_tex}
+\bottomrule
+\end{tabular}
+\end{table}
+
 \section{Visualizations}
 
 \begin{figure}[H]
@@ -304,16 +334,16 @@ $N$ & Model Variant & Solver & Variables & Constraints & Time (s) \\
 \end{figure}
 
 \section{Discussion}
-The empirical results reveal distinct performance characteristics across modeling paradigms when scaling up to larger board sizes such as $N = 64$ and $N = 128$:
+The empirical results reveal distinct performance characteristics and limitations across modeling paradigms when scaling up to larger board sizes such as $N = 64$ and $N = 128$:
 \begin{itemize}
-    \item \textbf{Timing Profile at Scale}: For moderate to large board sizes (e.g., $N = 64$), state-of-the-art SAT solvers (such as CaDiCaL and Kissat) and MIP/CP-SAT solvers exhibit measured solving times ranging from approximately $0.3$ to over $4.0$ seconds depending on the encoding and constraint density, rather than remaining in the sub-millisecond regime observed at very small $N$ ($N \le 8$).
-    \item \textbf{Clausal vs. Global Constraints}: Low-level SAT encodings generate large numbers of clauses ($O(N^3)$ for pairwise), causing memory overhead at scale. Conversely, CP-SAT global constraints ($\text{AllDifferent}$) maintain extremely compact representations and solve efficiently.
-    \item \textbf{Build vs. Solve Overhead}: Advanced SAT encodings (Product, Commander) require non-trivial model construction time in Python before handing off to the solver, whereas CP-SAT constructs models almost instantaneously.
-    \item \textbf{Commercial vs. Open-Source}: Commercial engines (Gurobi, CPLEX) offer robust presolving and MIP/CP flexibility, though trial license size limits restrict evaluations on extremely large $N$.
+    \item \textbf{SAT Scaling and Timeouts at $N = 64$ and $N = 128$}: At $N = 64$, SAT solving times range from $0.09$ to $10.5$ seconds, resulting in $3/25$ timeouts (specifically affecting Glucose3 on sequential, commander, and product encodings). At $N = 128$, performance degrades significantly for several solvers, yielding $11/25$ timeouts where Glucose3, MiniSat22, and MapleCM time out frequently within the 30-second limit, while successful runs span $0.23$ to $14.13$ seconds.
+    \item \textbf{Solver Sensitivity and Encoding Combinations}: Rather than uniform scaling up to $N = 128$, performance is highly sensitive to the interaction between solver heuristics and encoding choices. CaDiCaL and Kissat perform robustly and solve instances efficiently across most encodings, whereas Glucose3, MiniSat22, and MapleCM struggle with larger clause databases and complex encodings.
+    \item \textbf{CP-SAT Anomalies at Scale}: CP-SAT exhibits exceptional propagation power, but notably at $N = 128$, the allowed assignment variant timed out with $0$ variables and $0$ constraints due to initialization or builder overhead hitting the strict timeout boundary before solving could commence.
+    \item \textbf{Clausal vs. Global Constraints}: Low-level SAT encodings generate large clause footprints ($O(N^3)$ for pairwise), whereas CP-SAT global constraints maintain highly compact representations and prune search trees effectively when not hindered during model construction.
 \end{itemize}
 
 \section{Conclusion}
-This comprehensive benchmark demonstrates that modern SAT solvers, MIP, and CP-SAT engines scale robustly up to $N = 64$ and $N = 128$, with actual solving times spanning fractions of a second to a few seconds (approx. $0.3$ to $4.0$ seconds at $N = 64$). Global constraint propagation and clausal encodings each offer unique strengths, establishing a solid comparative taxonomy for combinatorial optimization problems.
+This comprehensive benchmark demonstrates that while modern SAT and CP-SAT engines solve moderate instances efficiently, they do not universally scale robustly up to $N = 128$. Performance is heavily dictated by solver and encoding sensitivity: CaDiCaL and Kissat handle large scales effectively, whereas Glucose3, MiniSat22, and MapleCM encounter frequent timeouts ($11/25$ at $N = 128$). Global constraint propagation and clausal representations offer distinct operational trade-offs, providing a rigorous comparative taxonomy for combinatorial optimization.
 
 \section{References}
 \begin{thebibliography}{9}
@@ -339,6 +369,7 @@ The source code, benchmark runners, raw experimental results (CSV files), and re
     latex_content = latex_content.replace("% {mip_table_tex}", mip_table_tex)
     latex_content = latex_content.replace("% {gurobi_table_tex}", gurobi_table_tex)
     latex_content = latex_content.replace("% {cplex_table_tex}", cplex_table_tex)
+    latex_content = latex_content.replace("% {timeout_table_tex}", timeout_table_tex)
 
     with open("report/report.tex", "w") as f:
         f.write(latex_content)

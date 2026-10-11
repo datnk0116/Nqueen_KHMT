@@ -1,4 +1,4 @@
-This is pdfTeX, Version 3.141592653-2.6-1.40.29 (TeX Live 2026) (preloaded format=pdflatex 2026.3.26)  12 OCT 2026 06:07
+This is pdfTeX, Version 3.141592653-2.6-1.40.29 (TeX Live 2026) (preloaded format=pdflatex 2026.3.26)  12 OCT 2026 06:17
 entering extended mode
  restricted \write18 enabled.
  %&-line parsing enabled.
@@ -420,89 +420,92 @@ pdfTeX warning (ext4): destination with the same identifier (name{table.2}) has
 <argument> ...shipout:D \box_use:N \l_shipout_box 
                                                   \__shipout_drop_firstpage_...
 l.153 
-      ]
-<sat_time_cadical.png, id=104, 578.16pt x 361.35pt>
-File: sat_time_cadical.png Graphic file (type png)
-<use sat_time_cadical.png>
-Package pdftex.def Info: sat_time_cadical.png  used on input line 193.
-(pdftex.def)             Requested size: 385.02547pt x 240.63658pt.
- [4
+      ] [4
 pdfTeX warning (ext4): destination with the same identifier (name{table.3}) has
  been already used, duplicate ignored
 <argument> ...shipout:D \box_use:N \l_shipout_box 
                                                   \__shipout_drop_firstpage_...
-l.197 
+l.207 
       
 pdfTeX warning (ext4): destination with the same identifier (name{table.4}) has
  been already used, duplicate ignored
 <argument> ...shipout:D \box_use:N \l_shipout_box 
                                                   \__shipout_drop_firstpage_...
-l.197 
+l.207 
       
 pdfTeX warning (ext4): destination with the same identifier (name{table.5}) has
  been already used, duplicate ignored
 <argument> ...shipout:D \box_use:N \l_shipout_box 
                                                   \__shipout_drop_firstpage_...
-l.197 
+l.207 
       ]
-<paradigm_comparison.png, id=112, 578.16pt x 361.35pt>
+<sat_time_cadical.png, id=116, 578.16pt x 361.35pt>
+File: sat_time_cadical.png Graphic file (type png)
+<use sat_time_cadical.png>
+Package pdftex.def Info: sat_time_cadical.png  used on input line 212.
+(pdftex.def)             Requested size: 385.02547pt x 240.63658pt.
+<paradigm_comparison.png, id=118, 578.16pt x 361.35pt>
 File: paradigm_comparison.png Graphic file (type png)
 <use paradigm_comparison.png>
-Package pdftex.def Info: paradigm_comparison.png  used on input line 200.
-(pdftex.def)             Requested size: 385.02547pt x 240.63658pt.
-<variables_scaling.png, id=113, 578.16pt x 361.35pt>
-File: variables_scaling.png Graphic file (type png)
-<use variables_scaling.png>
-Package pdftex.def Info: variables_scaling.png  used on input line 207.
+Package pdftex.def Info: paradigm_comparison.png  used on input line 219.
 (pdftex.def)             Requested size: 385.02547pt x 240.63658pt.
  [5
+pdfTeX warning (ext4): destination with the same identifier (name{table.6}) has
+ been already used, duplicate ignored
+<argument> ...shipout:D \box_use:N \l_shipout_box 
+                                                  \__shipout_drop_firstpage_...
+l.223 
+      
 pdfTeX warning (ext4): destination with the same identifier (name{figure.1}) ha
 s been already used, duplicate ignored
 <argument> ...shipout:D \box_use:N \l_shipout_box 
                                                   \__shipout_drop_firstpage_...
-l.211 
-      
+l.223 
+       <./sat_time_cadical.png>]
+<variables_scaling.png, id=125, 578.16pt x 361.35pt>
+File: variables_scaling.png Graphic file (type png)
+<use variables_scaling.png>
+Package pdftex.def Info: variables_scaling.png  used on input line 226.
+(pdftex.def)             Requested size: 385.02547pt x 240.63658pt.
+<build_vs_solve.png, id=126, 578.16pt x 361.35pt>
+File: build_vs_solve.png Graphic file (type png)
+<use build_vs_solve.png>
+Package pdftex.def Info: build_vs_solve.png  used on input line 233.
+(pdftex.def)             Requested size: 385.02547pt x 240.63658pt.
+ [6
 pdfTeX warning (ext4): destination with the same identifier (name{figure.2}) ha
 s been already used, duplicate ignored
 <argument> ...shipout:D \box_use:N \l_shipout_box 
                                                   \__shipout_drop_firstpage_...
-l.211 
-       <./sat_time_cadical.png> <./paradigm_comparison.png>]
-<build_vs_solve.png, id=122, 578.16pt x 361.35pt>
-File: build_vs_solve.png Graphic file (type png)
-<use build_vs_solve.png>
-Package pdftex.def Info: build_vs_solve.png  used on input line 214.
-(pdftex.def)             Requested size: 385.02547pt x 240.63658pt.
- [6
+l.237 
+      
 pdfTeX warning (ext4): destination with the same identifier (name{figure.3}) ha
 s been already used, duplicate ignored
 <argument> ...shipout:D \box_use:N \l_shipout_box 
                                                   \__shipout_drop_firstpage_...
-l.224     \item \textbf
-                       {Build vs. Solve Overhead}: Advanced SAT encodings (P...
-
+l.237 
+       <./paradigm_comparison.png> <./variables_scaling.png>] [7
 pdfTeX warning (ext4): destination with the same identifier (name{figure.4}) ha
 s been already used, duplicate ignored
 <argument> ...shipout:D \box_use:N \l_shipout_box 
                                                   \__shipout_drop_firstpage_...
-l.224     \item \textbf
-                       {Build vs. Solve Overhead}: Advanced SAT encodings (P...
- <./variables_scaling.png> <./build_vs_solve.png>] [7] (./report.aux)
+l.249 
+       <./build_vs_solve.png>] [8] (./report.aux)
  ***********
 LaTeX2e <2025-11-01>
 L3 programming layer <2026-01-19>
  ***********
 Package rerunfilecheck Info: File `report.out' has not changed.
-(rerunfilecheck)             Checksum: B12C20C9250DD2561C21E4F570DB1954;2928.
+(rerunfilecheck)             Checksum: 1BBAA22671BAF083D0E0854D5EFDE947;3056.
  ) 
 Here is how much of TeX's memory you used:
- 9986 strings out of 469006
- 153867 string characters out of 5454813
- 586677 words of memory out of 5000000
- 38527 multiletter control sequences out of 15000+600000
+ 9991 strings out of 469006
+ 153916 string characters out of 5454813
+ 586747 words of memory out of 5000000
+ 38529 multiletter control sequences out of 15000+600000
  639849 words of font info for 87 fonts, out of 8000000 for 9000
  319 hyphenation exceptions out of 8191
- 75i,9n,79p,784b,521s stack positions out of 10000i,1000n,20000p,200000b,200000s
+ 75i,9n,79p,826b,520s stack positions out of 10000i,1000n,20000p,200000b,200000s
  </Users/dat.vjp.pr0_10x/Library/texlive/2026basic/texmf-var/fonts/pk/ljfour/
 jknappen/ec/tcrm1095.600pk></usr/local/texlive/2026basic/texmf-dist/fonts/type1
 /public/amsfonts/cm/cmbx10.pfb></usr/local/texlive/2026basic/texmf-dist/fonts/t
@@ -518,10 +521,10 @@ sic/texmf-dist/fonts/type1/public/amsfonts/cm/cmr12.pfb></usr/local/texlive/202
 ve/2026basic/texmf-dist/fonts/type1/public/amsfonts/cm/cmsy8.pfb></usr/local/te
 xlive/2026basic/texmf-dist/fonts/type1/public/amsfonts/cm/cmti10.pfb></usr/loca
 l/texlive/2026basic/texmf-dist/fonts/type1/public/amsfonts/cm/cmtt10.pfb>
-Output written on report.pdf (7 pages, 707369 bytes).
+Output written on report.pdf (8 pages, 697808 bytes).
 PDF statistics:
- 217 PDF objects out of 1000 (max. 8388607)
- 171 compressed objects within 2 object streams
- 40 named destinations out of 1000 (max. 500000)
- 149 words of extra memory for PDF output out of 10000 (max. 10000000)
+ 228 PDF objects out of 1000 (max. 8388607)
+ 181 compressed objects within 2 object streams
+ 43 named destinations out of 1000 (max. 500000)
+ 157 words of extra memory for PDF output out of 10000 (max. 10000000)
 
