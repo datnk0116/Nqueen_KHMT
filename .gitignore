@@ -6,3 +6,8 @@ gurobi.lic
 cplex.lic
 .DS_Store
 results/
+.pytest_cache/
+*.pdf
+*.aux
+*.log
+*.out

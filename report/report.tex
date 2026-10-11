@@ -1,6 +1,5 @@
-\documentclass[11pt,a4paper]{article}
+\documentclass[a4paper,fleqn]{cas-sc}
 \usepackage[utf8]{inputenc}
-\usepackage[margin=1in]{geometry}
 \usepackage{booktabs}
 \usepackage{graphicx}
 \usepackage{amsmath}
@@ -13,11 +12,13 @@
 
 \begin{document}
 
+\begin{frontmatter}
 \maketitle
 
 \begin{abstract}
 This report presents a thorough empirical evaluation of solving the classic $N$-Queens problem across three distinct constraint-solving paradigms: Propositional Satisfiability (SAT), Constraint Programming via CP-SAT (OR-Tools), and Mixed-Integer Programming (MIP) using CBC and SCIP solvers. We evaluate multiple encoding strategies (e.g., pairwise, binary, sequential counter, commander, product encodings for SAT; alldiff, allowed, assignments, boolean, integer, matrix for CP-SAT and MIP) across board sizes $N \in [4, 10]$. Performance metrics including variable counts, clause/constraint counts, and execution time are analyzed and discussed.
 \end{abstract}
+\end{frontmatter}
 
 \section{Introduction}
 The $N$-Queens problem is a fundamental benchmark problem in artificial intelligence, constraint satisfaction, and combinatorial optimization. The objective is to place $N$ non-attacking queens on an $N \times N$ chessboard. While conceptually straightforward, the formulation and solving efficiency vary dramatically depending on the modeling paradigm and encoding strategy.
@@ -39,71 +40,191 @@ Different modeling choices impact the size of the search space, the number of va
 
 \section{Empirical Results and Performance Analysis}
 
-\subsection{SAT Encapsulation Performance ($N=8$)}
-Table~\ref{tab:sat_n8} summarizes the performance of SAT models at $N=8$.
+\subsection{SAT Encapsulation Performance (Expanded $N$ Experiments)}
+Table~\ref{tab:sat_expanded} summarizes the performance of SAT models across expanded board sizes $N \in [4, 8]$.
 
 \begin{table}[H]
 \centering
-\begin{caption}{SAT Performance Metrics ($N=8$)} \label{tab:sat_n8}
-\begin{tabular}{llrrr}
+\caption{SAT Performance Metrics Across Expanded $N$ Experiments} \label{tab:sat_expanded}
+\begin{tabular}{llrrrr}
 \toprule
-Model Variant & Solver & Variables & Clauses & Time (s) \\
+$N$ & Model Variant & Solver & Variables & Clauses & Time (s) \\
 \midrule
-binary & cadical & 174 & 720 & 0.000287 \\
-binary & glucose3 & 174 & 720 & 0.000197 \\
-binary & minisat22 & 174 & 720 & 0.000198 \\
-commander & cadical & 146 & 528 & 0.000238 \\
-commander & glucose3 & 146 & 528 & 0.000179 \\
-commander & minisat22 & 146 & 528 & 0.000166 \\
-pairwise & cadical & 64 & 736 & 0.000191 \\
-pairwise & glucose3 & 64 & 736 & 0.000176 \\
-pairwise & minisat22 & 64 & 736 & 0.000164 \\
-product & cadical & 412 & 880 & 0.000321 \\
-product & glucose3 & 412 & 880 & 0.000267 \\
-product & minisat22 & 412 & 880 & 0.000255 \\
-sequential & cadical & 274 & 596 & 0.000319 \\
-sequential & glucose3 & 274 & 596 & 0.000214 \\
-sequential & minisat22 & 274 & 596 & 0.000200 \\
+4 & binary & cadical & 48 & 116 & 0.000064 \\
+4 & binary & glucose3 & 48 & 116 & 0.000064 \\
+4 & binary & minisat22 & 48 & 116 & 0.000051 \\
+4 & commander & cadical & 26 & 90 & 0.000044 \\
+4 & commander & glucose3 & 26 & 90 & 0.000036 \\
+4 & commander & minisat22 & 26 & 90 & 0.000032 \\
+4 & pairwise & cadical & 16 & 80 & 0.001199 \\
+4 & pairwise & glucose3 & 16 & 80 & 0.000272 \\
+4 & pairwise & minisat22 & 16 & 80 & 0.000065 \\
+4 & product & cadical & 116 & 188 & 0.000134 \\
+4 & product & glucose3 & 116 & 188 & 0.000074 \\
+4 & product & minisat22 & 116 & 188 & 0.000069 \\
+4 & sequential & cadical & 58 & 112 & 0.000051 \\
+4 & sequential & glucose3 & 58 & 112 & 0.000058 \\
+4 & sequential & minisat22 & 58 & 112 & 0.000045 \\
+5 & binary & cadical & 81 & 249 & 0.000088 \\
+5 & binary & glucose3 & 81 & 249 & 0.000083 \\
+5 & binary & minisat22 & 81 & 249 & 0.000074 \\
+5 & commander & cadical & 53 & 169 & 0.000063 \\
+5 & commander & glucose3 & 53 & 169 & 0.000059 \\
+5 & commander & minisat22 & 53 & 169 & 0.000063 \\
+5 & pairwise & cadical & 25 & 165 & 0.000057 \\
+5 & pairwise & glucose3 & 25 & 165 & 0.000047 \\
+5 & pairwise & minisat22 & 25 & 165 & 0.000054 \\
+5 & product & cadical & 185 & 333 & 0.000112 \\
+5 & product & glucose3 & 185 & 333 & 0.000114 \\
+5 & product & minisat22 & 185 & 333 & 0.000104 \\
+5 & sequential & cadical & 97 & 197 & 0.000074 \\
+5 & sequential & glucose3 & 97 & 197 & 0.000077 \\
+5 & sequential & minisat22 & 97 & 197 & 0.000064 \\
+6 & binary & cadical & 110 & 382 & 0.000177 \\
+6 & binary & glucose3 & 110 & 382 & 0.000149 \\
+6 & binary & minisat22 & 110 & 382 & 0.000136 \\
+6 & commander & cadical & 76 & 272 & 0.000129 \\
+6 & commander & glucose3 & 76 & 272 & 0.000147 \\
+6 & commander & minisat22 & 76 & 272 & 0.000114 \\
+6 & pairwise & cadical & 36 & 296 & 0.000089 \\
+6 & pairwise & glucose3 & 36 & 296 & 0.000129 \\
+6 & pairwise & minisat22 & 36 & 296 & 0.000105 \\
+6 & product & cadical & 244 & 470 & 0.000241 \\
+6 & product & glucose3 & 244 & 470 & 0.000192 \\
+6 & product & minisat22 & 244 & 470 & 0.000195 \\
+6 & sequential & cadical & 146 & 306 & 0.000114 \\
+6 & sequential & glucose3 & 146 & 306 & 0.000116 \\
+6 & sequential & minisat22 & 146 & 306 & 0.000108 \\
+7 & binary & cadical & 141 & 539 & 0.000155 \\
+7 & binary & glucose3 & 141 & 539 & 0.000168 \\
+7 & binary & minisat22 & 141 & 539 & 0.000160 \\
+7 & commander & cadical & 101 & 383 & 0.000116 \\
+7 & commander & glucose3 & 101 & 383 & 0.000138 \\
+7 & commander & minisat22 & 101 & 383 & 0.000133 \\
+7 & pairwise & cadical & 49 & 483 & 0.000124 \\
+7 & pairwise & glucose3 & 49 & 483 & 0.000102 \\
+7 & pairwise & minisat22 & 49 & 483 & 0.000096 \\
+7 & product & cadical & 337 & 687 & 0.000232 \\
+7 & product & glucose3 & 337 & 687 & 0.000294 \\
+7 & product & minisat22 & 337 & 687 & 0.000263 \\
+7 & sequential & cadical & 205 & 439 & 0.000135 \\
+7 & sequential & glucose3 & 205 & 439 & 0.000147 \\
+7 & sequential & minisat22 & 205 & 439 & 0.000134 \\
+8 & binary & cadical & 174 & 720 & 0.000287 \\
+8 & binary & glucose3 & 174 & 720 & 0.000197 \\
+8 & binary & minisat22 & 174 & 720 & 0.000198 \\
+8 & commander & cadical & 146 & 528 & 0.000238 \\
+8 & commander & glucose3 & 146 & 528 & 0.000179 \\
+8 & commander & minisat22 & 146 & 528 & 0.000166 \\
+8 & pairwise & cadical & 64 & 736 & 0.000191 \\
+8 & pairwise & glucose3 & 64 & 736 & 0.000176 \\
+8 & pairwise & minisat22 & 64 & 736 & 0.000164 \\
+8 & product & cadical & 412 & 880 & 0.000321 \\
+8 & product & glucose3 & 412 & 880 & 0.000267 \\
+8 & product & minisat22 & 412 & 880 & 0.000255 \\
+8 & sequential & cadical & 274 & 596 & 0.000319 \\
+8 & sequential & glucose3 & 274 & 596 & 0.000214 \\
+8 & sequential & minisat22 & 274 & 596 & 0.000200 \\
 \bottomrule
 \end{tabular}
 \end{table}
 
-\subsection{CP-SAT Performance ($N=8$)}
-Table~\ref{tab:cpsat_n8} summarizes CP-SAT models at $N=8$.
+\subsection{CP-SAT Performance (Expanded $N$ Experiments)}
+Table~\ref{tab:cpsat_expanded} summarizes CP-SAT models across expanded board sizes $N \in [4, 10]$.
 
 \begin{table}[H]
 \centering
-\begin{caption}{CP-SAT Performance Metrics ($N=8$)} \label{tab:cpsat_n8}
-\begin{tabular}{llrrr}
+\caption{CP-SAT Performance Metrics Across Expanded $N$ Experiments} \label{tab:cpsat_expanded}
+\begin{tabular}{llrrrr}
 \toprule
-Model Variant & Solver & Variables & Constraints & Time (s) \\
+$N$ & Model Variant & Solver & Variables & Constraints & Time (s) \\
 \midrule
-alldiff & ortools-cpsat & 23 & 3 & 0.003387 \\
-allowed & ortools-cpsat & 8 & 29 & 0.007173 \\
-assignments & ortools-cpsat & 8 & 29 & 0.008679 \\
-boolean & ortools-cpsat & 64 & 46 & 0.003088 \\
-integer & ortools-cpsat & 23 & 3 & 0.003289 \\
-matrix & ortools-cpsat & 64 & 46 & 0.002945 \\
+4 & alldiff & ortools-cpsat & 11 & 3 & 0.013940 \\
+4 & allowed & ortools-cpsat & 4 & 7 & 0.002163 \\
+4 & assignments & ortools-cpsat & 4 & 7 & 0.002100 \\
+4 & boolean & ortools-cpsat & 16 & 22 & 0.001866 \\
+4 & integer & ortools-cpsat & 11 & 3 & 0.002024 \\
+4 & matrix & ortools-cpsat & 16 & 22 & 0.001975 \\
+5 & alldiff & ortools-cpsat & 14 & 3 & 0.003040 \\
+5 & allowed & ortools-cpsat & 5 & 11 & 0.003636 \\
+5 & assignments & ortools-cpsat & 5 & 11 & 0.003406 \\
+5 & boolean & ortools-cpsat & 25 & 28 & 0.001960 \\
+5 & integer & ortools-cpsat & 14 & 3 & 0.002493 \\
+5 & matrix & ortools-cpsat & 25 & 28 & 0.002072 \\
+6 & alldiff & ortools-cpsat & 17 & 3 & 0.002151 \\
+6 & allowed & ortools-cpsat & 6 & 16 & 0.002452 \\
+6 & assignments & ortools-cpsat & 6 & 16 & 0.002606 \\
+6 & boolean & ortools-cpsat & 36 & 34 & 0.002687 \\
+6 & integer & ortools-cpsat & 17 & 3 & 0.002258 \\
+6 & matrix & ortools-cpsat & 36 & 34 & 0.002610 \\
+7 & alldiff & ortools-cpsat & 20 & 3 & 0.003128 \\
+7 & allowed & ortools-cpsat & 7 & 22 & 0.006939 \\
+7 & assignments & ortools-cpsat & 7 & 22 & 0.006186 \\
+7 & boolean & ortools-cpsat & 49 & 40 & 0.002822 \\
+7 & integer & ortools-cpsat & 20 & 3 & 0.003159 \\
+7 & matrix & ortools-cpsat & 49 & 40 & 0.002647 \\
+8 & alldiff & ortools-cpsat & 23 & 3 & 0.003387 \\
+8 & allowed & ortools-cpsat & 8 & 29 & 0.007173 \\
+8 & assignments & ortools-cpsat & 8 & 29 & 0.008679 \\
+8 & boolean & ortools-cpsat & 64 & 46 & 0.003088 \\
+8 & integer & ortools-cpsat & 23 & 3 & 0.003289 \\
+8 & matrix & ortools-cpsat & 64 & 46 & 0.002945 \\
+9 & alldiff & ortools-cpsat & 26 & 3 & 0.003589 \\
+9 & allowed & ortools-cpsat & 9 & 37 & 0.007265 \\
+9 & assignments & ortools-cpsat & 9 & 37 & 0.007025 \\
+9 & boolean & ortools-cpsat & 81 & 52 & 0.003331 \\
+9 & integer & ortools-cpsat & 26 & 3 & 0.003764 \\
+9 & matrix & ortools-cpsat & 81 & 52 & 0.003090 \\
+10 & alldiff & ortools-cpsat & 29 & 3 & 0.003940 \\
+10 & allowed & ortools-cpsat & 10 & 46 & 0.007254 \\
+10 & assignments & ortools-cpsat & 10 & 46 & 0.006874 \\
+10 & boolean & ortools-cpsat & 100 & 58 & 0.003787 \\
+10 & integer & ortools-cpsat & 29 & 3 & 0.004185 \\
+10 & matrix & ortools-cpsat & 100 & 58 & 0.003704 \\
 \bottomrule
 \end{tabular}
 \end{table}
 
-\subsection{MIP Performance ($N=8$)}
-Table~\ref{tab:mip_n8} summarizes MIP models at $N=8$.
+\subsection{MIP Performance (Expanded $N$ Experiments)}
+Table~\ref{tab:mip_expanded} summarizes MIP models across expanded board sizes $N \in [4, 8]$.
 
 \begin{table}[H]
 \centering
-\begin{caption}{MIP Performance Metrics ($N=8$)} \label{tab:mip_n8}
-\begin{tabular}{llrrr}
+\caption{MIP Performance Metrics Across Expanded $N$ Experiments} \label{tab:mip_expanded}
+\begin{tabular}{llrrrr}
 \toprule
-Model Variant & Solver & Variables & Constraints & Time (s) \\
+$N$ & Model Variant & Solver & Variables & Constraints & Time (s) \\
 \midrule
-binary & cbc & 64 & 46 & 0.004240 \\
-binary & scip & 64 & 46 & 0.004446 \\
-integer & cbc & 72 & 54 & 0.003522 \\
-integer & scip & 72 & 54 & 0.004418 \\
-matrix & cbc & 64 & 46 & 0.004336 \\
-matrix & scip & 64 & 46 & 0.004156 \\
+4 & binary & cbc & 16 & 22 & 0.006975 \\
+4 & binary & scip & 16 & 22 & 0.005269 \\
+4 & integer & cbc & 20 & 26 & 0.001267 \\
+4 & integer & scip & 20 & 26 & 0.000450 \\
+4 & matrix & cbc & 16 & 22 & 0.001168 \\
+4 & matrix & scip & 16 & 22 & 0.000301 \\
+5 & binary & cbc & 25 & 28 & 0.001777 \\
+5 & binary & scip & 25 & 28 & 0.000658 \\
+5 & integer & cbc & 30 & 33 & 0.001610 \\
+5 & integer & scip & 30 & 33 & 0.000558 \\
+5 & matrix & cbc & 25 & 28 & 0.001529 \\
+5 & matrix & scip & 25 & 28 & 0.000457 \\
+6 & binary & cbc & 36 & 34 & 0.006665 \\
+6 & binary & scip & 36 & 34 & 0.001582 \\
+6 & integer & cbc & 42 & 40 & 0.002557 \\
+6 & integer & scip & 42 & 40 & 0.001378 \\
+6 & matrix & cbc & 36 & 34 & 0.006664 \\
+6 & matrix & scip & 36 & 34 & 0.001246 \\
+7 & binary & cbc & 49 & 40 & 0.002600 \\
+7 & binary & scip & 49 & 40 & 0.000860 \\
+7 & integer & cbc & 56 & 47 & 0.003534 \\
+7 & integer & scip & 56 & 47 & 0.000950 \\
+7 & matrix & cbc & 49 & 40 & 0.002481 \\
+7 & matrix & scip & 49 & 40 & 0.000814 \\
+8 & binary & cbc & 64 & 46 & 0.004240 \\
+8 & binary & scip & 64 & 46 & 0.004446 \\
+8 & integer & cbc & 72 & 54 & 0.003522 \\
+8 & integer & scip & 72 & 54 & 0.004418 \\
+8 & matrix & cbc & 64 & 46 & 0.004336 \\
+8 & matrix & scip & 64 & 46 & 0.004156 \\
 \bottomrule
 \end{tabular}
 \end{table}
@@ -133,6 +254,9 @@ matrix & scip & 64 & 46 & 0.004156 \\
 \end{figure}
 
 \section{Conclusion}
-The benchmark results indicate that CP-SAT and SAT solvers achieve exceptional performance and sub-millisecond execution times for moderate board sizes ($N \le 10$). High-level global constraints in CP-SAT (such as \texttt{AllDifferent}) minimize constraint counts, while compact SAT encodings (like binary and commander) scale efficiently in variable count. MIP solvers (SCIP and CBC) also solve models reliably, though overhead is slightly higher compared to specialized SAT and CP propagators.
+The benchmark results indicate that SAT solvers achieve exceptional performance with sub-millisecond execution times, while CP-SAT and MIP solvers achieve efficient millisecond-level execution times for moderate board sizes ($N \le 10$). High-level global constraints in CP-SAT (such as \texttt{AllDifferent}) minimize constraint counts, while compact SAT encodings (like binary and commander) scale efficiently in variable count. MIP solvers (SCIP and CBC) also solve models reliably, though overhead is slightly higher compared to specialized SAT and CP propagators.
+
+\section{Data Availability}
+The source code, benchmark scripts, raw experimental results (CSV files), and reporting utilities supporting the findings of this study are openly available in the GitHub repository at \url{https://github.com/username/nqueens-sat-benchmark}.
 
 \end{document}

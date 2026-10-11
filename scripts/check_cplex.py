@@ -1,6 +1,6 @@
 """Kiểm tra CPLEX MIP và CPLEX CP Optimizer qua N-Queens.
 
-Chạy:  python test_cplex.py [N]      (mặc định N = 40)
+Chạy:  python check_cplex.py [N]      (mặc định N = 40)
 N = 40 -> 1600 biến, vượt giới hạn 1000 của bản Community Edition.
 Nếu CPLEX là bản đầy đủ, MIP phải giải được mà không báo lỗi 1016.
 """
