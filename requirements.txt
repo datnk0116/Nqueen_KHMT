@@ -1,0 +1,8 @@
+python-sat
+ortools
+gurobipy
+docplex
+cplex
+pandas
+matplotlib
+pytest
