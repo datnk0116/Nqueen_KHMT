@@ -228,7 +228,7 @@ MIP models formulate the problem as linear inequalities over binary variables $x
 $$\sum_{i=1}^N x_{i,j} = 1 \quad (\forall j), \quad \sum_{j=1}^N x_{i,j} = 1 \quad (\forall i), \quad \sum_{(i,j) \in \text{diag}} x_{i,j} \le 1$$
 
 \section{Experimental Setup}
-Benchmarks were executed on macOS Sequoia with Python 3.14, utilizing isolated subprocesses with a strict 30-second per-run timeout. Board sizes ranged from $N = 8$ up to $N = 128$. Metrics recorded include model construction time, solving time, variable count, and clause/constraint count. Commercial solvers (Gurobi, CPLEX) operated under trial/academic license limitations.
+Benchmarks were executed on macOS Sequoia with Python 3.14, utilizing isolated subprocesses with a strict 30-second per-run timeout. Board sizes ranged from $N = 8$ up to $N = 128$. Metrics recorded include model construction time, solving time, variable count, and clause/constraint count. Commercial solver Gurobi operated under trial license limitations, while CPLEX operated under full license support allowing scaling up to $N = 128$.
 
 \section{Empirical Results and Performance Analysis}
 

@@ -249,7 +249,7 @@ def main():
     cpsat_n_values = [8, 16, 32, 64, 128]
     mip_n_values = [8, 16, 32, 64]
     gurobi_n_values = [8, 16, 32, 44]  # Up to free license limit N=44 (2000 vars)
-    cplex_n_values = [8, 16, 31]       # Up to community edition limit N=31 (1000 vars)
+    cplex_n_values = [8, 16, 32, 64, 128]      # Expanded N values up to 128
 
     print("=== Running SAT Benchmarks ===")
     sat_results = run_benchmarks_with_repetitions("SAT", sat_n_values, sat_encodings, sat_solvers, args.time_limit, args.repetitions)
