@@ -40,7 +40,7 @@ Boolean variables $x_{i,j}$ denote whether a queen is placed at row $i$, column 
 \begin{itemize}
     \item \textbf{At-Least-One (ALO)} per row: $\bigvee_{j=1}^N x_{i,j}$ for all $i$.
     \item \textbf{At-Most-One (AMO)} per row: $\bigwedge_{1 \le j < k \le N} (\neg x_{i,j} \lor \neg x_{i,k})$ (Pairwise encoding), yielding $\Theta(N^2)$ clauses per row.
-    \item \textbf{Binary Encoding}: Encodes row indices using $\lceil \log_2 N \rceil$ auxiliary boolean variables per cell, reducing clause count to $O(N^2 \log N)$.
+    \item \textbf{Binary Encoding}: Encodes each group of size $n$ using $\lceil \log_2 n \rceil$ auxiliary boolean variables per group (as opposed to pairwise $\Theta(n^2)$ clauses or unary sequential counters), reducing clause count to $O(N^2 \log N)$ and comparing favorably with native PySAT \texttt{CardEnc} cardinality abstractions which implement advanced sequential and sorting networks.
     \item \textbf{Sequential Counter Encoding}: Introduces unary counters $S_{i,j}$ satisfying $\sum_{j=1}^N x_{i,j} = 1$ with $O(N)$ clauses per row.
     \item \textbf{Commander Encoding}: Groups variables into buckets of size $k$ with commander variables, resulting in $O(N)$ clauses.
     \item \textbf{Product Encoding}: Factors the board coordinates into Cartesian products, achieving ultra-compact variable and clause scaling.
@@ -177,15 +177,10 @@ $N$ & Model Variant & Solver & Variables & Constraints & Time (s) \\
 $N$ & Model Variant & Solver & Variables & Constraints & Time (s) \\
 \midrule
 8 & binary & cplex & 64 & 42 & 0.010010 \\
-8 & integer & cplex-cp & 8 & 3 & 0.001671 \\
 16 & binary & cplex & 256 & 90 & 0.011324 \\
-16 & integer & cplex-cp & 16 & 3 & 0.000728 \\
 32 & binary & cplex & 1024 & 186 & 0.015620 \\
-32 & integer & cplex-cp & 32 & 3 & 0.000780 \\
 64 & binary & cplex & 4096 & 378 & 0.031135 \\
-64 & integer & cplex-cp & 64 & 3 & 0.000852 \\
 128 & binary & cplex & 16384 & 762 & 0.092102 \\
-128 & integer & cplex-cp & 128 & 3 & 0.000987 \\
 \bottomrule
 \end{tabular}
 \end{table}

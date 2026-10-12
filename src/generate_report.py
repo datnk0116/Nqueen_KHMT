@@ -11,31 +11,43 @@ def main():
         df = pd.read_csv("results/benchmark_results.csv")
     except Exception:
         df = pd.DataFrame()
+    if not df.empty and 'status' in df.columns:
+        df = df[df['status'] != 'ERROR']
         
     try:
         sat_df = pd.read_csv("results/sat_results.csv")
     except Exception:
         sat_df = pd.DataFrame()
+    if not sat_df.empty and 'status' in sat_df.columns:
+        sat_df = sat_df[sat_df['status'] != 'ERROR']
         
     try:
         cpsat_df = pd.read_csv("results/cpsat_results.csv")
     except Exception:
         cpsat_df = pd.DataFrame()
+    if not cpsat_df.empty and 'status' in cpsat_df.columns:
+        cpsat_df = cpsat_df[cpsat_df['status'] != 'ERROR']
         
     try:
         mip_df = pd.read_csv("results/mip_results.csv")
     except Exception:
         mip_df = pd.DataFrame()
+    if not mip_df.empty and 'status' in mip_df.columns:
+        mip_df = mip_df[mip_df['status'] != 'ERROR']
         
     try:
         gurobi_df = pd.read_csv("results/gurobi_results.csv")
     except Exception:
         gurobi_df = pd.DataFrame()
+    if not gurobi_df.empty and 'status' in gurobi_df.columns:
+        gurobi_df = gurobi_df[gurobi_df['status'] != 'ERROR']
         
     try:
         cplex_df = pd.read_csv("results/cplex_results.csv")
     except Exception:
         cplex_df = pd.DataFrame()
+    if not cplex_df.empty and 'status' in cplex_df.columns:
+        cplex_df = cplex_df[cplex_df['status'] != 'ERROR']
 
     all_dfs = [df, sat_df, cpsat_df, mip_df, gurobi_df, cplex_df]
     combined_df = pd.concat([d for d in all_dfs if not d.empty], ignore_index=True) if any(not d.empty for d in all_dfs) else pd.DataFrame()
@@ -208,7 +220,7 @@ Boolean variables $x_{i,j}$ denote whether a queen is placed at row $i$, column 
 \begin{itemize}
     \item \textbf{At-Least-One (ALO)} per row: $\bigvee_{j=1}^N x_{i,j}$ for all $i$.
     \item \textbf{At-Most-One (AMO)} per row: $\bigwedge_{1 \le j < k \le N} (\neg x_{i,j} \lor \neg x_{i,k})$ (Pairwise encoding), yielding $\Theta(N^2)$ clauses per row.
-    \item \textbf{Binary Encoding}: Encodes row indices using $\lceil \log_2 N \rceil$ auxiliary boolean variables per cell, reducing clause count to $O(N^2 \log N)$.
+    \item \textbf{Binary Encoding}: Encodes each group of size $n$ using $\lceil \log_2 n \rceil$ auxiliary boolean variables per group (as opposed to pairwise $\Theta(n^2)$ clauses or unary sequential counters), reducing clause count to $O(N^2 \log N)$ and comparing favorably with native PySAT \texttt{CardEnc} cardinality abstractions which implement advanced sequential and sorting networks.
     \item \textbf{Sequential Counter Encoding}: Introduces unary counters $S_{i,j}$ satisfying $\sum_{j=1}^N x_{i,j} = 1$ with $O(N)$ clauses per row.
     \item \textbf{Commander Encoding}: Groups variables into buckets of size $k$ with commander variables, resulting in $O(N)$ clauses.
     \item \textbf{Product Encoding}: Factors the board coordinates into Cartesian products, achieving ultra-compact variable and clause scaling.
