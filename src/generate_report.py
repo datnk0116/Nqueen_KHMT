@@ -255,7 +255,7 @@ Benchmarks were executed on macOS Sequoia with Python 3.14, utilizing isolated s
 \subsection{SAT Solvers Performance}
 Table~\ref{tab:sat} summarizes SAT benchmark results across diverse encodings and solvers.
 
-\begin{table}[H]
+\begin{table}[htbp]
 \centering
 \caption{SAT Solvers Performance Metrics} \label{tab:sat}
 \begin{tabular}{llrrrr}
@@ -270,7 +270,7 @@ $N$ & Model Variant & Solver & Variables & Clauses & Time (s) \\
 \subsection{CP-SAT Performance}
 Table~\ref{tab:cpsat} outlines OR-Tools CP-SAT performance.
 
-\begin{table}[H]
+\begin{table}[htbp]
 \centering
 \caption{CP-SAT Performance Metrics} \label{tab:cpsat}
 \begin{tabular}{llrrrr}
@@ -285,7 +285,7 @@ $N$ & Model Variant & Solver & Variables & Constraints & Time (s) \\
 \subsection{Open-Source MIP Performance}
 Table~\ref{tab:mip} summarizes CBC and SCIP performance.
 
-\begin{table}[H]
+\begin{table}[htbp]
 \centering
 \caption{MIP (CBC/SCIP) Performance Metrics} \label{tab:mip}
 \begin{tabular}{llrrrr}
@@ -300,7 +300,7 @@ $N$ & Model Variant & Solver & Variables & Constraints & Time (s) \\
 \subsection{Commercial Gurobi and CPLEX Performance}
 Tables~\ref{tab:gurobi} and \ref{tab:cplex} present Gurobi and CPLEX results.
 
-\begin{table}[H]
+\begin{table}[htbp]
 \centering
 \caption{Gurobi Performance Metrics} \label{tab:gurobi}
 \begin{tabular}{llrrrr}
@@ -312,7 +312,7 @@ $N$ & Model Variant & Solver & Variables & Constraints & Time (s) \\
 \end{tabular}
 \end{table}
 
-\begin{table}[H]
+\begin{table}[htbp]
 \centering
 \caption{CPLEX Performance Metrics} \label{tab:cplex}
 \begin{tabular}{llrrrr}
@@ -327,7 +327,7 @@ $N$ & Model Variant & Solver & Variables & Constraints & Time (s) \\
 \section{Timeout Analysis}
 Table~\ref{tab:timeouts} details the timeout counts encountered across solver paradigms and board sizes under the strict 30-second limit.
 
-\begin{table}[H]
+\begin{table}[htbp]
 \centering
 \caption{Timeout Analysis Across Solvers and Board Sizes} \label{tab:timeouts}
 \begin{tabular}{llrr}
@@ -341,28 +341,28 @@ Paradigm & Solver & Board Size ($N$) & Timeout Count \\
 
 \section{Visualizations}
 
-\begin{figure}[H]
+\begin{figure}[htbp]
 \centering
 \includegraphics[width=0.85\textwidth]{sat_time_cadical.png}
 \caption{SAT (CaDiCaL) solving time scaling across board sizes $N$.}
 \label{fig:sat_time}
 \end{figure}
 
-\begin{figure}[H]
+\begin{figure}[htbp]
 \centering
 \includegraphics[width=0.85\textwidth]{paradigm_comparison.png}
 \caption{Comparison of mean solving time across all solver paradigms (log scale).}
 \label{fig:paradigm_time}
 \end{figure}
 
-\begin{figure}[H]
+\begin{figure}[htbp]
 \centering
 \includegraphics[width=0.85\textwidth]{variables_scaling.png}
 \caption{Variable count scaling across different solving paradigms and solvers.}
 \label{fig:var_scaling}
 \end{figure}
 
-\begin{figure}[H]
+\begin{figure}[htbp]
 \centering
 \includegraphics[width=0.85\textwidth]{build_vs_solve.png}
 \caption{Model construction overhead versus active solving time by paradigm.}
