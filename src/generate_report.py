@@ -101,51 +101,51 @@ def main():
             if not sub.empty:
                 grouped = sub.groupby('n')['time_seconds'].mean()
                 ax.plot(grouped.index, grouped.values, marker='s', label=paradigm)
-        ax.set_xlabel("Board Size ($N$)")
-        ax.set_ylabel("Mean Solving Time (seconds)")
         ax.set_yscale('log')
-        ax.set_title("Paradigm Solving Time Comparison (Log Scale)")
+        ax.set_xlabel("Board Size ($N$)")
+        ax.set_ylabel("Mean Solving Time (seconds, log scale)")
+        ax.set_title("Paradigm Comparison Across Board Sizes")
         ax.legend(bbox_to_anchor=(1.05, 1), loc='upper left', fontsize='small')
         plt.tight_layout()
         plt.savefig("report/paradigm_comparison.png", dpi=300)
         plt.close()
 
-        # Plot 3: Variable scaling across paradigms
+        # Plot 3: Variable count scaling
         fig, ax = plt.subplots(figsize=(8, 5))
         for paradigm in combined_df['paradigm'].unique():
             sub = combined_df[combined_df['paradigm'] == paradigm]
-            if not sub.empty:
+            if not sub.empty and 'variables_count' in sub.columns:
                 grouped = sub.groupby('n')['variables_count'].mean()
-                if grouped.max() > 0:
-                    ax.plot(grouped.index, grouped.values, marker='^', label=paradigm)
+                ax.plot(grouped.index, grouped.values, marker='^', label=paradigm)
+        ax.set_yscale('log')
         ax.set_xlabel("Board Size ($N$)")
-        ax.set_ylabel("Mean Variables Count")
-        ax.set_title("Variable Scaling across Solvers and Paradigms")
+        ax.set_ylabel("Variable Count (log scale)")
+        ax.set_title("Variable Scaling Across Paradigms")
         ax.legend(bbox_to_anchor=(1.05, 1), loc='upper left', fontsize='small')
         plt.tight_layout()
         plt.savefig("report/variables_scaling.png", dpi=300)
         plt.close()
 
-        # Plot 4: Build vs Solve time breakdown
-        fig, ax = plt.subplots(figsize=(8, 5))
-        if 'build_time' in combined_df.columns and 'solve_time' in combined_df.columns:
-            build_grp = combined_df.groupby('paradigm')['build_time'].mean()
-            solve_grp = combined_df.groupby('paradigm')['solve_time'].mean()
-            paradigms = build_grp.index
-            x = np.arange(len(paradigms))
+        # Plot 4: Build vs Solve time
+        if 'build_time_seconds' in combined_df.columns and 'time_seconds' in combined_df.columns:
+            fig, ax = plt.subplots(figsize=(8, 5))
+            build_grouped = combined_df.groupby('paradigm')['build_time_seconds'].mean()
+            solve_grouped = combined_df.groupby('paradigm')['time_seconds'].mean()
+            x = np.arange(len(build_grouped.index))
             width = 0.35
-            ax.bar(x - width/2, build_grp.values, width, label='Build Time')
-            ax.bar(x + width/2, solve_grp.values, width, label='Solve Time')
+            ax.bar(x - width/2, build_grouped.values, width, label='Build Time')
+            ax.bar(x + width/2, solve_grouped.values, width, label='Solve Time')
             ax.set_xticks(x)
-            ax.set_xticklabels(paradigms, rotation=15)
-            ax.set_ylabel("Time (seconds)")
-            ax.set_title("Mean Model Build vs. Solve Time by Paradigm")
+            ax.set_xticklabels(build_grouped.index, rotation=15)
+            ax.set_yscale('log')
+            ax.set_ylabel("Seconds (log scale)")
+            ax.set_title("Model Construction vs Active Solving Time by Paradigm")
             ax.legend()
             plt.tight_layout()
             plt.savefig("report/build_vs_solve.png", dpi=300)
             plt.close()
 
-    def make_table_rows(subset_df, max_rows=15):
+    def make_table_rows(subset_df, max_rows=25):
         if subset_df.empty:
             return "No data available & - & - & - & - & - \\\\"
         sorted_df = subset_df.sort_values(by=['n', 'model_variant', 'solver'])
@@ -197,7 +197,7 @@ def main():
 \maketitle
 
 \begin{abstract}
-This report presents an exhaustive empirical evaluation of solving the classic $N$-Queens problem across six major solver groups and modeling paradigms: Propositional Satisfiability (SAT with CaDiCaL, Glucose3, MiniSat22, Kissat, MapleCM, and PySAT CardEnc abstractions), Constraint Programming via CP-SAT (OR-Tools), Mixed-Integer Programming (MIP with CBC, SCIP), High-Performance Commercial MIP (Gurobi), and Commercial CPLEX (MIP and CP engines). We evaluate encoding efficiency, variable scaling, constraint footprint, model construction overhead, and execution times across board sizes up to $N = 128$. Detailed performance metrics and visualizations highlight the trade-offs between expressive global constraints and low-level clausal representations, alongside comprehensive timeout analyses, CP startup overhead management, and solution status semantics (FEASIBLE vs OPTIMAL).
+This report presents an exhaustive empirical evaluation of solving the classic $N$-Queens problem across six major solver groups and modeling paradigms: Propositional Satisfiability (SAT with CaDiCaL, Glucose3, MiniSat22, Kissat, and MapleCM), Constraint Programming via CP-SAT (OR-Tools), Mixed-Integer Programming (MIP with CBC, SCIP), High-Performance Commercial MIP (Gurobi), and Commercial CPLEX (MIP and CP engines). We evaluate encoding efficiency, variable scaling, constraint footprint, model construction overhead, and execution times across board sizes up to $N = 128$. Detailed performance metrics and visualizations highlight the trade-offs between expressive global constraints and low-level clausal representations, alongside comprehensive timeout analyses, CP solve overhead management, and solution status semantics (FEASIBLE vs OPTIMAL).
 \end{abstract}
 
 \section{Introduction}
@@ -205,7 +205,7 @@ The $N$-Queens problem serves as a canonical benchmark in artificial intelligenc
 
 This study expands the evaluation framework to cover six distinct solver groups:
 \begin{itemize}
-    \item \textbf{SAT Solvers}: CaDiCaL \citep{biere2020cadical}, Glucose3, MiniSat22, Kissat, and MapleCM evaluated across Pairwise, Binary, Sequential Counter, Commander, Product, and PySAT \texttt{CardEnc} cardinality encodings \citep{ignatiev2018pysat}.
+    \item \textbf{SAT Solvers}: CaDiCaL \citep{biere2020cadical}, Glucose3, MiniSat22, Kissat, and MapleCM evaluated across Pairwise, Binary, Sequential Counter, Commander, and Product cardinality encodings.
     \item \textbf{Constraint Programming (CP-SAT)}: OR-Tools CP-SAT using Integer, Boolean, and Allowed assignments configurations \citep{perron2021ortools}.
     \item \textbf{Open-Source MIP}: CBC and SCIP solvers using Binary and Integer linear formulations.
     \item \textbf{Commercial MIP (Gurobi)}: High-performance Gurobi optimization engine with advanced presolve and branch-and-cut routines (noting trial license bounds at $N \le 44$).
@@ -219,8 +219,8 @@ Different paradigms map the combinatorial structure of the $N$-Queens problem in
 Boolean variables $x_{i,j}$ denote whether a queen is placed at row $i$, column $j$ ($1 \le i, j \le N$).
 \begin{itemize}
     \item \textbf{At-Least-One (ALO)} per row: $\bigvee_{j=1}^N x_{i,j}$ for all $i$.
-    \item \textbf{At-Most-One (AMO)} per row: Pairwise encoding $\bigwedge_{1 \le j < k \le N} (\neg x_{i,j} \lor \neg x_{i,k})$ yielding $\Theta(N^2)$ clauses; advanced encodings like Klieber \& Kwon \citep{klieber2007efficient} and Chen's Commander/Product encodings \citep{chen2010new}.
-    \item \textbf{Binary and PySAT CardEnc Encodings}: Encodes groups using $\lceil \log_2 n \rceil$ auxiliary boolean variables or optimized sorting/sequential networks via PySAT \texttt{CardEnc} \citep{ignatiev2018pysat}.
+    \item \textbf{At-Most-One (AMO)} per row: Pairwise encoding $\bigwedge_{1 \le j < k \le N} (\neg x_{i,j} \lor \neg x_{i,k})$ yielding $\Theta(N^2)$ clauses; advanced encodings including Klieber \& Kwon's Commander encoding \citep{klieber2007efficient} and Chen's Product encoding \citep{chen2010new}.
+    \item \textbf{Binary and Sequential Counter Encodings}: Encodes cardinality constraints using $\lceil \log_2 n \rceil$ auxiliary boolean variables or Sinz's sequential counter networks \citep{sinz2005}.
 \end{itemize}
 
 \subsection{Constraint Programming (CP-SAT) \& Global Constraints}
@@ -230,14 +230,14 @@ OR-Tools CP-SAT utilizes integer decision variables $q_i \in \{1, \dots, N\}$ re
     \item $\text{AllDifferent}(q_1 + 1, q_2 + 2, \dots, q_N + N)$ (main diagonals)
     \item $\text{AllDifferent}(q_1 - 1, q_2 - 2, \dots, q_N - N)$ (anti-diagonals)
 \end{enumerate}
-This formulation requires only $N$ integer variables and 3 global constraints, pruning infeasible branches exponentially faster than clausal representations.
+This formulation requires only $N$ integer variables and 3 global constraints, pruning infeasible branches effectively.
 
 \subsection{Mixed-Integer Programming (MIP)}
 MIP models formulate the problem as linear inequalities over binary variables $x_{i,j} \in \{0, 1\}$ or integer variables $q_i \in \{1, \dots, N\}$, coupled with linear diagonal separation cuts:
 $$\sum_{i=1}^N x_{i,j} = 1 \quad (\forall j), \quad \sum_{j=1}^N x_{i,j} = 1 \quad (\forall i), \quad \sum_{(i,j) \in \text{diag}} x_{i,j} \le 1$$
 
 \section{Experimental Setup}
-Benchmarks were executed on macOS Sequoia with Python 3.14, utilizing isolated subprocesses with a strict 30-second per-run timeout. Board sizes ranged from $N = 8$ up to $N = 128+$. Metrics recorded include model construction time, solving time, variable count, and clause/constraint count. Commercial solver Gurobi operated under trial license limitations ($N \le 44$), while CPLEX operated under full license support allowing scaling up to $N = 128$. For CP Optimizer, process startup overhead (spawning separate subprocesses for the `cpoptimizer` binary executable) introduces constant overhead; internal solver solve times were isolated from wall-clock subprocess invocation overhead where appropriate.
+Benchmarks were executed on macOS Sequoia with Python 3.14, utilizing isolated subprocesses with a strict 30-second per-run timeout. Board sizes ranged from $N = 8$ up to $N = 128$. Metrics recorded include model construction time, solving time, variable count, and clause/constraint count. Commercial solver Gurobi operated under trial license limitations ($N \le 44$), while CPLEX operated under full license support allowing scaling up to $N = 128$. For CP Optimizer, process startup overhead (spawning separate subprocesses for the \texttt{cpoptimizer} binary executable) introduces constant overhead; internal solver solve times were isolated from wall-clock subprocess invocation overhead where appropriate.
 
 \section{Empirical Results and Performance Analysis}
 
@@ -359,13 +359,13 @@ Paradigm & Solver & Board Size ($N$) & Timeout Count \\
 \end{figure}
 
 \section{Discussion and Comprehensive Solver Comparison}
-The empirical results reveal distinct performance characteristics and limitations across all six solver groups (CPLEX MIP, CPLEX CP, Gurobi, CP-SAT, SAT/CaDiCaL, and PySAT CardEnc) when scaling across the $N$ range ($N = 8$ to $128+$):
+The empirical results reveal distinct performance characteristics and limitations across all six solver groups (CPLEX MIP, CPLEX CP, Gurobi, CP-SAT, and SAT/CaDiCaL) when scaling across the $N$ range ($N = 8$ to $128$):
 \begin{itemize}
-    \item \textbf{Comparative Performance Across Six Solver Groups}: Across moderate to large scales ($N = 8$ to $128+$), commercial engines (CPLEX MIP, CPLEX CP, Gurobi) and high-performance solvers (CP-SAT, CaDiCaL) demonstrate exceptional scalability. CPLEX CP and CP-SAT exploit global constraints (`AllDifferent`) to prune search trees exponentially faster than clausal representations.
-    \item \textbf{FEASIBLE vs. OPTIMAL Status Semantics}: For pure satisfaction problems (such as $N$-Queens without an objective function), finding *any* valid non-attacking configuration successfully solves the problem. Constraint Programming engines (CPLEX CP, CP-SAT) correctly terminate upon encountering the first valid assignment and report \texttt{FEASIBLE} (or \texttt{SOLUTION\_FOUND}), whereas MIP solvers must prove optimality or explore the entire branch-and-bound tree. Requiring \texttt{OPTIMAL} for satisfaction problems is computationally redundant unless an optimization objective is specified.
-    \item \textbf{CP Optimizer Process Startup Overhead}: CP Optimizer relies on an external binary executable (`cpoptimizer`). Spawning this subprocess incurs inter-process communication and process startup overhead (typically 10--50 ms). Our benchmark harness isolated internal solver solve time from wall-clock invocation time to prevent skewing comparisons against in-process Python solvers.
+    \item \textbf{Comparative Performance Across Six Solver Groups}: Across moderate to large scales ($N = 8$ to $128$), commercial engines (CPLEX MIP, CPLEX CP, Gurobi) and high-performance solvers (CP-SAT, CaDiCaL) demonstrate exceptional scalability. At $N = 128$, CP-SAT and CPLEX CP solve in 0.02 to 1.3 seconds, whereas many SAT combinations take tens of seconds or timeout.
+    \item \textbf{FEASIBLE vs. OPTIMAL Status Semantics}: For pure satisfaction problems (such as $N$-Queens without an objective function), finding \emph{any} valid non-attacking configuration successfully solves the problem. Constraint Programming engines (CPLEX CP, CP-SAT) correctly terminate upon encountering the first valid assignment and report \texttt{FEASIBLE} (or \texttt{SOLUTION\_FOUND}), whereas MIP stops at the first feasible solution since there is no objective function, reporting OPTIMAL because all feasible solutions are optimal for a null objective. Requiring \texttt{OPTIMAL} for satisfaction problems is computationally redundant unless an optimization objective is specified.
+    \item \textbf{CP Optimizer Process Startup Overhead}: CP Optimizer relies on an external binary executable (\texttt{cpoptimizer}). Spawning this subprocess incurs inter-process communication and process startup overhead; actual measured solve times range from approximately 0.012 to 0.019 seconds for CPLEX CP up to $N = 128$. Our benchmark harness isolated internal solver solve time from wall-clock invocation time to prevent skewing comparisons against in-process Python solvers.
     \item \textbf{Gurobi Trial License Limitations}: Gurobi's trial license restricts model dimensions for larger instances, capping trials at $N \le 44$. For $N > 44$, full commercial licenses or alternative solvers (CPLEX, CP-SAT, CaDiCaL) are required.
-    \item \textbf{SAT Scaling and PySAT CardEnc}: CaDiCaL and Kissat handle large clause databases efficiently up to $N = 128$ (solving in under 26s), whereas Glucose3, MiniSat22, and MapleCM encounter frequent timeouts (""" + f"{sat_128_timeouts}/{sat_128_total}" + r""" at $N = 128$). PySAT \texttt{CardEnc} provides highly compact cardinality constraint encodings.
+    \item \textbf{SAT Scaling and Encodings}: CaDiCaL and Kissat handle large clause databases efficiently up to $N = 128$ (solving in under 26s), whereas Glucose3, MiniSat22, and MapleCM encounter frequent timeouts (""" + f"{sat_128_timeouts}/{sat_128_total}" + r""" at $N = 128$). Compact cardinality encodings significantly reduce variable and clause footprints.
 \end{itemize}
 
 \section{Conclusion}
@@ -374,19 +374,16 @@ This comprehensive benchmark demonstrates that while modern SAT, CP-SAT, and com
 \section{References}
 \begin{thebibliography}{10}
 \bibitem{biere2020cadical}
-A. Biere, ``CaDiCaL at SAT Race 2019,'' \emph{Proceedings of Pragmatics of SAT}, pages 51--52, 2019.
+A. Biere, ``CaDiCaL at SAT Race 2019,'' In \emph{Pragmatics of SAT (PoS) Workshop}, pages 51--52, 2019.
 
 \bibitem{sinz2005}
 C. Sinz, ``Towards an Optimal CNF Encoding of Boolean Cardinality Constraints,'' In \emph{Principles and Practice of Constraint Programming (CP 2005)}, pp. 827--831, 2005.
 
 \bibitem{klieber2007efficient}
-W. Klieber and G. Kwon, ``Efficient CNF Encoding for Selecting 1 from n Objects,'' Technical Report, University of Miami, 2007.
+W. Klieber and G. Kwon, ``Efficient CNF Encoding for Selecting 1 from n Objects,'' In \emph{Workshop on Constraint Formalisms and Violations (CFV)}, 2007.
 
 \bibitem{chen2010new}
-J. Chen, ``A New SAT Encoding for the At-Most-One Constraint,'' In \emph{Workshop on Constraint Satisfaction}, 2010.
-
-\bibitem{ignatiev2018pysat}
-A. Ignatiev, A. Morgado, and J. Marques-Silva, ``PySAT: A Python Toolkit for Prototyping with SAT Oracles,'' In \emph{International Conference on Theory and Applications of Satisfiability Testing (SAT)}, pp. 428--437, 2018.
+J. Chen, ``A New SAT Encoding for the At-Most-One Constraint,'' In \emph{International Workshop on Modelling and Reformulation (ModRef)}, 2010.
 
 \bibitem{perron2021ortools}
 L. Perron and V. Furnon, ``OR-Tools,'' Google, 2021. Available: \url{https://developers.google.com/optimization}.
