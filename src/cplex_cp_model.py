@@ -11,6 +11,7 @@ if not cp_path and os.environ.get("CPLEX_STUDIO_DIR"):
     cp_path = os.path.join(os.environ.get("CPLEX_STUDIO_DIR"), "cpoptimizer/bin/arm64_osx/cpoptimizer")
 if not cp_path or not os.path.exists(cp_path):
     for fallback in [
+        'SAT/bin/cpoptimizer',
         '/Applications/CPLEX_Studio222/cpoptimizer/bin/arm64_osx/cpoptimizer',
         '/Applications/CPLEX_Studio221/cpoptimizer/bin/arm64_osx/cpoptimizer',
         'cpoptimizer'

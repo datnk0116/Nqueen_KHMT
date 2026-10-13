@@ -6,9 +6,15 @@ Nếu CPLEX là bản đầy đủ, MIP phải giải được mà không báo l
 """
 import sys
 import time
+import os
 
 from docplex.mp.model import Model
 from docplex.cp.model import CpoModel
+from docplex.cp.config import context
+
+cp_path = os.environ.get("CPLEX_CP_EXECUTABLE")
+if cp_path and os.path.exists(cp_path):
+    context.solver.local.execfile = cp_path
 
 
 def is_valid(queens, n):
