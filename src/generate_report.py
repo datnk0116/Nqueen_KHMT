@@ -190,11 +190,11 @@ def main():
 
 \begin{document}
 
-\begin{frontmatter}
-
 \title{\textbf{Comprehensive Benchmark Report: N-Queens Problem Across Six Solver Groups and Paradigms}}
+\shorttitle{N-Queens Benchmark Across Six Solver Groups}
+\shortauthors{DatNK0116}
 \author[1]{DatNK0116}
-\ead{datnk0116@gmail.com}
+\ead{24021404@vnu.edu.vn}
 \fntext[1]{Course: Modern Topics in Computer Science (2627I_INT3011E_4)}
 
 \affiliation[1]{organization={Faculty of Information Technology, University of Engineering and Technology, Vietnam National University},
@@ -209,7 +209,7 @@ This report presents an exhaustive empirical evaluation of solving the classic $
 N-Queens \sep Propositional Satisfiability \sep Constraint Programming \sep Mixed-Integer Programming \sep Benchmarking \sep PySAT
 \end{keywords}
 
-\end{frontmatter}
+\maketitle
 
 \section{Introduction}
 The $N$-Queens problem serves as a canonical benchmark in artificial intelligence, automated reasoning, constraint satisfaction, and combinatorial optimization. Placing $N$ non-attacking queens on an $N \times N$ chessboard tests the scalability, constraint propagation, and search pruning power of modern discrete solvers. 
