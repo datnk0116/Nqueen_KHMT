@@ -1,0 +1,15 @@
+\ProvidesPackage{moreverb}[2008/07/04 v2.3 extended verbatim]
+\RequirePackage{verbatim}
+\newwrite\verbatim@out
+\def\verbatimwrite#1{%
+  \@bsphack
+  \immediate\openout\verbatim@out#1%
+  \let\do\@makeother\dospecials
+  \catcode`\^^M\active
+  \def\verbatim@processline{%
+    \immediate\write\verbatim@out{\the\verbatim@line}}%
+  \verbatim@start}%
+\def\endverbatimwrite{%
+  \immediate\closeout\verbatim@out
+  \@esphack}%
+\endinput
