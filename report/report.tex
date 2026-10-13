@@ -10,24 +10,26 @@
 
 \begin{document}
 
+\begin{frontmatter}
+
 \title{\textbf{Comprehensive Benchmark Report: N-Queens Problem Across Six Solver Groups and Paradigms}}
 \author[1]{DatNK0116}
 \ead{datnk0116@gmail.com}
-\fntext[1]{Lop: Cac van de hien dai trong KHMT (2627I_INT3011E_4)}
+\fntext[1]{Course: Modern Topics in Computer Science (2627I_INT3011E_4)}
 
-\affiliation[1]{organization={Faculty of Information Technology, University of Engineering and Technology, Vietnam National University, Hanoi},
+\affiliation[1]{organization={Faculty of Information Technology, University of Engineering and Technology, Vietnam National University},
                 city={Hanoi},
                 country={Vietnam}}
 
 \begin{abstract}
-This report presents an exhaustive empirical evaluation of solving the classic N-Queens problem across six major solver groups and modeling paradigms: Propositional Satisfiability (SAT with CaDiCaL, Glucose3, MiniSat22, Kissat, and MapleCM), Constraint Programming via CP-SAT (OR-Tools), Mixed-Integer Programming (MIP with CBC, SCIP), High-Performance Commercial MIP (Gurobi), and Commercial CPLEX (MIP and CP engines). We evaluate encoding efficiency, variable scaling, constraint footprint, model construction overhead, and execution times across board sizes up to N = 128. Detailed performance metrics and visualizations highlight the trade-offs between expressive global constraints and low-level clausal representations, alongside comprehensive timeout analyses, CP solve overhead management, and solution status semantics (FEASIBLE vs OPTIMAL).
+This report presents an exhaustive empirical evaluation of solving the classic $N$-Queens problem across six major solver groups and modeling paradigms: Propositional Satisfiability (SAT with CaDiCaL, Glucose3, MiniSat22, Kissat, and MapleCM), Constraint Programming via CP-SAT (OR-Tools), Mixed-Integer Programming (MIP with CBC, SCIP), High-Performance Commercial MIP (Gurobi), and Commercial CPLEX (MIP and CP engines). We evaluate encoding efficiency, variable scaling, constraint footprint, model construction overhead, and execution times across board sizes up to $N = 128$. Detailed performance metrics and visualizations highlight the trade-offs between expressive global constraints and low-level clausal representations, alongside comprehensive timeout analyses, CP solve overhead management, and solution status semantics (FEASIBLE vs OPTIMAL).
 \end{abstract}
 
 \begin{keywords}
 N-Queens \sep Propositional Satisfiability \sep Constraint Programming \sep Mixed-Integer Programming \sep Benchmarking \sep PySAT
 \end{keywords}
 
-\maketitle
+\end{frontmatter}
 
 \section{Introduction}
 The $N$-Queens problem serves as a canonical benchmark in artificial intelligence, automated reasoning, constraint satisfaction, and combinatorial optimization. Placing $N$ non-attacking queens on an $N \times N$ chessboard tests the scalability, constraint propagation, and search pruning power of modern discrete solvers. 

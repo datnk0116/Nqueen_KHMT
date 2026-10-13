@@ -192,10 +192,12 @@ def main():
 
 \begin{frontmatter}
 
-\title{\textbf{Comprehensive Benchmark Report: $N$-Queens Problem Across Six Solver Groups and Paradigms}}
-\author[1]{DatNK0116\fnmark{1}}
-\ead{dat.vjp.pr0_10x@gmail.com}
-\affiliation[1]{organization={Department of Computer Science},
+\title{\textbf{Comprehensive Benchmark Report: N-Queens Problem Across Six Solver Groups and Paradigms}}
+\author[1]{DatNK0116}
+\ead{datnk0116@gmail.com}
+\fntext[1]{Course: Modern Topics in Computer Science (2627I_INT3011E_4)}
+
+\affiliation[1]{organization={Faculty of Information Technology, University of Engineering and Technology, Vietnam National University},
                 city={Hanoi},
                 country={Vietnam}}
 
@@ -384,7 +386,7 @@ This comprehensive benchmark demonstrates that while modern SAT, CP-SAT, and com
 \section{References}
 \begin{thebibliography}{10}
 \bibitem{biere2020cadical}
-A. Biere, ``CaDiCaL at SAT Race 2019,'' Department of Computer Science, University of Helsinki, SAT Race 2019 Solver Description, 2019.
+A. Biere, ``CaDiCaL at SAT Race 2019,'' in \emph{Proceedings of SAT Race 2019} (Pragmatics of SAT, Vol. B), pp. 1--2, Department of Computer Science, University of Helsinki, 2019. Available: \url{http://www.satcompetition.org/2019/proceedings.pdf}
 
 \bibitem{sinz2005}
 C. Sinz, ``Towards an Optimal CNF Encoding of Boolean Cardinality Constraints,'' In \emph{Principles and Practice of Constraint Programming (CP 2005)}, pp. 827--831, 2005.
