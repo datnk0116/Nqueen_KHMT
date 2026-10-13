@@ -195,7 +195,7 @@ def main():
 \shortauthors{DatNK0116}
 \author[1]{DatNK0116}
 \ead{24021404@vnu.edu.vn}
-\fntext[1]{Course: Modern Topics in Computer Science (2627I_INT3011E_4)}
+\fntext[1]{Course: Modern Topics in Computer Science (2627I\_INT3011E\_4)}
 
 \affiliation[1]{organization={Faculty of Information Technology, University of Engineering and Technology, Vietnam National University},
                 city={Hanoi},
