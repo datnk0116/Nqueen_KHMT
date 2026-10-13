@@ -14,5 +14,6 @@ cplex.lic
 *.synctex.gz
 *.fls
 *.fdb_latexmk
+*.bak
 !results/
 !results/*.csv

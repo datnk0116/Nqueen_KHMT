@@ -59,7 +59,10 @@ def solve_nqueens(n: int, time_limit: float = None):
             params["TimeLimit"] = 60
             
         sol = m.solve(**params)
-        solve_time = time.time() - solve_start
+        if sol is not None and hasattr(sol, 'get_solve_time'):
+            solve_time = sol.get_solve_time()
+        else:
+            solve_time = time.time() - solve_start
         total_time = build_time + solve_time
         
         if sol is None or not sol.is_solution():
