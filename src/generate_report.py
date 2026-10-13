@@ -127,10 +127,10 @@ def main():
         plt.close()
 
         # Plot 4: Build vs Solve time
-        if 'build_time_seconds' in combined_df.columns and 'time_seconds' in combined_df.columns:
+        if 'build_time' in combined_df.columns and 'solve_time' in combined_df.columns:
             fig, ax = plt.subplots(figsize=(8, 5))
-            build_grouped = combined_df.groupby('paradigm')['build_time_seconds'].mean()
-            solve_grouped = combined_df.groupby('paradigm')['time_seconds'].mean()
+            build_grouped = combined_df.groupby('paradigm')['build_time'].mean()
+            solve_grouped = combined_df.groupby('paradigm')['solve_time'].mean()
             x = np.arange(len(build_grouped.index))
             width = 0.35
             ax.bar(x - width/2, build_grouped.values, width, label='Build Time')
