@@ -3,23 +3,48 @@ import subprocess
 import pandas as pd
 import numpy as np
 
-def main():
-    os.makedirs("report", exist_ok=True)
-    
-    # Load all result CSVs
+def load_combined(results_dir="results"):
+    path = os.path.join(results_dir, "benchmark_results.csv")
     try:
-        df = pd.read_csv("results/benchmark_results.csv")
+        df = pd.read_csv(path)
     except Exception:
         df = pd.DataFrame()
     if not df.empty and 'status' in df.columns:
         df = df[df['status'] != 'ERROR']
-        
+    
+    if not df.empty:
+        keys = ['n', 'paradigm', 'model_variant', 'solver']
+        if all(k in df.columns for k in keys):
+            dups = df.duplicated(subset=keys, keep=False)
+            dup_count = dups.sum()
+            if dup_count > 0:
+                raise ValueError(f"Duplicate rows detected in {path}: {dup_count} duplicate rows found.")
+    return df
+
+def timeout_table(df):
+    if df.empty or 'status' not in df.columns:
+        return pd.DataFrame(columns=['paradigm', 'solver', 'n', 'timeout_count'])
+    timeouts_df = df[df['status'] == 'TIMEOUT']
+    if timeouts_df.empty:
+        return pd.DataFrame(columns=['paradigm', 'solver', 'n', 'timeout_count'])
+    grouped_to = timeouts_df.groupby(['paradigm', 'solver', 'n']).size().reset_index(name='timeout_count')
+    return grouped_to
+
+def main():
+    os.makedirs("report", exist_ok=True)
+    
+    combined_df = load_combined("results")
+    
     try:
         sat_df = pd.read_csv("results/sat_results.csv")
     except Exception:
         sat_df = pd.DataFrame()
     if not sat_df.empty and 'status' in sat_df.columns:
         sat_df = sat_df[sat_df['status'] != 'ERROR']
+        
+    sat_128 = sat_df[sat_df['n'] == 128] if not sat_df.empty else pd.DataFrame()
+    sat_128_timeouts = len(sat_128[sat_128['status'] == 'TIMEOUT']) if not sat_128.empty else 10
+    sat_128_total = len(sat_128) if not sat_128.empty else 25
         
     try:
         cpsat_df = pd.read_csv("results/cpsat_results.csv")
@@ -49,25 +74,6 @@ def main():
     if not cplex_df.empty and 'status' in cplex_df.columns:
         cplex_df = cplex_df[cplex_df['status'] != 'ERROR']
 
-    all_dfs = [df, sat_df, cpsat_df, mip_df, gurobi_df, cplex_df]
-    combined_df = pd.concat([d for d in all_dfs if not d.empty], ignore_index=True) if any(not d.empty for d in all_dfs) else pd.DataFrame()
-
-    # Dynamic statistics calculation
-    sat_64 = sat_df[sat_df['n'] == 64] if not sat_df.empty else pd.DataFrame()
-    sat_128 = sat_df[sat_df['n'] == 128] if not sat_df.empty else pd.DataFrame()
-
-    sat_64_success = sat_64[sat_64['status'] != 'TIMEOUT'] if not sat_64.empty else pd.DataFrame()
-    sat_64_time_min = sat_64_success['time_seconds'].min() if not sat_64_success.empty else 0.05
-    sat_64_time_max = sat_64_success['time_seconds'].max() if not sat_64_success.empty else 10.5
-    sat_64_timeouts = len(sat_64[sat_64['status'] == 'TIMEOUT']) if not sat_64.empty else 3
-    sat_64_total = len(sat_64) if not sat_64.empty else 25
-
-    sat_128_success = sat_128[sat_128['status'] != 'TIMEOUT'] if not sat_128.empty else pd.DataFrame()
-    sat_128_time_min = sat_128_success['time_seconds'].min() if not sat_128_success.empty else 0.19
-    sat_128_time_max = sat_128_success['time_seconds'].max() if not sat_128_success.empty else 25.77
-    sat_128_timeouts = len(sat_128[sat_128['status'] == 'TIMEOUT']) if not sat_128.empty else 10
-    sat_128_total = len(sat_128) if not sat_128.empty else 25
-
     has_mpl = False
     try:
         import matplotlib.pyplot as plt
@@ -94,7 +100,7 @@ def main():
             plt.savefig("report/sat_time_cadical.png", dpi=300)
             plt.close()
 
-        # Plot 2: Paradigm comparison across all solver groups
+        # Plot 2: Paradigm comparison across all solver groups (timeouts counted as 30 s)
         fig, ax = plt.subplots(figsize=(8, 5))
         for paradigm in combined_df['paradigm'].unique():
             sub = combined_df[combined_df['paradigm'] == paradigm]
@@ -103,20 +109,22 @@ def main():
                 ax.plot(grouped.index, grouped.values, marker='s', label=paradigm)
         ax.set_yscale('log')
         ax.set_xlabel("Board Size ($N$)")
-        ax.set_ylabel("Mean Solving Time (seconds, log scale)")
-        ax.set_title("Paradigm Comparison Across Board Sizes")
+        ax.set_ylabel("Mean Solving Time (seconds, log scale, timeouts counted as 30 s)")
+        ax.set_title("Paradigm Comparison Across Board Sizes (timeouts counted as 30 s)")
         ax.legend(bbox_to_anchor=(1.05, 1), loc='upper left', fontsize='small')
         plt.tight_layout()
         plt.savefig("report/paradigm_comparison.png", dpi=300)
         plt.close()
 
-        # Plot 3: Variable count scaling
+        # Plot 3: Variable count scaling (exclude TIMEOUT/MEMOUT/LICENSE_LIMIT)
         fig, ax = plt.subplots(figsize=(8, 5))
-        for paradigm in combined_df['paradigm'].unique():
-            sub = combined_df[combined_df['paradigm'] == paradigm]
+        valid_var_df = combined_df[~combined_df['status'].isin(['TIMEOUT', 'MEMOUT', 'LICENSE_LIMIT'])]
+        for paradigm in valid_var_df['paradigm'].unique():
+            sub = valid_var_df[valid_var_df['paradigm'] == paradigm]
             if not sub.empty and 'variables_count' in sub.columns:
                 grouped = sub.groupby('n')['variables_count'].mean()
-                ax.plot(grouped.index, grouped.values, marker='^', label=paradigm)
+                if not grouped.empty:
+                    ax.plot(grouped.index, grouped.values, marker='^', label=paradigm)
         ax.set_yscale('log')
         ax.set_xlabel("Board Size ($N$)")
         ax.set_ylabel("Variable Count (log scale)")
@@ -126,17 +134,22 @@ def main():
         plt.savefig("report/variables_scaling.png", dpi=300)
         plt.close()
 
-        # Plot 4: Build vs Solve time
+        # Plot 4: Build vs Solve time (exclude TIMEOUT/MEMOUT/LICENSE_LIMIT, reindex)
         if 'build_time' in combined_df.columns and 'solve_time' in combined_df.columns:
             fig, ax = plt.subplots(figsize=(8, 5))
-            build_grouped = combined_df.groupby('paradigm')['build_time'].mean()
-            solve_grouped = combined_df.groupby('paradigm')['solve_time'].mean()
-            x = np.arange(len(build_grouped.index))
+            valid_bs_df = combined_df[~combined_df['status'].isin(['TIMEOUT', 'MEMOUT', 'LICENSE_LIMIT'])]
+            build_grouped = valid_bs_df.groupby('paradigm')['build_time'].mean()
+            solve_grouped = valid_bs_df.groupby('paradigm')['solve_time'].mean()
+            all_paradigms = sorted(list(set(build_grouped.index).union(set(solve_grouped.index))))
+            build_grouped = build_grouped.reindex(all_paradigms, fill_value=0)
+            solve_grouped = solve_grouped.reindex(all_paradigms, fill_value=0)
+            
+            x = np.arange(len(all_paradigms))
             width = 0.35
             ax.bar(x - width/2, build_grouped.values, width, label='Build Time')
             ax.bar(x + width/2, solve_grouped.values, width, label='Solve Time')
             ax.set_xticks(x)
-            ax.set_xticklabels(build_grouped.index, rotation=15)
+            ax.set_xticklabels(all_paradigms, rotation=15)
             ax.set_yscale('log')
             ax.set_ylabel("Seconds (log scale)")
             ax.set_title("Model Construction vs Active Solving Time by Paradigm")
@@ -166,16 +179,14 @@ def main():
     gurobi_table_tex = make_table_rows(gurobi_df)
     cplex_table_tex = make_table_rows(cplex_df)
 
-    # Generate timeout analysis table data
+    # Generate timeout analysis table data using timeout_table helper
     timeout_rows = []
-    if not combined_df.empty:
-        timeouts_df = combined_df[combined_df['status'] == 'TIMEOUT']
-        if not timeouts_df.empty:
-            grouped_to = timeouts_df.groupby(['paradigm', 'solver', 'n']).size().reset_index(name='timeout_count')
-            for _, row in grouped_to.iterrows():
-                timeout_rows.append(f"{row['paradigm']} & {row['solver']} & {row['n']} & {row['timeout_count']} \\\\")
-        else:
-            timeout_rows.append("No timeouts recorded & - & - & - \\\\")
+    to_df = timeout_table(combined_df)
+    if not to_df.empty:
+        for _, row in to_df.iterrows():
+            timeout_rows.append(f"{row['paradigm']} & {row['solver']} & {row['n']} & {row['timeout_count']} \\\\")
+    else:
+        timeout_rows.append("No timeouts recorded & - & - & - \\\\")
     timeout_table_tex = "\n".join(timeout_rows)
 
     latex_content = r"""\documentclass[a4paper,fleqn]{cas-sc}
@@ -351,7 +362,7 @@ Paradigm & Solver & Board Size ($N$) & Timeout Count \\
 \begin{figure}[htbp]
 \centering
 \includegraphics[width=0.85\textwidth]{paradigm_comparison.png}
-\caption{Comparison of mean solving time across all solver paradigms (log scale).}
+\caption{Comparison of mean solving time across all solver paradigms (log scale; timeouts counted as 30 s, so means are lower bounds).}
 \label{fig:paradigm_time}
 \end{figure}
 
