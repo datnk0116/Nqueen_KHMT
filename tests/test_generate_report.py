@@ -5,7 +5,7 @@ import pandas as pd
 
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '../src')))
 
-from generate_report import load_combined, timeout_table, make_sat_table_rows
+from generate_report import load_combined, timeout_table, make_sat_table_rows, make_sat_size_table_rows, make_table_rows, format_sat_time
 
 def test_timeout_table():
     df = load_combined("results")
@@ -47,26 +47,51 @@ def test_load_combined_raises_on_duplicates(tmp_path):
     with pytest.raises(ValueError, match="Duplicate rows detected"):
         load_combined(str(tmp_path))
 
-def test_sat_table_rows():
+def test_sat_table_rows_cells():
     df = load_combined("results")
     sat_tex = make_sat_table_rows(df)
     lines = sat_tex.strip().split("\n")
-    # 25 rows (5 N values x 5 encodings)
     assert len(lines) == 25
     
-    # Contains all N values from 8 to 128
-    for n_val in [8, 16, 32, 64, 128]:
-        assert f"{n_val}" in sat_tex
-        
-    # Contains "T/O" exactly 13 times
-    assert sat_tex.count("T/O") == 13
+    sat_df = df[df['paradigm'] == 'SAT']
+    solvers = ['cadical', 'glucose3', 'minisat22', 'kissat', 'maplecm']
     
-    # Check total data cells across 25 rows x 5 solvers = 125 cells
-    total_cells = 0
-    for line in lines:
-        parts = [p.strip() for p in line.split("&")]
-        # parts: [N, encoding, solver1, solver2, solver3, solver4, solver5\\ ]
-        # Last part ends with \\
-        data_cells = parts[2:]
-        total_cells += len(data_cells)
-    assert total_cells == 125
+    sorted_df = sat_df.sort_values(by=['n', 'model_variant']).drop_duplicates(subset=['n', 'model_variant'])
+    for idx, (_, r) in enumerate(sorted_df.iterrows()):
+        n = r['n']
+        variant = r['model_variant']
+        line_parts = [p.strip() for p in lines[idx].split("&")]
+        assert int(line_parts[0]) == n
+        assert line_parts[1] == variant
+        for s_idx, solver in enumerate(solvers):
+            sub = sat_df[(sat_df['n'] == n) & (sat_df['model_variant'] == variant) & (sat_df['solver'] == solver)]
+            if sub.empty:
+                expected = "-"
+            else:
+                expected = format_sat_time(sub.iloc[0])
+            actual = line_parts[2 + s_idx].rstrip('\\').strip()
+            assert actual == expected
+
+def test_sat_size_table_rows():
+    df = load_combined("results")
+    size_tex = make_sat_size_table_rows(df)
+    lines = size_tex.strip().split("\n")
+    assert len(lines) == 25
+    
+    text_content = size_tex
+    assert "64 & commander & 11958 & 47096" in text_content
+    assert "64 & sequential & 20098 & 47692" in text_content
+
+def test_make_table_rows_timeout():
+    df_timeout = pd.DataFrame([{
+        'n': 128,
+        'model_variant': 'allowed',
+        'solver': 'ortools-cpsat',
+        'variables_count': 0,
+        'constraints_count': 0,
+        'time_seconds': 30.0,
+        'status': 'TIMEOUT'
+    }])
+    res = make_table_rows(df_timeout)
+    assert "- & - & T/O" in res
+    assert "0 & 0" not in res

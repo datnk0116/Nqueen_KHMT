@@ -30,6 +30,19 @@ def timeout_table(df):
     grouped_to = timeouts_df.groupby(['paradigm', 'solver', 'n']).size().reset_index(name='timeout_count')
     return grouped_to
 
+def format_sat_time(row):
+    status = row.get('status', 'SUCCESS')
+    if status == 'TIMEOUT':
+        return "T/O"
+    elif status in ('ERROR', 'MEMOUT', 'LICENSE_LIMIT'):
+        return "ERR"
+    else:
+        t = row.get('time_seconds', 0.0)
+        if t < 0.001:
+            return f"{t:.2e}"
+        else:
+            return f"{t:.3f}"
+
 def make_sat_table_rows(df):
     if df.empty:
         return "No data available & - & - & - & - & - & - \\\\"
@@ -51,18 +64,35 @@ def make_sat_table_rows(df):
                 row_cells.append("-")
             else:
                 row = sub.iloc[0]
-                status = row.get('status', 'SUCCESS')
-                if status == 'TIMEOUT':
-                    row_cells.append("T/O")
-                elif status in ('ERROR', 'MEMOUT', 'LICENSE_LIMIT'):
-                    row_cells.append("ERR")
-                else:
-                    t = row.get('time_seconds', 0.0)
-                    if t < 0.001:
-                        row_cells.append(f"{t:.2e}")
-                    else:
-                        row_cells.append(f"{t:.3f}")
+                row_cells.append(format_sat_time(row))
         rows.append(" & ".join(row_cells) + " \\\\")
+    return "\n".join(rows)
+
+def make_sat_size_table_rows(df):
+    if df.empty:
+        return "No data available & - & - & - \\\\"
+    sat_df = df[df['paradigm'] == 'SAT'] if 'paradigm' in df.columns else df
+    if sat_df.empty:
+        return "No data available & - & - & - \\\\"
+    
+    sorted_df = sat_df.sort_values(by=['n', 'model_variant']).drop_duplicates(subset=['n', 'model_variant'])
+    rows = []
+    for _, r in sorted_df.iterrows():
+        n = r['n']
+        variant = r['model_variant']
+        sub = sat_df[(sat_df['n'] == n) & (sat_df['model_variant'] == variant)]
+        valid_sub = sub[~sub['status'].isin(['TIMEOUT', 'ERROR', 'MEMOUT', 'LICENSE_LIMIT']) & (sub['variables_count'] > 0)]
+        if valid_sub.empty:
+            rows.append(f"{n} & {variant} & - & - \\\\")
+        else:
+            var_nunique = valid_sub['variables_count'].nunique()
+            clause_col = 'clauses_constraints_count' if 'clauses_constraints_count' in valid_sub.columns else 'constraints_count'
+            clause_nunique = valid_sub[clause_col].nunique()
+            if var_nunique > 1 or clause_nunique > 1:
+                raise ValueError(f"Non-unique variable or clause counts found for n={n}, variant={variant}")
+            v_count = valid_sub['variables_count'].iloc[0]
+            c_count = valid_sub[clause_col].iloc[0]
+            rows.append(f"{n} & {variant} & {v_count} & {c_count} \\\\")
     return "\n".join(rows)
 
 def make_table_rows(subset_df, max_rows=None):
@@ -74,16 +104,18 @@ def make_table_rows(subset_df, max_rows=None):
     for _, row in sorted_df.iterrows():
         if max_rows is not None and count >= max_rows:
             break
-        constraints = row.get('clauses_constraints_count', row.get('constraints_count', 0))
-        t_sec = row.get('time_seconds', 0.0)
         status = row.get('status', 'SUCCESS')
-        if status == 'TIMEOUT':
-            t_str = "T/O"
-        elif status in ('ERROR', 'MEMOUT', 'LICENSE_LIMIT'):
-            t_str = "ERR"
+        if status in ('TIMEOUT', 'ERROR', 'MEMOUT', 'LICENSE_LIMIT'):
+            v_str = "-"
+            c_str = "-"
+            t_str = "T/O" if status == 'TIMEOUT' else "ERR"
         else:
+            v_str = str(row.get('variables_count', 0))
+            constraints = row.get('clauses_constraints_count', row.get('constraints_count', 0))
+            c_str = str(constraints)
+            t_sec = row.get('time_seconds', 0.0)
             t_str = f"{t_sec:.6f}"
-        rows.append(f"{row.get('n', 0)} & {row.get('model_variant', '')} & {row.get('solver', '')} & {row.get('variables_count', 0)} & {constraints} & {t_str} \\\\")
+        rows.append(f"{row.get('n', 0)} & {row.get('model_variant', '')} & {row.get('solver', '')} & {v_str} & {c_str} & {t_str} \\\\")
         count += 1
     return "\n".join(rows)
 
@@ -187,6 +219,7 @@ def main():
             plt.close()
 
     sat_table_tex = make_sat_table_rows(sat_df)
+    sat_size_table_tex = make_sat_size_table_rows(sat_df)
     cpsat_table_tex = make_table_rows(cpsat_df)
     mip_table_tex = make_table_rows(mip_df)
     gurobi_table_tex = make_table_rows(gurobi_df)
@@ -289,9 +322,25 @@ $N$ & Encoding & CaDiCaL & Glucose3 & MiniSat22 & Kissat & MapleCM \\
 \midrule
 % {sat_table_tex}
 \bottomrule
+\tabularnewline
 \end{tabular}%
 }
 \end{table*}
+
+Table~\ref{tab:satsize} presents the model size (variable and clause counts) across board sizes $N$ and encoding variants.
+
+\begin{table}[htbp]
+\centering
+\caption{SAT Model Size Metrics by Encoding Variant} \label{tab:satsize}
+\begin{tabular}{llrr}
+\toprule
+$N$ & Encoding & Variables & Clauses \\
+\midrule
+% {sat_size_table_tex}
+\bottomrule
+\tabularnewline
+\end{tabular}
+\end{table}
 
 \subsection{CP-SAT Performance}
 Table~\ref{tab:cpsat} outlines OR-Tools CP-SAT performance.
@@ -441,6 +490,7 @@ The source code, benchmark runners, raw experimental results (CSV files), and re
 
     # Replace placeholders with actual table rows
     latex_content = latex_content.replace("% {sat_table_tex}", sat_table_tex)
+    latex_content = latex_content.replace("% {sat_size_table_tex}", sat_size_table_tex)
     latex_content = latex_content.replace("% {cpsat_table_tex}", cpsat_table_tex)
     latex_content = latex_content.replace("% {mip_table_tex}", mip_table_tex)
     latex_content = latex_content.replace("% {gurobi_table_tex}", gurobi_table_tex)
