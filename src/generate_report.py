@@ -133,6 +133,20 @@ def main():
     sat_128 = sat_df[sat_df['n'] == 128] if not sat_df.empty else pd.DataFrame()
     sat_128_timeouts = len(sat_128[sat_128['status'] == 'TIMEOUT']) if not sat_128.empty else 10
     sat_128_total = len(sat_128) if not sat_128.empty else 25
+    g3_to = len(sat_128[(sat_128['solver'] == 'glucose3') & (sat_128['status'] == 'TIMEOUT')]) if not sat_128.empty else 4
+    m22_to = len(sat_128[(sat_128['solver'] == 'minisat22') & (sat_128['status'] == 'TIMEOUT')]) if not sat_128.empty else 3
+    mcm_to = len(sat_128[(sat_128['solver'] == 'maplecm') & (sat_128['status'] == 'TIMEOUT')]) if not sat_128.empty else 3
+
+    cplex_cp_df = combined_df[(combined_df['paradigm'] == 'CPLEX-CP')] if not combined_df.empty else pd.DataFrame()
+    cplex_cp_8 = cplex_cp_df[cplex_cp_df['n'] == 8]['time_seconds'].median() * 1000 if not cplex_cp_df.empty else 0.26
+    cplex_cp_128 = cplex_cp_df[cplex_cp_df['n'] == 128]['time_seconds'].median() * 1000 if not cplex_cp_df.empty else 10.5
+
+    cpsat_int_128 = cpsat_df[(cpsat_df['n'] == 128) & (cpsat_df['model_variant'] == 'integer')]['time_seconds'].median() if not cpsat_df.empty else 0.71326
+    cpsat_bool_128 = cpsat_df[(cpsat_df['n'] == 128) & (cpsat_df['model_variant'] == 'boolean')]['time_seconds'].median() if not cpsat_df.empty else 0.73134
+
+    cadical_max = sat_df[(sat_df['solver'] == 'cadical') & (sat_df['status'] != 'TIMEOUT')]['time_seconds'].max() if not sat_df.empty else 8.60
+    kissat_max = sat_df[(sat_df['solver'] == 'kissat') & (sat_df['status'] != 'TIMEOUT')]['time_seconds'].max() if not sat_df.empty else 6.03
+    maplecm_max = sat_df[(sat_df['solver'] == 'maplecm') & (sat_df['status'] != 'TIMEOUT')]['time_seconds'].max() if not sat_df.empty else 26.22
 
     has_mpl = False
     try:
@@ -302,7 +316,7 @@ OR-Tools CP-SAT utilizes integer decision variables $q_i \in \{0, 1, \dots, N-1\
 This formulation utilizes $N$ primary integer decision variables, alongside auxiliary variables introduced during model construction (resulting in 383 variables for $N = 128$ in the integer configuration proto), and 3 global constraints, pruning infeasible branches effectively.
 
 \subsection{Mixed-Integer Programming (MIP)}
-MIP models formulate the problem as linear inequalities over binary variables $x_{i,j} \in \{0, 1\}$ or integer variables $q_i \in \{1, \dots, N\}$, coupled with linear diagonal separation cuts:
+MIP models formulate the problem as linear inequalities over binary variables $x_{i,j} \in \{0, 1\}$ or integer variables $q_i \in \{0, 1, \dots, N-1\}$, coupled with linear diagonal separation cuts:
 $$\sum_{i=1}^N x_{i,j} = 1 \quad (\forall j), \quad \sum_{j=1}^N x_{i,j} = 1 \quad (\forall i), \quad \sum_{(i,j) \in \text{diag}} x_{i,j} \le 1$$
 
 \section{Experimental Setup}
@@ -453,11 +467,11 @@ Paradigm & Solver & Board Size ($N$) & Timeout Count \\
 \section{Discussion and Comprehensive Solver Comparison}
 The empirical results reveal distinct performance characteristics and limitations across all six solver groups (SAT, CP-SAT, open-source MIP, Gurobi, CPLEX MIP, and CPLEX CP) when scaling across the $N$ range ($N = 8$ to $128$):
 \begin{itemize}
-    \item \textbf{Comparative Performance Across Six Solver Groups}: Across moderate to large scales ($N = 8$ to $128$), commercial engines (CPLEX MIP, CPLEX CP, Gurobi) and high-performance solvers (CP-SAT, CaDiCaL) demonstrate exceptional scalability. At $N = 128$, recorded runtimes range from approximately 0.0105 s for CPLEX CP to 0.73 s for CP-SAT (noting that measurement methodologies differ across solvers, where reported times equal \texttt{build\_time + solve\_time} excluding parent-side process launch overhead), whereas many SAT combinations take tens of seconds or timeout.
+    \item \textbf{Comparative Performance Across Six Solver Groups}: Across moderate to large scales ($N = 8$ to $128$), commercial engines (CPLEX MIP, CPLEX CP, Gurobi) and high-performance solvers (CP-SAT, CaDiCaL) demonstrate exceptional scalability. At $N = 128$, recorded runtimes range from approximately """ + f"{cplex_cp_128:.3f}" + r""" ms for CPLEX CP to """ + f"{cpsat_int_128:.3f}" + r""" s for CP-SAT (noting that measurement methodologies differ across solvers, where reported \texttt{time\_seconds} is the median over repetitions of each run's \texttt{build\_time + solve\_time} — with build and solve medians reported separately so they may not sum exactly — excluding parent-side process launch overhead), whereas many SAT combinations take tens of seconds or timeout.
     \item \textbf{FEASIBLE vs. OPTIMAL Status Semantics}: For pure satisfaction problems (such as $N$-Queens without an objective function), finding any valid non-attacking configuration successfully solves the problem. Solution status labels are solver-specific and API-dependent: CPLEX CP reports \texttt{FEASIBLE}, whereas CP-SAT reports \texttt{OPTIMAL} and MIP solvers may report \texttt{OPTIMAL} for satisfaction models. Solution validity in our framework is independently verified using the benchmark's verification module rather than relying solely on solver status strings.
-    \item \textbf{CP Optimizer Process Startup Overhead}: CP Optimizer relies on an external binary executable (\texttt{cpoptimizer}). Spawning this subprocess incurs inter-process communication and process startup overhead; actual measured solve times are approximately 0.0105 seconds for CPLEX CP up to $N = 128$. Our benchmark harness isolated internal solver solve time from wall-clock invocation time where appropriate.
+    \item \textbf{CP Optimizer Process Startup Overhead}: CP Optimizer relies on an external binary executable (\texttt{cpoptimizer}). Spawning this subprocess incurs inter-process communication and process startup overhead; actual total measured runtimes for CPLEX CP increase from approximately """ + f"{cplex_cp_8:.2f}" + r""" ms at $N = 8$ to """ + f"{cplex_cp_128:.2f}" + r""" ms at $N = 128$. Note that the \texttt{solve\_time} of CPLEX CP comes from \texttt{get\_solve\_time()}, which in CSV records values of 0.00 and 0.01 (indicating a resolution of ~10 ms); thus, the ~10.5 ms recorded at $N = 128$ appears to be predominantly 10 ms rounding plus ~0.5 ms model build time, and should not be directly compared on equal footing with CP-SAT's ~""" + f"{cpsat_int_128:.3f}" + r""" s wall-clock measurement.
     \item \textbf{Gurobi Trial License Limitations}: Gurobi's trial license restricts model dimensions for larger instances, capping trials at $N \le 44$. For $N > 44$, full commercial licenses or alternative solvers (CPLEX, CP-SAT, CaDiCaL) are required.
-    \item \textbf{SAT Scaling and Encodings}: CaDiCaL and Kissat handle large clause databases efficiently up to $N = 128$ (with maximum recorded runtimes of approximately 8.60 s for CaDiCaL and 6.03 s for Kissat), whereas MapleCM reaches a maximum recorded runtime of approximately 26.22 seconds under product encoding at $N = 128$, and Glucose3, MiniSat22, and MapleCM encounter frequent timeouts (10 out of 25 cases timed out at $N = 128$, specifically Glucose3: 4, MiniSat22: 3, MapleCM: 3). Compact cardinality encodings such as Commander (47,096 clauses at $N = 64$) and Sequential Counter (47,692 clauses at $N = 64$) dramatically reduce clause footprints compared to naive Pairwise encodings.
+    \item \textbf{SAT Scaling and Encodings}: CaDiCaL and Kissat handle large clause databases efficiently up to $N = 128$ (with maximum recorded runtimes of approximately """ + f"{cadical_max:.2f}" + r""" s for CaDiCaL and """ + f"{kissat_max:.2f}" + r""" s for Kissat), whereas MapleCM reaches a maximum recorded runtime of approximately """ + f"{maplecm_max:.2f}" + r""" seconds under product encoding at $N = 128$, and Glucose3, MiniSat22, and MapleCM encounter frequent timeouts (""" + f"{sat_128_timeouts}/{sat_128_total}" + r""" cases timed out at $N = 128$, specifically Glucose3: """ + f"{g3_to}" + r""", MiniSat22: """ + f"{m22_to}" + r""", MapleCM: """ + f"{mcm_to}" + r"""). Compact cardinality encodings such as Commander (47,096 clauses at $N = 64$) and Sequential Counter (47,692 clauses at $N = 64$) dramatically reduce clause footprints compared to naive Pairwise encodings.
     \item \textbf{CP-SAT Allowed Assignment Timeout at $N = 128$}: At $N = 128$, the CP-SAT allowed assignment variant timed out within 30 s; the underlying cause has not been isolated.
 \end{itemize}
 

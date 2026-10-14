@@ -95,3 +95,43 @@ def test_make_table_rows_timeout():
     res = make_table_rows(df_timeout)
     assert "- & - & T/O" in res
     assert "0 & 0" not in res
+
+def test_dynamic_statistics_and_stale_text():
+    df = load_combined("results")
+    sat_df = df[df['paradigm'] == 'SAT']
+    cpsat_df = df[df['paradigm'] == 'CP-SAT']
+
+    cadical_max = sat_df[(sat_df['solver'] == 'cadical') & (sat_df['status'] != 'TIMEOUT')]['time_seconds'].max()
+    kissat_max = sat_df[(sat_df['solver'] == 'kissat') & (sat_df['status'] != 'TIMEOUT')]['time_seconds'].max()
+    maplecm_max = sat_df[(sat_df['solver'] == 'maplecm') & (sat_df['status'] != 'TIMEOUT')]['time_seconds'].max()
+
+    assert abs(cadical_max - 8.60) < 0.1
+    assert abs(kissat_max - 6.03) < 0.1
+    assert abs(maplecm_max - 26.22) < 0.1
+
+    sat_128 = sat_df[sat_df['n'] == 128]
+    to_count = len(sat_128[sat_128['status'] == 'TIMEOUT'])
+    total_sat_128 = len(sat_128)
+    assert to_count == 10
+    assert total_sat_128 == 25
+
+    g3_to = len(sat_128[(sat_128['solver'] == 'glucose3') & (sat_128['status'] == 'TIMEOUT')])
+    m22_to = len(sat_128[(sat_128['solver'] == 'minisat22') & (sat_128['status'] == 'TIMEOUT')])
+    mcm_to = len(sat_128[(sat_128['solver'] == 'maplecm') & (sat_128['status'] == 'TIMEOUT')])
+    assert g3_to == 4
+    assert m22_to == 3
+    assert mcm_to == 3
+
+    cpsat_int_128 = cpsat_df[(cpsat_df['n'] == 128) & (cpsat_df['model_variant'] == 'integer')]['time_seconds'].median()
+    cpsat_bool_128 = cpsat_df[(cpsat_df['n'] == 128) & (cpsat_df['model_variant'] == 'boolean')]['time_seconds'].median()
+    assert abs(cpsat_int_128 - 0.713) < 0.01
+    assert abs(cpsat_bool_128 - 0.731) < 0.01
+
+    report_tex_path = "report/report.tex"
+    if os.path.exists(report_tex_path):
+        with open(report_tex_path, "r") as f:
+            content = f.read()
+        assert "0.02 to 1.3" not in content
+        assert "under 26s" not in content
+        assert "0.012 to 0.019" not in content
+        assert "{1, \\dots, N}" not in content
