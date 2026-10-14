@@ -259,7 +259,7 @@ def main():
                 country={Vietnam}}
 
 \begin{abstract}
-This report presents an exhaustive empirical evaluation of solving the classic $N$-Queens problem across six major solver groups and modeling paradigms: Propositional Satisfiability (SAT with CaDiCaL, Glucose3, MiniSat22, Kissat, and MapleCM), Constraint Programming via CP-SAT (OR-Tools), Mixed-Integer Programming (MIP with CBC, SCIP), High-Performance Commercial MIP (Gurobi), and Commercial CPLEX (MIP and CP engines). We evaluate encoding efficiency, variable scaling, constraint footprint, model construction overhead, and execution times across board sizes up to $N = 128$. Detailed performance metrics and visualizations highlight the trade-offs between expressive global constraints and low-level clausal representations, alongside comprehensive timeout analyses, CP solve overhead management, and solution status semantics (FEASIBLE vs OPTIMAL).
+This report presents an exhaustive empirical evaluation of solving the classic $N$-Queens problem across six major solver groups and modeling paradigms: Propositional Satisfiability (SAT with CaDiCaL, Glucose3, MiniSat22, Kissat, and MapleCM), Constraint Programming via CP-SAT (OR-Tools), Mixed-Integer Programming (MIP with CBC, SCIP), High-Performance Commercial MIP (Gurobi), Commercial CPLEX MIP, and Commercial CPLEX CP. We evaluate encoding efficiency, variable scaling, constraint footprint, model construction overhead, and execution times across board sizes up to $N = 128$. Detailed performance metrics and visualizations highlight the trade-offs between expressive global constraints and low-level clausal representations, alongside comprehensive timeout analyses, CP solve overhead management, and solution status semantics (FEASIBLE vs OPTIMAL).
 \end{abstract}
 
 \begin{keywords}
@@ -277,7 +277,8 @@ This study expands the evaluation framework to cover six distinct solver groups:
     \item \textbf{Constraint Programming (CP-SAT)}: OR-Tools CP-SAT using Integer, Boolean, and Allowed assignments configurations \citep{perron2021ortools}.
     \item \textbf{Open-Source MIP}: CBC and SCIP solvers using Binary and Integer linear formulations.
     \item \textbf{Commercial MIP (Gurobi)}: High-performance Gurobi optimization engine with advanced presolve and branch-and-cut routines (noting trial license bounds at $N \le 44$).
-    \item \textbf{Commercial CPLEX (MIP \& CP)}: IBM ILOG CPLEX Optimizer using both Mathematical Programming (MIP) and Constraint Programming (CP) engines, scaling up to $N = 128$.
+    \item \textbf{Commercial CPLEX MIP}: IBM ILOG CPLEX Optimizer using the Mathematical Programming (MIP) engine.
+    \item \textbf{Commercial CPLEX CP}: IBM ILOG CPLEX Optimizer using the Constraint Programming (CP) engine, scaling up to $N = 128$.
 \end{itemize}
 
 \section{Encodings and Mathematical Formulations}
@@ -450,10 +451,10 @@ Paradigm & Solver & Board Size ($N$) & Timeout Count \\
 \end{figure}
 
 \section{Discussion and Comprehensive Solver Comparison}
-The empirical results reveal distinct performance characteristics and limitations across all six solver groups (CPLEX MIP, CPLEX CP, Gurobi, CP-SAT, and SAT/CaDiCaL) when scaling across the $N$ range ($N = 8$ to $128$):
+The empirical results reveal distinct performance characteristics and limitations across all six solver groups (SAT, CP-SAT, open-source MIP, Gurobi, CPLEX MIP, and CPLEX CP) when scaling across the $N$ range ($N = 8$ to $128$):
 \begin{itemize}
-    \item \textbf{Comparative Performance Across Six Solver Groups}: Across moderate to large scales ($N = 8$ to $128$), commercial engines (CPLEX MIP, CPLEX CP, Gurobi) and high-performance solvers (CP-SAT, CaDiCaL) demonstrate exceptional scalability. At $N = 128$, recorded runtimes range from approximately 0.0105 s for CPLEX CP to 0.73 s for CP-SAT (noting that measurement methodologies differ across solvers, where reported times equal `build_time + solve_time` excluding parent-side process launch overhead), whereas many SAT combinations take tens of seconds or timeout.
-    \item \textbf{FEASIBLE vs. OPTIMAL Status Semantics}: For pure satisfaction problems (such as $N$-Queens without an objective function), finding any valid non-attacking configuration successfully solves the problem. Solution status labels are solver-specific and API-dependent: CPLEX CP reports \texttt{FEASIBLE} upon encountering the first valid assignment without certifying optimality, whereas CP-SAT reports \texttt{OPTIMAL} and MIP solvers may report \texttt{OPTIMAL} for satisfaction models. Solution validity in our framework is independently verified using the benchmark's verification module rather than relying solely on solver status strings.
+    \item \textbf{Comparative Performance Across Six Solver Groups}: Across moderate to large scales ($N = 8$ to $128$), commercial engines (CPLEX MIP, CPLEX CP, Gurobi) and high-performance solvers (CP-SAT, CaDiCaL) demonstrate exceptional scalability. At $N = 128$, recorded runtimes range from approximately 0.0105 s for CPLEX CP to 0.73 s for CP-SAT (noting that measurement methodologies differ across solvers, where reported times equal \texttt{build\_time + solve\_time} excluding parent-side process launch overhead), whereas many SAT combinations take tens of seconds or timeout.
+    \item \textbf{FEASIBLE vs. OPTIMAL Status Semantics}: For pure satisfaction problems (such as $N$-Queens without an objective function), finding any valid non-attacking configuration successfully solves the problem. Solution status labels are solver-specific and API-dependent: CPLEX CP reports \texttt{FEASIBLE}, whereas CP-SAT reports \texttt{OPTIMAL} and MIP solvers may report \texttt{OPTIMAL} for satisfaction models. Solution validity in our framework is independently verified using the benchmark's verification module rather than relying solely on solver status strings.
     \item \textbf{CP Optimizer Process Startup Overhead}: CP Optimizer relies on an external binary executable (\texttt{cpoptimizer}). Spawning this subprocess incurs inter-process communication and process startup overhead; actual measured solve times are approximately 0.0105 seconds for CPLEX CP up to $N = 128$. Our benchmark harness isolated internal solver solve time from wall-clock invocation time where appropriate.
     \item \textbf{Gurobi Trial License Limitations}: Gurobi's trial license restricts model dimensions for larger instances, capping trials at $N \le 44$. For $N > 44$, full commercial licenses or alternative solvers (CPLEX, CP-SAT, CaDiCaL) are required.
     \item \textbf{SAT Scaling and Encodings}: CaDiCaL and Kissat handle large clause databases efficiently up to $N = 128$ (with maximum recorded runtimes of approximately 8.60 s for CaDiCaL and 6.03 s for Kissat), whereas MapleCM reaches a maximum recorded runtime of approximately 26.22 seconds under product encoding at $N = 128$, and Glucose3, MiniSat22, and MapleCM encounter frequent timeouts (10 out of 25 cases timed out at $N = 128$, specifically Glucose3: 4, MiniSat22: 3, MapleCM: 3). Compact cardinality encodings such as Commander (47,096 clauses at $N = 64$) and Sequential Counter (47,692 clauses at $N = 64$) dramatically reduce clause footprints compared to naive Pairwise encodings.
@@ -506,16 +507,17 @@ The source code, benchmark runners, raw experimental results (CSV files), and re
         f.write(latex_content)
     print("LaTeX report generated successfully at report/report.tex")
 
-    # Compile report.tex with pdflatex
+    # Compile report.tex with pdflatex and verify return code
     try:
-        subprocess.run(["pdflatex", "-interaction=nonstopmode", "report.tex"], cwd="report", check=False)
-        subprocess.run(["pdflatex", "-interaction=nonstopmode", "report.tex"], cwd="report", check=False)
+        res1 = subprocess.run(["pdflatex", "-interaction=nonstopmode", "report.tex"], cwd="report", check=True)
+        res2 = subprocess.run(["pdflatex", "-interaction=nonstopmode", "report.tex"], cwd="report", check=True)
         if os.path.exists("report/report.pdf"):
             print("Successfully compiled report.pdf!")
         else:
-            print("Warning: report.pdf was not generated.")
+            raise RuntimeError("report.pdf was not generated.")
     except Exception as e:
-        print(f"Warning during pdflatex compilation: {e}")
+        print(f"Error during pdflatex compilation: {e}")
+        raise
 
 if __name__ == "__main__":
     main()
