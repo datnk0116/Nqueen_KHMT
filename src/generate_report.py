@@ -292,13 +292,13 @@ Boolean variables $x_{i,j}$ denote whether a queen is placed at row $i$, column 
 \end{itemize}
 
 \subsection{Constraint Programming (CP-SAT) \& Global Constraints}
-OR-Tools CP-SAT utilizes integer decision variables $q_i \in \{1, \dots, N\}$ representing the column of the queen in row $i$. Global constraints enforce:
+OR-Tools CP-SAT utilizes integer decision variables $q_i \in \{0, 1, \dots, N-1\}$ representing the column of the queen in row $i$. Global constraints enforce:
 \begin{enumerate}
     \item $\text{AllDifferent}(q_1, \dots, q_N)$ (columns)
     \item $\text{AllDifferent}(q_1 + 1, q_2 + 2, \dots, q_N + N)$ (main diagonals)
     \item $\text{AllDifferent}(q_1 - 1, q_2 - 2, \dots, q_N - N)$ (anti-diagonals)
 \end{enumerate}
-This formulation requires only $N$ integer variables and 3 global constraints, pruning infeasible branches effectively.
+This formulation utilizes $N$ primary integer decision variables, alongside auxiliary variables introduced during model construction, and 3 global constraints, pruning infeasible branches effectively.
 
 \subsection{Mixed-Integer Programming (MIP)}
 MIP models formulate the problem as linear inequalities over binary variables $x_{i,j} \in \{0, 1\}$ or integer variables $q_i \in \{1, \dots, N\}$, coupled with linear diagonal separation cuts:
@@ -354,6 +354,7 @@ $N$ & Model Variant & Solver & Variables & Constraints & Time (s) \\
 \midrule
 % {cpsat_table_tex}
 \bottomrule
+\tabularnewline
 \end{tabular}
 \end{table}
 
@@ -369,6 +370,7 @@ $N$ & Model Variant & Solver & Variables & Constraints & Time (s) \\
 \midrule
 % {mip_table_tex}
 \bottomrule
+\tabularnewline
 \end{tabular}
 \end{table}
 
@@ -384,6 +386,7 @@ $N$ & Model Variant & Solver & Variables & Constraints & Time (s) \\
 \midrule
 % {gurobi_table_tex}
 \bottomrule
+\tabularnewline
 \end{tabular}
 \end{table}
 
@@ -396,6 +399,7 @@ $N$ & Model Variant & Solver & Variables & Constraints & Time (s) \\
 \midrule
 % {cplex_table_tex}
 \bottomrule
+\tabularnewline
 \end{tabular}
 \end{table}
 
@@ -411,6 +415,7 @@ Paradigm & Solver & Board Size ($N$) & Timeout Count \\
 \midrule
 % {timeout_table_tex}
 \bottomrule
+\tabularnewline
 \end{tabular}
 \end{table}
 
@@ -447,11 +452,11 @@ Paradigm & Solver & Board Size ($N$) & Timeout Count \\
 \section{Discussion and Comprehensive Solver Comparison}
 The empirical results reveal distinct performance characteristics and limitations across all six solver groups (CPLEX MIP, CPLEX CP, Gurobi, CP-SAT, and SAT/CaDiCaL) when scaling across the $N$ range ($N = 8$ to $128$):
 \begin{itemize}
-    \item \textbf{Comparative Performance Across Six Solver Groups}: Across moderate to large scales ($N = 8$ to $128$), commercial engines (CPLEX MIP, CPLEX CP, Gurobi) and high-performance solvers (CP-SAT, CaDiCaL) demonstrate exceptional scalability. At $N = 128$, CP-SAT and CPLEX CP solve in 0.02 to 1.3 seconds, whereas many SAT combinations take tens of seconds or timeout.
-    \item \textbf{FEASIBLE vs. OPTIMAL Status Semantics}: For pure satisfaction problems (such as $N$-Queens without an objective function), finding \emph{any} valid non-attacking configuration successfully solves the problem. Constraint Programming engines (CPLEX CP, CP-SAT) correctly terminate upon encountering the first valid assignment and report \texttt{FEASIBLE} (or \texttt{SOLUTION\_FOUND}), whereas MIP stops at the first feasible solution since there is no objective function, reporting OPTIMAL because all feasible solutions are optimal for a null objective. Requiring \texttt{OPTIMAL} for satisfaction problems is computationally redundant unless an optimization objective is specified.
-    \item \textbf{CP Optimizer Process Startup Overhead}: CP Optimizer relies on an external binary executable (\texttt{cpoptimizer}). Spawning this subprocess incurs inter-process communication and process startup overhead; actual measured solve times range from approximately 0.012 to 0.019 seconds for CPLEX CP up to $N = 128$. Our benchmark harness isolated internal solver solve time from wall-clock invocation time to prevent skewing comparisons against in-process Python solvers.
+    \item \textbf{Comparative Performance Across Six Solver Groups}: Across moderate to large scales ($N = 8$ to $128$), commercial engines (CPLEX MIP, CPLEX CP, Gurobi) and high-performance solvers (CP-SAT, CaDiCaL) demonstrate exceptional scalability. At $N = 128$, recorded runtimes range from approximately 0.0105 s for CPLEX CP to 0.73 s for CP-SAT (noting that measurement methodologies differ across solvers), whereas many SAT combinations take tens of seconds or timeout.
+    \item \textbf{FEASIBLE vs. OPTIMAL Status Semantics}: For pure satisfaction problems (such as $N$-Queens without an objective function), finding \emph{any} valid non-attacking configuration successfully solves the problem. Constraint Programming engines (such as CPLEX CP) report \texttt{FEASIBLE} upon encountering the first valid assignment, whereas CP-SAT reports \texttt{OPTIMAL}, and MIP stops at the first feasible solution since there is no objective function, reporting OPTIMAL because all feasible solutions are optimal for a null objective. Requiring \texttt{OPTIMAL} for satisfaction problems is computationally redundant unless an optimization objective is specified.
+    \item \textbf{CP Optimizer Process Startup Overhead}: CP Optimizer relies on an external binary executable (\texttt{cpoptimizer}). Spawning this subprocess incurs inter-process communication and process startup overhead; actual measured solve times are approximately 0.0105 seconds for CPLEX CP up to $N = 128$. Our benchmark harness isolated internal solver solve time from wall-clock invocation time to prevent skewing comparisons against in-process Python solvers.
     \item \textbf{Gurobi Trial License Limitations}: Gurobi's trial license restricts model dimensions for larger instances, capping trials at $N \le 44$. For $N > 44$, full commercial licenses or alternative solvers (CPLEX, CP-SAT, CaDiCaL) are required.
-    \item \textbf{SAT Scaling and Encodings}: CaDiCaL and Kissat handle large clause databases efficiently up to $N = 128$ (solving in under 26s), whereas Glucose3, MiniSat22, and MapleCM encounter frequent timeouts (""" + f"{sat_128_timeouts}/{sat_128_total}" + r""" at $N = 128$). Compact cardinality encodings such as Commander (47,096 clauses at $N = 64$) and Sequential Counter (47,692 clauses at $N = 64$) dramatically reduce clause footprints compared to naive Pairwise encodings.
+    \item \textbf{SAT Scaling and Encodings}: CaDiCaL and Kissat handle large clause databases efficiently up to $N = 128$ (solving in under 9 seconds), whereas MapleCM reaches a maximum recorded runtime of approximately 26.2 seconds, and Glucose3, MiniSat22, and MapleCM encounter frequent timeouts (""" + f"{sat_128_timeouts}/{sat_128_total}" + r""" at $N = 128$). Compact cardinality encodings such as Commander (47,096 clauses at $N = 64$) and Sequential Counter (47,692 clauses at $N = 64$) dramatically reduce clause footprints compared to naive Pairwise encodings.
     \item \textbf{CP-SAT Allowed Assignment Timeout at $N = 128$}: At $N = 128$, the CP-SAT allowed assignment variant timed out within 30 s; cause not isolated.
 \end{itemize}
 
