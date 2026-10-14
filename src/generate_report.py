@@ -30,49 +30,77 @@ def timeout_table(df):
     grouped_to = timeouts_df.groupby(['paradigm', 'solver', 'n']).size().reset_index(name='timeout_count')
     return grouped_to
 
+def make_sat_table_rows(df):
+    if df.empty:
+        return "No data available & - & - & - & - & - & - \\\\"
+    sat_df = df[df['paradigm'] == 'SAT'] if 'paradigm' in df.columns else df
+    if sat_df.empty:
+        return "No data available & - & - & - & - & - & - \\\\"
+    
+    solvers = ['cadical', 'glucose3', 'minisat22', 'kissat', 'maplecm']
+    sorted_df = sat_df.sort_values(by=['n', 'model_variant']).drop_duplicates(subset=['n', 'model_variant'])
+    
+    rows = []
+    for _, r in sorted_df.iterrows():
+        n = r['n']
+        variant = r['model_variant']
+        row_cells = [str(n), str(variant)]
+        for solver in solvers:
+            sub = sat_df[(sat_df['n'] == n) & (sat_df['model_variant'] == variant) & (sat_df['solver'] == solver)]
+            if sub.empty:
+                row_cells.append("-")
+            else:
+                row = sub.iloc[0]
+                status = row.get('status', 'SUCCESS')
+                if status == 'TIMEOUT':
+                    row_cells.append("T/O")
+                elif status in ('ERROR', 'MEMOUT', 'LICENSE_LIMIT'):
+                    row_cells.append("ERR")
+                else:
+                    t = row.get('time_seconds', 0.0)
+                    if t < 0.001:
+                        row_cells.append(f"{t:.2e}")
+                    else:
+                        row_cells.append(f"{t:.3f}")
+        rows.append(" & ".join(row_cells) + " \\\\")
+    return "\n".join(rows)
+
+def make_table_rows(subset_df, max_rows=None):
+    if subset_df.empty:
+        return "No data available & - & - & - & - & - \\\\"
+    sorted_df = subset_df.sort_values(by=['n', 'model_variant', 'solver'])
+    rows = []
+    count = 0
+    for _, row in sorted_df.iterrows():
+        if max_rows is not None and count >= max_rows:
+            break
+        constraints = row.get('clauses_constraints_count', row.get('constraints_count', 0))
+        t_sec = row.get('time_seconds', 0.0)
+        status = row.get('status', 'SUCCESS')
+        if status == 'TIMEOUT':
+            t_str = "T/O"
+        elif status in ('ERROR', 'MEMOUT', 'LICENSE_LIMIT'):
+            t_str = "ERR"
+        else:
+            t_str = f"{t_sec:.6f}"
+        rows.append(f"{row.get('n', 0)} & {row.get('model_variant', '')} & {row.get('solver', '')} & {row.get('variables_count', 0)} & {constraints} & {t_str} \\\\")
+        count += 1
+    return "\n".join(rows)
+
 def main():
     os.makedirs("report", exist_ok=True)
     
     combined_df = load_combined("results")
     
-    try:
-        sat_df = pd.read_csv("results/sat_results.csv")
-    except Exception:
-        sat_df = pd.DataFrame()
-    if not sat_df.empty and 'status' in sat_df.columns:
-        sat_df = sat_df[sat_df['status'] != 'ERROR']
-        
+    sat_df = combined_df[combined_df['paradigm'] == 'SAT'] if not combined_df.empty else pd.DataFrame()
+    cpsat_df = combined_df[combined_df['paradigm'] == 'CP-SAT'] if not combined_df.empty else pd.DataFrame()
+    mip_df = combined_df[combined_df['paradigm'] == 'MIP'] if not combined_df.empty else pd.DataFrame()
+    gurobi_df = combined_df[combined_df['paradigm'] == 'Gurobi'] if not combined_df.empty else pd.DataFrame()
+    cplex_df = combined_df[combined_df['paradigm'].isin(['CPLEX-MIP', 'CPLEX-CP'])] if not combined_df.empty else pd.DataFrame()
+
     sat_128 = sat_df[sat_df['n'] == 128] if not sat_df.empty else pd.DataFrame()
     sat_128_timeouts = len(sat_128[sat_128['status'] == 'TIMEOUT']) if not sat_128.empty else 10
     sat_128_total = len(sat_128) if not sat_128.empty else 25
-        
-    try:
-        cpsat_df = pd.read_csv("results/cpsat_results.csv")
-    except Exception:
-        cpsat_df = pd.DataFrame()
-    if not cpsat_df.empty and 'status' in cpsat_df.columns:
-        cpsat_df = cpsat_df[cpsat_df['status'] != 'ERROR']
-        
-    try:
-        mip_df = pd.read_csv("results/mip_results.csv")
-    except Exception:
-        mip_df = pd.DataFrame()
-    if not mip_df.empty and 'status' in mip_df.columns:
-        mip_df = mip_df[mip_df['status'] != 'ERROR']
-        
-    try:
-        gurobi_df = pd.read_csv("results/gurobi_results.csv")
-    except Exception:
-        gurobi_df = pd.DataFrame()
-    if not gurobi_df.empty and 'status' in gurobi_df.columns:
-        gurobi_df = gurobi_df[gurobi_df['status'] != 'ERROR']
-        
-    try:
-        cplex_df = pd.read_csv("results/cplex_results.csv")
-    except Exception:
-        cplex_df = pd.DataFrame()
-    if not cplex_df.empty and 'status' in cplex_df.columns:
-        cplex_df = cplex_df[cplex_df['status'] != 'ERROR']
 
     has_mpl = False
     try:
@@ -158,22 +186,7 @@ def main():
             plt.savefig("report/build_vs_solve.png", dpi=300)
             plt.close()
 
-    def make_table_rows(subset_df, max_rows=25):
-        if subset_df.empty:
-            return "No data available & - & - & - & - & - \\\\"
-        sorted_df = subset_df.sort_values(by=['n', 'model_variant', 'solver'])
-        rows = []
-        count = 0
-        for _, row in sorted_df.iterrows():
-            if count >= max_rows:
-                break
-            constraints = row.get('clauses_constraints_count', row.get('constraints_count', 0))
-            t_sec = row.get('time_seconds', 0.0)
-            rows.append(f"{row.get('n', 0)} & {row.get('model_variant', '')} & {row.get('solver', '')} & {row.get('variables_count', 0)} & {constraints} & {t_sec:.6f} \\\\")
-            count += 1
-        return "\n".join(rows)
-
-    sat_table_tex = make_table_rows(sat_df)
+    sat_table_tex = make_sat_table_rows(sat_df)
     cpsat_table_tex = make_table_rows(cpsat_df)
     mip_table_tex = make_table_rows(mip_df)
     gurobi_table_tex = make_table_rows(gurobi_df)
@@ -264,19 +277,21 @@ Benchmarks were executed on macOS Sequoia with Python 3.14, utilizing isolated s
 \section{Empirical Results and Performance Analysis}
 
 \subsection{SAT Solvers Performance}
-Table~\ref{tab:sat} summarizes SAT benchmark results across diverse encodings and solvers.
+Table~\ref{tab:sat} summarizes SAT benchmark results across diverse encodings and solvers (solving time in seconds).
 
-\begin{table}[htbp]
+\begin{table*}[htbp]
 \centering
-\caption{SAT Solvers Performance Metrics} \label{tab:sat}
-\begin{tabular}{llrrrr}
+\caption{SAT Solvers Performance Metrics (Solving Time in Seconds)} \label{tab:sat}
+\resizebox{\textwidth}{!}{%
+\begin{tabular}{llrrrrr}
 \toprule
-$N$ & Model Variant & Solver & Variables & Clauses & Time (s) \\
+$N$ & Encoding & CaDiCaL & Glucose3 & MiniSat22 & Kissat & MapleCM \\
 \midrule
 % {sat_table_tex}
 \bottomrule
-\end{tabular}
-\end{table}
+\end{tabular}%
+}
+\end{table*}
 
 \subsection{CP-SAT Performance}
 Table~\ref{tab:cpsat} outlines OR-Tools CP-SAT performance.
