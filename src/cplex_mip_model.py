@@ -52,6 +52,8 @@ def solve_nqueens(n: int, time_limit: float = None):
 
     solve_start = time.perf_counter()
     try:
+        if time_limit is not None:
+            m.set_time_limit(max(0.001, time_limit - build_time))
         sol = m.solve(log_output=False)
         solve_time = time.perf_counter() - solve_start
         total_time = build_time + solve_time
@@ -63,8 +65,16 @@ def solve_nqueens(n: int, time_limit: float = None):
             solver_reported_time = m.solve_details.time
 
         if sol is None:
+            status = "NO_SOLUTION"
+            if m is not None and hasattr(m, 'solve_details') and hasattr(m.solve_details, 'status'):
+                detail_status = str(m.solve_details.status).upper()
+                if "TIME" in detail_status or "LIMIT" in detail_status:
+                    status = "TIME_LIMIT"
+            elif time_limit is not None and solve_time >= time_limit * 0.95:
+                status = "TIME_LIMIT"
+
             return {
-                "status": "NO_SOLUTION",
+                "status": status,
                 "total_time": total_time,
                 "variables_count": variables_count,
                 "constraints_count": constraints_count,

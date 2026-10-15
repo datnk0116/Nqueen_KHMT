@@ -242,3 +242,120 @@ def test_load_combined_old_csv(tmp_path):
     loaded = load_combined(str(tmp_path))
     assert len(loaded) == 1
     assert loaded.iloc[0]['paradigm'] == 'SAT'
+
+def test_sat_model_time_limit_interrupt(monkeypatch):
+    from sat_model import NQueensSAT
+    from pysat.solvers import Glucose3
+    def mock_solve_limited(self, expect_interrupt=False):
+        return None
+    monkeypatch.setattr(Glucose3, "solve_limited", mock_solve_limited)
+    model = NQueensSAT(8, "sequential", "glucose3")
+    res = model.solve(time_limit=1.0)
+    assert res["status"] == "TIME_LIMIT"
+    assert res["is_sat"] is False
+    assert res["queens"] == []
+    assert res["time"] >= 0
+
+def test_sat_model_cadical_fallback():
+    from sat_model import NQueensSAT
+    model = NQueensSAT(8, "sequential", "cadical")
+    res = model.solve(time_limit=10.0)
+    assert res["status"] == "SAT"
+    assert res["is_sat"] is True
+    assert len(res["queens"]) == 8
+
+def test_run_subprocess_solver_includes_wall_time():
+    res = run_subprocess_solver("SAT", 8, "sequential", "cadical", 30.0)
+    assert "wall_time" in res
+    assert res["wall_time"] > 0
+    assert "time_seconds" in res
+    assert res["status"] == "SAT"
+
+def test_repetitions_mixed_majority_timeout(monkeypatch):
+    from benchmark import run_benchmarks_with_repetitions
+    call_count = 0
+    def mock_run_subprocess(paradigm, n, variant, solver, time_limit):
+        nonlocal call_count
+        call_count += 1
+        if call_count == 1:
+            return {
+                "n": n, "paradigm": paradigm, "model_variant": variant, "solver": solver,
+                "status": "SAT", "is_sat": True, "variables_count": 64, "clauses_constraints_count": 100,
+                "import_time": 0.05, "build_time": 0.01, "solve_time": 0.02, "time_seconds": 0.08,
+                "solver_reported_time": None, "wall_time": 0.1, "verified": True, "error": ""
+            }
+        else:
+            return {
+                "n": n, "paradigm": paradigm, "model_variant": variant, "solver": solver,
+                "status": "TIMEOUT", "is_sat": False, "variables_count": 0, "clauses_constraints_count": 0,
+                "import_time": float('nan'), "build_time": float('nan'), "solve_time": float('nan'),
+                "time_seconds": 30.0, "solver_reported_time": None, "wall_time": 30.05, "verified": False,
+                "error": "Hard timeout expired"
+            }
+    import benchmark
+    monkeypatch.setattr(benchmark, "run_subprocess_solver", mock_run_subprocess)
+    results = run_benchmarks_with_repetitions("SAT", [8], ["sequential"], ["cadical"], 30.0, repetitions=3)
+    assert len(results) == 1
+    rec = results[0]
+    assert rec["status"] == "TIMEOUT"
+    assert rec["runs_total"] == 3
+    assert rec["runs_success"] == 1
+    assert rec["runs_timeout"] == 2
+    assert rec["time_seconds"] == 30.0
+
+def test_repetitions_mixed_minority_timeout(monkeypatch):
+    from benchmark import run_benchmarks_with_repetitions
+    call_count = 0
+    def mock_run_subprocess(paradigm, n, variant, solver, time_limit):
+        nonlocal call_count
+        call_count += 1
+        if call_count == 1:
+            return {
+                "n": n, "paradigm": paradigm, "model_variant": variant, "solver": solver,
+                "status": "SAT", "is_sat": True, "variables_count": 64, "clauses_constraints_count": 100,
+                "import_time": 0.05, "build_time": 0.01, "solve_time": 0.04, "time_seconds": 0.10,
+                "solver_reported_time": 0.03, "wall_time": 0.12, "verified": True, "error": ""
+            }
+        elif call_count == 2:
+            return {
+                "n": n, "paradigm": paradigm, "model_variant": variant, "solver": solver,
+                "status": "SAT", "is_sat": True, "variables_count": 64, "clauses_constraints_count": 100,
+                "import_time": 0.06, "build_time": 0.01, "solve_time": 0.05, "time_seconds": 0.12,
+                "solver_reported_time": 0.04, "wall_time": 0.14, "verified": True, "error": ""
+            }
+        else:
+            return {
+                "n": n, "paradigm": paradigm, "model_variant": variant, "solver": solver,
+                "status": "TIMEOUT", "is_sat": False, "variables_count": 0, "clauses_constraints_count": 0,
+                "import_time": float('nan'), "build_time": float('nan'), "solve_time": float('nan'),
+                "time_seconds": 30.0, "solver_reported_time": None, "wall_time": 30.05, "verified": False,
+                "error": "Hard timeout expired"
+            }
+    import benchmark
+    monkeypatch.setattr(benchmark, "run_subprocess_solver", mock_run_subprocess)
+    results = run_benchmarks_with_repetitions("SAT", [8], ["sequential"], ["cadical"], 30.0, repetitions=3)
+    assert len(results) == 1
+    rec = results[0]
+    assert rec["status"] == "SAT"
+    assert rec["runs_total"] == 3
+    assert rec["runs_success"] == 2
+    assert rec["runs_timeout"] == 1
+    assert "1/3 runs timed out" in rec["error"]
+    assert rec["time_seconds"] == 0.12
+    assert rec["solver_reported_time"] == 0.035
+
+def test_no_time_time_calls_in_models():
+    model_files = [
+        'sat_model.py', 'cpsat_model.py', 'mip_cp_models.py',
+        'gurobi_model.py', 'cplex_mip_model.py', 'cplex_cp_model.py'
+    ]
+    for filename in model_files:
+        path = os.path.join(os.path.dirname(__file__), '../src', filename)
+        with open(path, 'r') as f:
+            tree = ast.parse(f.read(), filename=filename)
+        for node in ast.walk(tree):
+            if isinstance(node, ast.Call):
+                func = node.func
+                if isinstance(func, ast.Attribute):
+                    if isinstance(func.value, ast.Name) and func.value.id == 'time' and func.attr == 'time':
+                        pytest.fail(f"Found time.time() call in {filename}! Use time.perf_counter() instead.")

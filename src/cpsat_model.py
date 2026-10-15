@@ -121,11 +121,13 @@ class NQueensCPSAT:
         if time_limit is not None:
             self.solver.parameters.max_time_in_seconds = time_limit
             
-        start_time = time.time()
+        start_time = time.perf_counter()
         status = self.solver.Solve(self.model)
-        elapsed = time.time() - start_time
+        elapsed = time.perf_counter() - start_time
         
         status_name = self.solver.StatusName(status)
+        if status == cp_model.UNKNOWN and time_limit is not None:
+            status_name = "TIME_LIMIT"
         is_sat = status in (cp_model.OPTIMAL, cp_model.FEASIBLE)
         
         queens = []

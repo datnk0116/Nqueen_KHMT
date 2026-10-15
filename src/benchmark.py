@@ -27,7 +27,7 @@ def run_subprocess_solver(paradigm, n, model_variant, solver, time_limit):
     """
     Runs a single solver configuration in an isolated subprocess with a hard timeout (time_limit)
     covering the entire process (import + build + solve).
-    Returns a dict with benchmark metrics.
+    Returns a dict with benchmark metrics including parent-measured wall_time.
     """
     code = f"""
 import sys, os, time, json
@@ -56,16 +56,27 @@ try:
         model.build()
         build_time = time.perf_counter() - build_start
         
-        solve_start = time.perf_counter()
-        res = model.solve(time_limit=time_limit)
-        solve_time = time.perf_counter() - solve_start
-        
-        queens = res.get("queens", [])
-        is_sat = res.get("is_sat", False)
-        status = res.get("status", "UNKNOWN")
-        variables_count = res.get("variables_count", 0)
-        constraints_count = res.get("clauses_count", 0)
-        verified = verify(queens, n) if is_sat and queens else (status == "UNSAT")
+        elapsed_so_far = import_time + build_time
+        if time_limit is not None and elapsed_so_far >= time_limit:
+            solve_time = 0.0
+            status = "TIME_LIMIT"
+            queens = []
+            is_sat = False
+            variables_count = model.variables_count
+            constraints_count = model.clauses_count
+            verified = False
+        else:
+            rem_limit = max(0.001, time_limit - elapsed_so_far) if time_limit is not None else None
+            solve_start = time.perf_counter()
+            res = model.solve(time_limit=rem_limit)
+            solve_time = time.perf_counter() - solve_start
+
+            queens = res.get("queens", [])
+            is_sat = res.get("is_sat", False) and res.get("status") != "TIME_LIMIT"
+            status = res.get("status", "UNKNOWN")
+            variables_count = res.get("variables_count", 0)
+            constraints_count = res.get("clauses_count", 0)
+            verified = verify(queens, n) if is_sat and queens else (status == "UNSAT")
         
     elif paradigm == "CP-SAT":
         import_start = time.perf_counter()
@@ -77,16 +88,27 @@ try:
         model.build()
         build_time = time.perf_counter() - build_start
         
-        solve_start = time.perf_counter()
-        res = model.solve(time_limit=time_limit)
-        solve_time = time.perf_counter() - solve_start
-        
-        queens = res.get("queens", [])
-        is_sat = res.get("is_sat", False)
-        status = res.get("status", "UNKNOWN")
-        variables_count = res.get("variables_count", 0)
-        constraints_count = res.get("constraints_count", 0)
-        verified = verify(queens, n) if is_sat and queens else (status in ("INFEASIBLE", "MODEL_INVALID"))
+        elapsed_so_far = import_time + build_time
+        if time_limit is not None and elapsed_so_far >= time_limit:
+            solve_time = 0.0
+            status = "TIME_LIMIT"
+            queens = []
+            is_sat = False
+            variables_count = model.variables_count
+            constraints_count = model.constraints_count
+            verified = False
+        else:
+            rem_limit = max(0.001, time_limit - elapsed_so_far) if time_limit is not None else None
+            solve_start = time.perf_counter()
+            res = model.solve(time_limit=rem_limit)
+            solve_time = time.perf_counter() - solve_start
+
+            queens = res.get("queens", [])
+            is_sat = res.get("is_sat", False) and res.get("status") != "TIME_LIMIT"
+            status = res.get("status", "UNKNOWN")
+            variables_count = res.get("variables_count", 0)
+            constraints_count = res.get("constraints_count", 0)
+            verified = verify(queens, n) if is_sat and queens else (status in ("INFEASIBLE", "MODEL_INVALID"))
         
     elif paradigm == "MIP":
         import_start = time.perf_counter()
@@ -98,22 +120,34 @@ try:
         model.build()
         build_time = time.perf_counter() - build_start
         
-        solve_start = time.perf_counter()
-        res = model.solve(time_limit=time_limit)
-        solve_time = time.perf_counter() - solve_start
-        
-        queens = res.get("queens", [])
-        is_sat = res.get("is_sat", False)
-        status = res.get("status", "UNKNOWN")
-        variables_count = res.get("variables_count", 0)
-        constraints_count = res.get("constraints_count", 0)
-        verified = verify(queens, n) if is_sat and queens else False
+        elapsed_so_far = import_time + build_time
+        if time_limit is not None and elapsed_so_far >= time_limit:
+            solve_time = 0.0
+            status = "TIME_LIMIT"
+            queens = []
+            is_sat = False
+            variables_count = model.variables_count
+            constraints_count = model.constraints_count
+            verified = False
+        else:
+            rem_limit = max(0.001, time_limit - elapsed_so_far) if time_limit is not None else None
+            solve_start = time.perf_counter()
+            res = model.solve(time_limit=rem_limit)
+            solve_time = time.perf_counter() - solve_start
+
+            queens = res.get("queens", [])
+            is_sat = res.get("is_sat", False) and res.get("status") != "TIME_LIMIT"
+            status = res.get("status", "UNKNOWN")
+            variables_count = res.get("variables_count", 0)
+            constraints_count = res.get("constraints_count", 0)
+            verified = verify(queens, n) if is_sat and queens else False
         
     elif paradigm == "Gurobi":
         import_start = time.perf_counter()
         from gurobi_model import solve_nqueens
         import_time = time.perf_counter() - import_start
-        res = solve_nqueens(n, time_limit=time_limit)
+        rem_limit = max(0.001, time_limit - import_time) if time_limit is not None else None
+        res = solve_nqueens(n, time_limit=rem_limit)
         status = res["status"]
         total_time = res["total_time"]
         variables_count = res["variables_count"]
@@ -122,14 +156,15 @@ try:
         build_time = res["build_time"]
         solve_time = res["solve_time"]
         solver_reported_time = res["solver_reported_time"]
-        is_sat = status in ("OPTIMAL", "SUBOPTIMAL") or len(queens) > 0
-        verified = verify(queens, n) if queens else False
+        is_sat = (status in ("OPTIMAL", "SUBOPTIMAL") or len(queens) > 0) and status != "TIME_LIMIT"
+        verified = verify(queens, n) if queens and is_sat else False
         
     elif paradigm == "CPLEX-MIP":
         import_start = time.perf_counter()
         from cplex_mip_model import solve_nqueens
         import_time = time.perf_counter() - import_start
-        res = solve_nqueens(n, time_limit=time_limit)
+        rem_limit = max(0.001, time_limit - import_time) if time_limit is not None else None
+        res = solve_nqueens(n, time_limit=rem_limit)
         status = res["status"]
         total_time = res["total_time"]
         variables_count = res["variables_count"]
@@ -138,14 +173,15 @@ try:
         build_time = res["build_time"]
         solve_time = res["solve_time"]
         solver_reported_time = res["solver_reported_time"]
-        is_sat = status in ("OPTIMAL", "FEASIBLE") or len(queens) > 0
-        verified = verify(queens, n) if queens else False
+        is_sat = (status in ("OPTIMAL", "FEASIBLE") or len(queens) > 0) and status != "TIME_LIMIT"
+        verified = verify(queens, n) if queens and is_sat else False
         
     elif paradigm == "CPLEX-CP":
         import_start = time.perf_counter()
         from cplex_cp_model import solve_nqueens
         import_time = time.perf_counter() - import_start
-        res = solve_nqueens(n, time_limit=time_limit)
+        rem_limit = max(0.001, time_limit - import_time) if time_limit is not None else None
+        res = solve_nqueens(n, time_limit=rem_limit)
         status = res["status"]
         total_time = res["total_time"]
         variables_count = res["variables_count"]
@@ -154,8 +190,8 @@ try:
         build_time = res["build_time"]
         solve_time = res["solve_time"]
         solver_reported_time = res["solver_reported_time"]
-        is_sat = status in ("OPTIMAL", "FEASIBLE", "Feasible") or len(queens) > 0
-        verified = verify(queens, n) if queens else False
+        is_sat = (status in ("OPTIMAL", "FEASIBLE", "Feasible") or len(queens) > 0) and status != "TIME_LIMIT"
+        verified = verify(queens, n) if queens and is_sat else False
         
     else:
         raise ValueError(f"Unknown paradigm: {{paradigm}}")
@@ -201,8 +237,10 @@ except Exception as e:
     print("RESULT_JSON:" + json.dumps(out))
 """
     cmd = [sys.executable, "-c", code]
+    p_start = time.perf_counter()
     try:
         res = subprocess.run(cmd, capture_output=True, text=True, timeout=time_limit)
+        p_wall = time.perf_counter() - p_start
         stdout = res.stdout
         stderr = res.stderr
         
@@ -210,7 +248,9 @@ except Exception as e:
             return {
                 "n": n, "paradigm": paradigm, "model_variant": model_variant, "solver": solver,
                 "status": "MEMOUT", "is_sat": False, "variables_count": 0, "clauses_constraints_count": 0,
-                "import_time": float('nan'), "build_time": float('nan'), "solve_time": float('nan'), "time_seconds": time_limit, "solver_reported_time": None, "verified": False, "error": "Memory limit exceeded (MEMOUT)"
+                "import_time": float('nan'), "build_time": float('nan'), "solve_time": float('nan'),
+                "time_seconds": time_limit, "solver_reported_time": None, "wall_time": p_wall,
+                "verified": False, "error": "Memory limit exceeded (MEMOUT)"
             }
 
         for line in stdout.splitlines():
@@ -230,6 +270,7 @@ except Exception as e:
                     "solve_time": data["solve_time"],
                     "time_seconds": data["time_seconds"],
                     "solver_reported_time": data["solver_reported_time"],
+                    "wall_time": p_wall,
                     "verified": data["verified"],
                     "error": data["error"]
                 }
@@ -237,19 +278,27 @@ except Exception as e:
         return {
             "n": n, "paradigm": paradigm, "model_variant": model_variant, "solver": solver,
             "status": "ERROR", "is_sat": False, "variables_count": 0, "clauses_constraints_count": 0,
-            "import_time": float('nan'), "build_time": float('nan'), "solve_time": float('nan'), "time_seconds": 0.0, "solver_reported_time": None, "verified": False, "error": stderr or "No JSON output"
+            "import_time": float('nan'), "build_time": float('nan'), "solve_time": float('nan'),
+            "time_seconds": 0.0, "solver_reported_time": None, "wall_time": p_wall,
+            "verified": False, "error": stderr or "No JSON output"
         }
     except subprocess.TimeoutExpired:
+        p_wall = time.perf_counter() - p_start
         return {
             "n": n, "paradigm": paradigm, "model_variant": model_variant, "solver": solver,
             "status": "TIMEOUT", "is_sat": False, "variables_count": 0, "clauses_constraints_count": 0,
-            "import_time": float('nan'), "build_time": float('nan'), "solve_time": float('nan'), "time_seconds": time_limit, "solver_reported_time": None, "verified": False, "error": "Hard timeout expired"
+            "import_time": float('nan'), "build_time": float('nan'), "solve_time": float('nan'),
+            "time_seconds": time_limit, "solver_reported_time": None, "wall_time": p_wall,
+            "verified": False, "error": "Hard timeout expired"
         }
     except Exception as e:
+        p_wall = time.perf_counter() - p_start
         return {
             "n": n, "paradigm": paradigm, "model_variant": model_variant, "solver": solver,
             "status": "ERROR", "is_sat": False, "variables_count": 0, "clauses_constraints_count": 0,
-            "import_time": float('nan'), "build_time": float('nan'), "solve_time": float('nan'), "time_seconds": 0.0, "solver_reported_time": None, "verified": False, "error": str(e)
+            "import_time": float('nan'), "build_time": float('nan'), "solve_time": float('nan'),
+            "time_seconds": 0.0, "solver_reported_time": None, "wall_time": p_wall,
+            "verified": False, "error": str(e)
         }
 
 def run_benchmarks_with_repetitions(paradigm, n_values, encodings_or_configs, solvers, time_limit, repetitions=3):
@@ -262,29 +311,106 @@ def run_benchmarks_with_repetitions(paradigm, n_values, encodings_or_configs, so
                 for rep in range(repetitions):
                     rec = run_subprocess_solver(paradigm, n, variant, solver, time_limit)
                     run_records.append(rec)
-                    if rec["status"] in ("TIMEOUT", "MEMOUT", "LICENSE_LIMIT", "ERROR"):
+                    # For LICENSE_LIMIT, repeating is redundant because license size limit is deterministic.
+                    if rec["status"] == "LICENSE_LIMIT":
+                        while len(run_records) < repetitions:
+                            run_records.append(rec.copy())
                         break
+
+                runs_total = len(run_records)
+                runs_success = sum(1 for r in run_records if r["status"] in ("OPTIMAL", "FEASIBLE", "SAT"))
+                runs_timeout = sum(1 for r in run_records if r["status"] in ("TIMEOUT", "TIME_LIMIT"))
+                runs_memout = sum(1 for r in run_records if r["status"] == "MEMOUT")
+                runs_license = sum(1 for r in run_records if r["status"] == "LICENSE_LIMIT")
+                runs_error = sum(1 for r in run_records if r["status"] == "ERROR")
+
+                successful = [r for r in run_records if r["status"] in ("OPTIMAL", "FEASIBLE", "SAT")]
+
+                # Determine aggregate status
+                if runs_license > 0:
+                    status = "LICENSE_LIMIT"
+                    is_sat = False
+                    verified = False
+                    error = "License/size limit reached"
+                elif runs_memout > 0:
+                    status = "MEMOUT"
+                    is_sat = False
+                    verified = False
+                    error = "Memory limit exceeded (MEMOUT)"
+                elif runs_error == runs_total:
+                    status = "ERROR"
+                    is_sat = False
+                    verified = False
+                    error = run_records[-1].get("error", "Error")
+                elif runs_timeout >= (runs_total / 2.0) or (runs_success == 0 and runs_timeout > 0):
+                    soft_timeouts = sum(1 for r in run_records if r["status"] == "TIME_LIMIT")
+                    status = "TIME_LIMIT" if soft_timeouts == runs_timeout else "TIMEOUT"
+                    is_sat = False
+                    verified = False
+                    error = f"{runs_timeout}/{runs_total} runs timed out"
+                elif runs_success > 0:
+                    status = successful[0]["status"]
+                    is_sat = successful[0]["is_sat"]
+                    verified = successful[0]["verified"]
+                    error = f"{runs_timeout}/{runs_total} runs timed out" if runs_timeout > 0 else ""
+                else:
+                    status = run_records[-1]["status"]
+                    is_sat = False
+                    verified = False
+                    error = run_records[-1].get("error", "")
+
+                all_times = [r["time_seconds"] for r in run_records if not pd.isna(r["time_seconds"])]
+                all_walls = [r["wall_time"] for r in run_records if ("wall_time" in r and not pd.isna(r["wall_time"]))]
                 
-                successful = [r for r in run_records if r["status"] not in ("TIMEOUT", "MEMOUT", "ERROR", "LICENSE_LIMIT")]
-                if successful:
+                median_time = statistics.median(all_times) if all_times else time_limit
+                median_wall = statistics.median(all_walls) if all_walls else median_time
+
+                if status in ("TIMEOUT", "TIME_LIMIT", "MEMOUT", "ERROR", "LICENSE_LIMIT") and runs_success == 0:
+                    median_import = float('nan')
+                    median_build = float('nan')
+                    median_solve = float('nan')
+                    reported_times = [r["solver_reported_time"] for r in run_records if r.get("solver_reported_time") is not None and not pd.isna(r.get("solver_reported_time"))]
+                    median_reported = statistics.median(reported_times) if reported_times else None
+                    base_rec = run_records[0]
+                    variables_count = base_rec["variables_count"] if status == "LICENSE_LIMIT" else 0
+                    constraints_count = base_rec["clauses_constraints_count"] if status == "LICENSE_LIMIT" else 0
+                else:
                     import_times = [r["import_time"] for r in successful if not pd.isna(r["import_time"])]
                     build_times = [r["build_time"] for r in successful if not pd.isna(r["build_time"])]
                     solve_times = [r["solve_time"] for r in successful if not pd.isna(r["solve_time"])]
-                    time_seconds = [r["time_seconds"] for r in successful if not pd.isna(r["time_seconds"])]
+                    reported_times = [r["solver_reported_time"] for r in run_records if r.get("solver_reported_time") is not None and not pd.isna(r.get("solver_reported_time"))]
 
-                    median_time = statistics.median(time_seconds) if time_seconds else successful[0]["time_seconds"]
                     median_import = statistics.median(import_times) if import_times else float('nan')
                     median_build = statistics.median(build_times) if build_times else float('nan')
                     median_solve = statistics.median(solve_times) if solve_times else float('nan')
-                    
-                    rep_res = successful[0].copy()
-                    rep_res["import_time"] = median_import
-                    rep_res["build_time"] = median_build
-                    rep_res["solve_time"] = median_solve
-                    rep_res["time_seconds"] = median_time
-                    results.append(rep_res)
-                else:
-                    results.append(run_records[-1])
+                    median_reported = statistics.median(reported_times) if reported_times else None
+                    base_rec = successful[0]
+                    variables_count = base_rec["variables_count"]
+                    constraints_count = base_rec["clauses_constraints_count"]
+
+                rep_res = {
+                    "n": n,
+                    "paradigm": paradigm,
+                    "model_variant": variant,
+                    "solver": solver,
+                    "status": status,
+                    "is_sat": is_sat,
+                    "variables_count": variables_count,
+                    "clauses_constraints_count": constraints_count,
+                    "import_time": median_import,
+                    "build_time": median_build,
+                    "solve_time": median_solve,
+                    "time_seconds": median_time,
+                    "solver_reported_time": median_reported,
+                    "wall_time": median_wall,
+                    "runs_total": runs_total,
+                    "runs_success": runs_success,
+                    "runs_timeout": runs_timeout,
+                    "runs_error": runs_error,
+                    "verified": verified,
+                    "error": error
+                }
+                results.append(rep_res)
     return results
 
 def main():

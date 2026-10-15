@@ -54,6 +54,8 @@ def solve_nqueens(n: int, time_limit: float = None):
 
     solve_start = time.perf_counter()
     try:
+        if time_limit is not None:
+            m.Params.TimeLimit = max(0.001, time_limit - build_time)
         m.optimize()
         solve_time = time.perf_counter() - solve_start
         total_time = build_time + solve_time

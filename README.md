@@ -35,15 +35,28 @@ This project provides an exhaustive empirical benchmarking and analysis framewor
 
 ## Timing Protocol
 
-The benchmarking framework enforces a unified, rigorous timing protocol across all paradigms:
-- **High-Resolution Clocks**: Time measurements utilize `time.perf_counter()`.
-- **Phase Breakdown**:
+The benchmarking framework enforces a unified, rigorous timing and timeout protocol across all paradigms:
+- **High-Resolution Clocks**: All elapsed time measurements consistently utilize `time.perf_counter()`.
+- **Phase Breakdown & Metric Definitions**:
   - `import_time`: Time taken to import and load paradigm/solver modules prior to model construction.
-  - `build_time`: Time taken to construct the model variables and constraints (excluding module import overhead).
-  - `solve_time`: Active solving time (`time.perf_counter()` elapsed around the solver invocation).
-  - `solver_reported_time`: Internal solve time reported by solvers when available (e.g., CPLEX CP via `get_solve_time()`).
-- **Subprocess Hard Timeout**: A strict hard timeout (`--time-limit`, default 30.0 seconds) is applied to the entire child process (`import_time + build_time + solve_time`). If the total time exceeds the limit, the status is recorded as `TIMEOUT`, with `import_time`, `build_time`, and `solve_time` recorded as `NaN`, and `time_seconds` set to the time limit.
-- **Repetitions & Median Reporting**: Each benchmark configuration is executed across 3 repetitions (`--repetitions 3`), and median timing metrics are reported to mitigate system jitter.
+  - `build_time`: Time taken to construct model variables and constraints (excluding module import overhead).
+  - `solve_time`: Active solving time measured elapsed around solver invocation.
+  - `time_seconds`: Cumulative child process phase duration, defined strictly as `import_time + build_time + solve_time` (or `time_limit` on hard timeout).
+  - `wall_time`: Parent-measured wall-clock elapsed time for the child process execution (`subprocess.run`), capturing OS process launch, execution, and IPC.
+  - `solver_reported_time`: Internal solve time reported directly by solvers when available (e.g., CPLEX CP via `get_solve_time()`, CPLEX MIP via `solve_details.time`, Gurobi via `Runtime`).
+  - `model_time`: Solver-relevant duration defined as `build_time + solve_time` (excluding module import overhead), used in cross-paradigm comparisons to eliminate Python import skew at small $N$.
+- **Dual Timeout Architecture**:
+  - **Solver-Level Time Limit (`TIME_LIMIT`)**: Inside the child process, the remaining time budget `max(0.001, time_limit - (import_time + build_time))` is computed and passed to the solver. For backends with cooperative interrupt support (such as PySAT `Glucose3`, `Glucose4`, `Minisat22`, `MapleCM`, OR-Tools CP-SAT, and MIP solvers), the solver terminates gracefully when the limit is reached without killing the process.
+  - **Process-Level Hard Timeout (`TIMEOUT`)**: The parent process wraps child execution with `subprocess.run(timeout=time_limit)`. Backends lacking internal interrupt support in PySAT (such as CaDiCaL and Kissat) rely on this parent-side hard timeout. When a hard timeout occurs, status is recorded as `TIMEOUT`, phase times are recorded as `NaN`, and `time_seconds` is set to `time_limit`.
+  - **Status Classification**: Cleanly distinguishes `SAT` / `OPTIMAL`, `FEASIBLE`, `UNSAT` / `INFEASIBLE`, `TIME_LIMIT`, `TIMEOUT`, `MEMOUT`, `LICENSE_LIMIT`, and `ERROR`. `TIME_LIMIT` is strictly treated as timeout rather than normal success (`is_sat = False`).
+- **Repetitions & Mixed-Run Resolution**:
+  - Each configuration executes all 3 repetitions (`--repetitions 3`) without early termination.
+  - Granular repetition metrics are tracked per benchmark: `runs_total`, `runs_success`, `runs_timeout`, and `runs_error`.
+  - When mixed outcomes occur (e.g., 1 success and 2 timeouts), if timeouts form the majority (`runs_timeout >= runs_total / 2`), the aggregate status is resolved as `TIMEOUT` (or `TIME_LIMIT`). If successes form the majority, the success status is preserved while recording the timeout count in the `error` column (e.g., `"1/3 runs timed out"`). Timeouts are never silently discarded.
+  - Medians across repetitions are reported for all timing metrics, including `solver_reported_time` and `wall_time`.
+
+> **Note on Historical Results Data**:
+> The CSV files currently present in `results/` represent historical benchmark runs performed prior to the standardization of isolated `import_time`, `wall_time`, and repetition tracking columns. In accordance with benchmark reproducibility guidelines, historical raw CSV files are preserved intact and never synthetically modified. To generate fresh experimental datasets reflecting the unified timing protocol, re-run the benchmark suite using the command in Step 4 below.
 
 ---
 

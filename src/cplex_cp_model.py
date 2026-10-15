@@ -65,7 +65,7 @@ def solve_nqueens(n: int, time_limit: float = None):
     try:
         params = {"LogVerbosity": "Quiet"}
         if time_limit is not None:
-            params["TimeLimit"] = time_limit
+            params["TimeLimit"] = max(0.001, time_limit - build_time)
         else:
             params["TimeLimit"] = 60
             
@@ -81,9 +81,12 @@ def solve_nqueens(n: int, time_limit: float = None):
                 pass
 
         if sol is None or not sol.is_solution():
-            status = sol.get_solve_status() if sol is not None else "NO_SOLUTION"
+            status = str(sol.get_solve_status()) if sol is not None else "NO_SOLUTION"
+            stop_cause = str(sol.get_stop_cause()).upper() if (sol is not None and hasattr(sol, 'get_stop_cause')) else ""
+            if "LIMIT" in stop_cause or "TIME" in stop_cause or (time_limit is not None and solve_time >= time_limit * 0.95):
+                status = "TIME_LIMIT"
             return {
-                "status": str(status),
+                "status": status,
                 "total_time": total_time,
                 "variables_count": variables_count,
                 "constraints_count": constraints_count,

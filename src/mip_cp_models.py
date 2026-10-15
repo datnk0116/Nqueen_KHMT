@@ -137,16 +137,16 @@ class NQueensMIP:
         if time_limit is not None:
             self.solver.set_time_limit(int(time_limit * 1000))
             
-        start_time = time.time()
+        start_time = time.perf_counter()
         status = self.solver.Solve()
-        elapsed = time.time() - start_time
+        elapsed = time.perf_counter() - start_time
         
         status_map = {
             pywraplp.Solver.OPTIMAL: "OPTIMAL",
             pywraplp.Solver.FEASIBLE: "FEASIBLE",
             pywraplp.Solver.INFEASIBLE: "INFEASIBLE",
             pywraplp.Solver.ABNORMAL: "ABNORMAL",
-            pywraplp.Solver.NOT_SOLVED: "NOT_SOLVED",
+            pywraplp.Solver.NOT_SOLVED: "TIME_LIMIT" if time_limit is not None else "NOT_SOLVED",
         }
         status_name = status_map.get(status, str(status))
         is_sat = status in (pywraplp.Solver.OPTIMAL, pywraplp.Solver.FEASIBLE)

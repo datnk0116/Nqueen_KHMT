@@ -3,6 +3,7 @@ SAT model builder and solver for N-Queens using PySAT and various AMO encodings.
 """
 
 import time
+import threading
 import os
 import importlib.util
 from pysat.formula import IDPool
@@ -78,29 +79,58 @@ class NQueensSAT:
         return self.clauses
 
     def solve(self, time_limit: float = None) -> dict:
-        """Solves the N-Queens problem and returns solving statistics and solution."""
+        """
+        Solves the N-Queens problem and returns solving statistics and solution.
+        If time_limit is provided (in seconds), cooperative interrupt is scheduled via
+        threading.Timer and solver.interrupt() (using solve_limited).
+        For backends lacking interrupt support in PySAT (such as CaDiCaL and Kissat),
+        cooperative interrupt raises NotImplementedError and normal solve() is invoked,
+        relying on the parent process's hard timeout.
+        """
         if not self.clauses:
             self.build()
             
         solver_cls = SOLVERS.get(self.solver_name)
-        start_time = time.time()
+        start_time = time.perf_counter()
         
         is_sat = False
         model = None
         
+        def _run_solve(solver_instance):
+            nonlocal is_sat, model
+            timer = None
+            if time_limit is not None and time_limit > 0:
+                try:
+                    timer = threading.Timer(time_limit, solver_instance.interrupt)
+                    timer.daemon = True
+                    timer.start()
+                    is_sat = solver_instance.solve_limited(expect_interrupt=True)
+                except NotImplementedError:
+                    # PySAT backends like CaDiCaL and Kissat do not implement interrupt().
+                    # For these backends, cooperative interrupt is unavailable,
+                    # and timeout enforcement relies on the parent process hard timeout.
+                    if timer is not None:
+                        timer.cancel()
+                        timer = None
+                    is_sat = solver_instance.solve()
+                finally:
+                    if timer is not None:
+                        timer.cancel()
+            else:
+                is_sat = solver_instance.solve()
+
+            if is_sat:
+                model = solver_instance.get_model()
+
         try:
             if solver_cls:
                 with solver_cls(bootstrap_with=self.clauses) as solver:
-                    is_sat = solver.solve()
-                    if is_sat:
-                        model = solver.get_model()
+                    _run_solve(solver)
             else:
                 with Solver(name=self.solver_name, bootstrap_with=self.clauses) as solver:
-                    is_sat = solver.solve()
-                    if is_sat:
-                        model = solver.get_model()
+                    _run_solve(solver)
         except Exception as e:
-            elapsed = time.time() - start_time
+            elapsed = time.perf_counter() - start_time
             self.stats = {
                 "status": "ERROR",
                 "is_sat": False,
@@ -116,7 +146,23 @@ class NQueensSAT:
             }
             return self.stats
 
-        elapsed = time.time() - start_time
+        elapsed = time.perf_counter() - start_time
+
+        if is_sat is None:
+            # Solver was interrupted by time_limit
+            self.stats = {
+                "status": "TIME_LIMIT",
+                "is_sat": False,
+                "model": None,
+                "queens": [],
+                "time": elapsed,
+                "variables_count": self.variables_count,
+                "clauses_count": self.clauses_count,
+                "n": self.n,
+                "encoding": self.encoding_name,
+                "solver": self.solver_name,
+            }
+            return self.stats
         
         queens = []
         if is_sat and model:
@@ -132,7 +178,7 @@ class NQueensSAT:
 
         self.stats = {
             "status": "SAT" if is_sat else "UNSAT",
-            "is_sat": is_sat,
+            "is_sat": bool(is_sat),
             "model": model,
             "queens": queens,
             "time": elapsed,
