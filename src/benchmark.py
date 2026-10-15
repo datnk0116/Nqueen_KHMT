@@ -190,7 +190,9 @@ try:
         build_time = res["build_time"]
         solve_time = res["solve_time"]
         solver_reported_time = res["solver_reported_time"]
-        is_sat = (status in ("OPTIMAL", "FEASIBLE", "Feasible") or len(queens) > 0) and status != "TIME_LIMIT"
+        if status == "Feasible":
+            status = "FEASIBLE"
+        is_sat = (status in ("OPTIMAL", "FEASIBLE") or len(queens) > 0) and status != "TIME_LIMIT"
         verified = verify(queens, n) if queens and is_sat else False
         
     else:
@@ -317,29 +319,90 @@ except Exception as e:
 
 from collections import Counter
 
+def classify_status(rec):
+    """
+    Classifies a solver execution record into a category and canonical status.
+    Categories:
+      - 'SUCCESS': Valid, verified feasible/optimal solution (OPTIMAL, FEASIBLE, SAT, SUBOPTIMAL).
+      - 'TIMEOUT': Soft time limit or process hard timeout (TIMEOUT, TIME_LIMIT).
+      - 'MEMOUT': Out of memory failure (MEMOUT).
+      - 'LICENSE_LIMIT': License or problem size limit exceeded (LICENSE_LIMIT).
+      - 'INFEASIBLE': Proven unsatisfiable or infeasible instance (UNSAT, INFEASIBLE, MODEL_INVALID).
+      - 'ERROR': Execution errors, exceptions, or unverified solutions.
+      - 'UNKNOWN': Unrecognized or unknown solver statuses.
+    """
+    raw_status = rec.get("status")
+    if raw_status is None:
+        raw_status = "UNKNOWN"
+    elif not isinstance(raw_status, str):
+        raw_status = str(raw_status)
+
+    norm = raw_status.strip()
+    norm_upper = norm.upper()
+
+    # Success candidates
+    if norm_upper in ("OPTIMAL", "FEASIBLE", "SAT", "SUBOPTIMAL"):
+        # Feasible solutions are only successful when validity requirements are satisfied
+        is_sat = rec.get("is_sat", False)
+        verified = rec.get("verified", False)
+        if is_sat and verified:
+            # Preserve solver-specific semantics: SUBOPTIMAL stays SUBOPTIMAL,
+            # FEASIBLE/Feasible normalizes to FEASIBLE, OPTIMAL stays OPTIMAL, SAT stays SAT
+            canonical = norm_upper
+            return ("SUCCESS", canonical)
+        else:
+            # Solver emitted a success status string, but solution was invalid or unverified
+            return ("ERROR", "ERROR")
+
+    # Timeouts
+    if norm_upper in ("TIMEOUT", "TIME_LIMIT"):
+        return ("TIMEOUT", norm_upper)
+
+    # Resource & licensing limits
+    if norm_upper == "MEMOUT":
+        return ("MEMOUT", "MEMOUT")
+    if norm_upper == "LICENSE_LIMIT":
+        return ("LICENSE_LIMIT", "LICENSE_LIMIT")
+
+    # Proven infeasible / unsatisfiable
+    if norm_upper in ("UNSAT", "INFEASIBLE", "MODEL_INVALID"):
+        return ("INFEASIBLE", norm_upper)
+
+    # Generic error
+    if norm_upper == "ERROR":
+        return ("ERROR", "ERROR")
+
+    # Unknown or unrecognized status
+    return ("UNKNOWN", norm if norm else "UNKNOWN")
+
 def aggregate_repetition_records(run_records, time_limit):
     """
     Aggregates execution records across multiple repetitions of a solver benchmark configuration.
 
     Aggregation Policy:
-    1. A configuration is classified as successful ('OPTIMAL', 'FEASIBLE', 'SAT') only if successful
-       runs form a strict majority (runs_success > runs_total / 2.0).
+    1. A configuration is classified as successful ('OPTIMAL', 'FEASIBLE', 'SAT', 'SUBOPTIMAL') only
+       if successful runs form a strict majority (runs_success > runs_total / 2.0) AND their solution
+       validity requirements are satisfied (is_sat=True and verified=True).
        - Aggregate status is the most common status among successful repetitions (mode).
-       - is_sat is True, verified is True if all successful runs are verified.
+       - is_sat is True, verified is True.
        - Diagnostic notes in 'error' record non-success occurrences (e.g. "1/3 runs timed out",
          "1/3 runs ran out of memory", "1/3 runs errored", "1/3 runs hit license limits").
        - Median phase times (import, build, solve, model) are computed across successful repetitions.
     2. If successful runs do not form a strict majority (runs_success <= runs_total / 2.0):
-       - is_sat is False, verified is False.
+       - is_sat is False.
        - The configuration is never classified as success (indeterminate/failure).
        - If a failure category forms a strict majority (count > runs_total / 2.0), that status is selected:
          * LICENSE_LIMIT if runs_license > runs_total / 2.0
          * MEMOUT if runs_memout > runs_total / 2.0
          * TIMEOUT (or TIME_LIMIT if all timeouts are TIME_LIMIT) if runs_timeout > runs_total / 2.0
+         * INFEASIBLE if runs_infeasible > runs_total / 2.0 (verified=True if verified)
          * ERROR if runs_error > runs_total / 2.0
+         * UNKNOWN if runs_unknown > runs_total / 2.0
        - If no category achieves a strict majority (tied counts in even repetitions or split failures),
-         the failure category with the highest count is selected, breaking ties deterministically
-         by severity/determinism: LICENSE_LIMIT > MEMOUT > TIMEOUT > ERROR.
+         the failure category with the highest count among categories with count > 0 is selected,
+         breaking ties deterministically by severity/determinism:
+         LICENSE_LIMIT > MEMOUT > TIMEOUT > INFEASIBLE > ERROR > UNKNOWN.
+         Crucially, LICENSE_LIMIT is NEVER selected when runs_license == 0.
        - Diagnostic notes in 'error' describe the primary failure message and all mixed outcomes.
        - Median phase times (import, build, solve, model) are set to NaN, ensuring timed out / failed
          configurations do not report misleading solve times.
@@ -356,20 +419,26 @@ def aggregate_repetition_records(run_records, time_limit):
     solver = base.get("solver")
 
     runs_total = len(run_records)
-    successful = [r for r in run_records if r.get("status") in ("OPTIMAL", "FEASIBLE", "SAT")]
-    runs_success = len(successful)
-    runs_timeout = sum(1 for r in run_records if r.get("status") in ("TIMEOUT", "TIME_LIMIT"))
-    runs_license = sum(1 for r in run_records if r.get("status") == "LICENSE_LIMIT")
-    runs_memout = sum(1 for r in run_records if r.get("status") == "MEMOUT")
-    runs_error = sum(1 for r in run_records if r.get("status") == "ERROR")
+    classified = [classify_status(r) for r in run_records]
+
+    successful_records = [r for r, (cat, _) in zip(run_records, classified) if cat == "SUCCESS"]
+    successful_statuses = [can for cat, can in classified if cat == "SUCCESS"]
+
+    runs_success = len(successful_records)
+    runs_timeout = sum(1 for cat, _ in classified if cat == "TIMEOUT")
+    runs_license = sum(1 for cat, _ in classified if cat == "LICENSE_LIMIT")
+    runs_memout = sum(1 for cat, _ in classified if cat == "MEMOUT")
+    runs_error = sum(1 for cat, _ in classified if cat == "ERROR")
+    runs_infeasible = sum(1 for cat, _ in classified if cat == "INFEASIBLE")
+    runs_unknown = sum(1 for cat, _ in classified if cat == "UNKNOWN")
 
     majority_threshold = runs_total / 2.0
 
     if runs_success > majority_threshold:
-        status_counts = Counter(r["status"] for r in successful)
+        status_counts = Counter(successful_statuses)
         status = status_counts.most_common(1)[0][0]
         is_sat = True
-        verified = all(r.get("verified", False) for r in successful)
+        verified = True
 
         notes = []
         if runs_timeout > 0:
@@ -380,64 +449,116 @@ def aggregate_repetition_records(run_records, time_limit):
             notes.append(f"{runs_error}/{runs_total} runs errored")
         if runs_license > 0:
             notes.append(f"{runs_license}/{runs_total} runs hit license limits")
+        if runs_infeasible > 0:
+            notes.append(f"{runs_infeasible}/{runs_total} runs proved infeasible")
+        if runs_unknown > 0:
+            notes.append(f"{runs_unknown}/{runs_total} runs had unknown status")
         error = "; ".join(notes)
     else:
         is_sat = False
-        verified = False
 
         if runs_license > majority_threshold:
             status = "LICENSE_LIMIT"
+            chosen_cat = "LICENSE_LIMIT"
+            verified = False
         elif runs_memout > majority_threshold:
             status = "MEMOUT"
+            chosen_cat = "MEMOUT"
+            verified = False
         elif runs_timeout > majority_threshold:
-            soft_timeouts = sum(1 for r in run_records if r.get("status") == "TIME_LIMIT")
+            soft_timeouts = sum(1 for r in run_records if r.get("status", "").upper() == "TIME_LIMIT")
             status = "TIME_LIMIT" if soft_timeouts == runs_timeout else "TIMEOUT"
+            chosen_cat = "TIMEOUT"
+            verified = False
+        elif runs_infeasible > majority_threshold:
+            chosen_cat = "INFEASIBLE"
+            inf_statuses = [can for cat, can in classified if cat == "INFEASIBLE"]
+            status = Counter(inf_statuses).most_common(1)[0][0]
+            verified = all(r.get("verified", False) for r in run_records if classify_status(r)[0] == "INFEASIBLE")
         elif runs_error > majority_threshold:
             status = "ERROR"
+            chosen_cat = "ERROR"
+            verified = False
+        elif runs_unknown > majority_threshold:
+            chosen_cat = "UNKNOWN"
+            unk_statuses = [can for cat, can in classified if cat == "UNKNOWN"]
+            status = Counter(unk_statuses).most_common(1)[0][0]
+            verified = False
         else:
-            failure_counts = [
-                ("LICENSE_LIMIT", runs_license),
-                ("MEMOUT", runs_memout),
-                ("TIMEOUT", runs_timeout),
-                ("ERROR", runs_error),
-            ]
-            max_status, _ = max(failure_counts, key=lambda x: x[1])
-            if max_status == "TIMEOUT":
-                soft_timeouts = sum(1 for r in run_records if r.get("status") == "TIME_LIMIT")
-                status = "TIME_LIMIT" if (runs_timeout > 0 and soft_timeouts == runs_timeout) else "TIMEOUT"
+            candidates = []
+            if runs_license > 0:
+                candidates.append(("LICENSE_LIMIT", runs_license))
+            if runs_memout > 0:
+                candidates.append(("MEMOUT", runs_memout))
+            if runs_timeout > 0:
+                candidates.append(("TIMEOUT", runs_timeout))
+            if runs_infeasible > 0:
+                candidates.append(("INFEASIBLE", runs_infeasible))
+            if runs_error > 0:
+                candidates.append(("ERROR", runs_error))
+            if runs_unknown > 0:
+                candidates.append(("UNKNOWN", runs_unknown))
+
+            if candidates:
+                chosen_cat, _ = max(candidates, key=lambda x: x[1])
+                if chosen_cat == "TIMEOUT":
+                    soft_timeouts = sum(1 for r in run_records if r.get("status", "").upper() == "TIME_LIMIT")
+                    status = "TIME_LIMIT" if (runs_timeout > 0 and soft_timeouts == runs_timeout) else "TIMEOUT"
+                    verified = False
+                elif chosen_cat == "INFEASIBLE":
+                    inf_statuses = [can for cat, can in classified if cat == "INFEASIBLE"]
+                    status = Counter(inf_statuses).most_common(1)[0][0]
+                    verified = all(r.get("verified", False) for r, (c, _) in zip(run_records, classified) if c == "INFEASIBLE")
+                elif chosen_cat == "UNKNOWN":
+                    unk_statuses = [can for cat, can in classified if cat == "UNKNOWN"]
+                    status = Counter(unk_statuses).most_common(1)[0][0]
+                    verified = False
+                else:
+                    status = chosen_cat
+                    verified = False
             else:
-                status = max_status
+                chosen_cat = "UNKNOWN"
+                status = "UNKNOWN"
+                verified = False
 
         notes = []
-        if status == "LICENSE_LIMIT":
+        if chosen_cat == "LICENSE_LIMIT":
             lic_errs = [r.get("error", "") for r in run_records if r.get("status") == "LICENSE_LIMIT" and r.get("error")]
             first_lic = lic_errs[0] if lic_errs else "License/size limit reached"
             if runs_license == runs_total:
                 notes.append(first_lic)
             else:
                 notes.append(f"{runs_license}/{runs_total} runs hit license limits: {first_lic}")
-        elif status == "MEMOUT":
+        elif chosen_cat == "MEMOUT":
             mem_errs = [r.get("error", "") for r in run_records if r.get("status") == "MEMOUT" and r.get("error")]
             first_mem = mem_errs[0] if mem_errs else "Memory limit exceeded (MEMOUT)"
             if runs_memout == runs_total:
                 notes.append(first_mem)
             else:
                 notes.append(f"{runs_memout}/{runs_total} runs ran out of memory")
-        elif status in ("TIMEOUT", "TIME_LIMIT"):
+        elif chosen_cat == "TIMEOUT":
             notes.append(f"{runs_timeout}/{runs_total} runs timed out")
-        elif status == "ERROR":
+        elif chosen_cat == "INFEASIBLE":
+            notes.append(f"{runs_infeasible}/{runs_total} runs proved infeasible ({status})")
+        elif chosen_cat == "ERROR":
             err_msgs = [r.get("error", "") for r in run_records if r.get("status") == "ERROR" and r.get("error")]
             first_err = err_msgs[0] if err_msgs else "Error"
             notes.append(f"{runs_error}/{runs_total} runs errored: {first_err}")
+        elif chosen_cat == "UNKNOWN":
+            notes.append(f"{runs_unknown}/{runs_total} runs had unknown status ({status})")
 
-        if status not in ("TIMEOUT", "TIME_LIMIT") and runs_timeout > 0:
+        if chosen_cat != "TIMEOUT" and runs_timeout > 0:
             notes.append(f"{runs_timeout}/{runs_total} runs timed out")
-        if status != "MEMOUT" and runs_memout > 0:
+        if chosen_cat != "MEMOUT" and runs_memout > 0:
             notes.append(f"{runs_memout}/{runs_total} runs ran out of memory")
-        if status != "ERROR" and runs_error > 0:
+        if chosen_cat != "ERROR" and runs_error > 0:
             notes.append(f"{runs_error}/{runs_total} runs errored")
-        if status != "LICENSE_LIMIT" and runs_license > 0:
+        if chosen_cat != "LICENSE_LIMIT" and runs_license > 0:
             notes.append(f"{runs_license}/{runs_total} runs hit license limits")
+        if chosen_cat != "INFEASIBLE" and runs_infeasible > 0:
+            notes.append(f"{runs_infeasible}/{runs_total} runs proved infeasible")
+        if chosen_cat != "UNKNOWN" and runs_unknown > 0:
+            notes.append(f"{runs_unknown}/{runs_total} runs had unknown status")
         if runs_success > 0:
             notes.append(f"{runs_success}/{runs_total} runs succeeded")
 
@@ -449,7 +570,7 @@ def aggregate_repetition_records(run_records, time_limit):
     median_time = statistics.median(all_times) if all_times else time_limit
     median_wall = statistics.median(all_walls) if all_walls else median_time
 
-    if status in ("TIMEOUT", "TIME_LIMIT", "MEMOUT", "ERROR", "LICENSE_LIMIT"):
+    if runs_success <= majority_threshold:
         median_import = float('nan')
         median_build = float('nan')
         median_solve = float('nan')
@@ -459,19 +580,19 @@ def aggregate_repetition_records(run_records, time_limit):
         variables_count = base.get("variables_count", 0) if status == "LICENSE_LIMIT" else 0
         constraints_count = base.get("clauses_constraints_count", 0) if status == "LICENSE_LIMIT" else 0
     else:
-        import_times = [r["import_time"] for r in successful if not pd.isna(r.get("import_time"))]
-        build_times = [r["build_time"] for r in successful if not pd.isna(r.get("build_time"))]
-        solve_times = [r["solve_time"] for r in successful if not pd.isna(r.get("solve_time"))]
-        model_times = [r["model_time"] for r in successful if ("model_time" in r and not pd.isna(r.get("model_time")))]
-        reported_times = [r["solver_reported_time"] for r in successful if r.get("solver_reported_time") is not None and not pd.isna(r.get("solver_reported_time"))]
+        import_times = [r["import_time"] for r in successful_records if not pd.isna(r.get("import_time"))]
+        build_times = [r["build_time"] for r in successful_records if not pd.isna(r.get("build_time"))]
+        solve_times = [r["solve_time"] for r in successful_records if not pd.isna(r.get("solve_time"))]
+        model_times = [r["model_time"] for r in successful_records if ("model_time" in r and not pd.isna(r.get("model_time")))]
+        reported_times = [r["solver_reported_time"] for r in successful_records if r.get("solver_reported_time") is not None and not pd.isna(r.get("solver_reported_time"))]
 
         median_import = statistics.median(import_times) if import_times else float('nan')
         median_build = statistics.median(build_times) if build_times else float('nan')
         median_solve = statistics.median(solve_times) if solve_times else float('nan')
         median_model = statistics.median(model_times) if model_times else (median_build + median_solve if (not pd.isna(median_build) and not pd.isna(median_solve)) else float('nan'))
         median_reported = statistics.median(reported_times) if reported_times else None
-        variables_count = successful[0].get("variables_count", 0)
-        constraints_count = successful[0].get("clauses_constraints_count", 0)
+        variables_count = successful_records[0].get("variables_count", 0)
+        constraints_count = successful_records[0].get("clauses_constraints_count", 0)
 
     return {
         "n": n,

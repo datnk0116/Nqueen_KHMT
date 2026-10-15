@@ -443,3 +443,183 @@ def test_edge_cases_single_and_even_repetitions():
     assert res_2s_2to["runs_timeout"] == 2
     assert "2/4 runs timed out" in res_2s_2to["error"]
     assert "2/4 runs succeeded" in res_2s_2to["error"]
+
+def test_suboptimal_gurobi_status():
+    # 3 SUBOPTIMAL with verified solution
+    recs = [
+        make_record(status="SUBOPTIMAL", time_seconds=0.15, solve_time=0.12, is_sat=True, verified=True,
+                    paradigm="Gurobi", solver="gurobi"),
+        make_record(status="SUBOPTIMAL", time_seconds=0.18, solve_time=0.14, is_sat=True, verified=True,
+                    paradigm="Gurobi", solver="gurobi"),
+        make_record(status="SUBOPTIMAL", time_seconds=0.16, solve_time=0.13, is_sat=True, verified=True,
+                    paradigm="Gurobi", solver="gurobi"),
+    ]
+    res = aggregate_repetition_records(recs, time_limit=30.0)
+    assert res["status"] == "SUBOPTIMAL"
+    assert res["is_sat"] is True
+    assert res["verified"] is True
+    assert res["runs_total"] == 3
+    assert res["runs_success"] == 3
+    assert res["solve_time"] == pytest.approx(0.13)
+    assert res["error"] == ""
+
+    # 2 SUBOPTIMAL, 1 TIMEOUT (majority success)
+    recs_mix = [
+        make_record(status="SUBOPTIMAL", time_seconds=0.15, solve_time=0.12, is_sat=True, verified=True),
+        make_record(status="SUBOPTIMAL", time_seconds=0.17, solve_time=0.14, is_sat=True, verified=True),
+        make_record(status="TIMEOUT", time_seconds=30.0, solve_time=float('nan'), is_sat=False, verified=False),
+    ]
+    res_mix = aggregate_repetition_records(recs_mix, time_limit=30.0)
+    assert res_mix["status"] == "SUBOPTIMAL"
+    assert res_mix["is_sat"] is True
+    assert res_mix["verified"] is True
+    assert res_mix["runs_success"] == 2
+    assert "1/3 runs timed out" in res_mix["error"]
+
+def test_feasible_cplex_case_normalization():
+    # Mixed case "Feasible" from CPLEX CP normalized to canonical "FEASIBLE"
+    recs = [
+        make_record(status="Feasible", time_seconds=0.20, solve_time=0.10, is_sat=True, verified=True,
+                    paradigm="CPLEX-CP", solver="cplex-cp"),
+        make_record(status="FEASIBLE", time_seconds=0.22, solve_time=0.12, is_sat=True, verified=True,
+                    paradigm="CPLEX-CP", solver="cplex-cp"),
+        make_record(status="feasible", time_seconds=0.21, solve_time=0.11, is_sat=True, verified=True,
+                    paradigm="CPLEX-CP", solver="cplex-cp"),
+    ]
+    res = aggregate_repetition_records(recs, time_limit=30.0)
+    assert res["status"] == "FEASIBLE"
+    assert res["is_sat"] is True
+    assert res["verified"] is True
+    assert res["runs_total"] == 3
+    assert res["runs_success"] == 3
+    assert res["solve_time"] == pytest.approx(0.11)
+
+def test_unverified_feasible_degrades_to_error():
+    # Feasible status claimed but verified is False -> must degrade to ERROR category
+    recs = [
+        make_record(status="FEASIBLE", time_seconds=0.20, is_sat=True, verified=False),
+        make_record(status="OPTIMAL", time_seconds=0.22, is_sat=True, verified=False),
+        make_record(status="SAT", time_seconds=0.21, is_sat=False, verified=True),
+    ]
+    res = aggregate_repetition_records(recs, time_limit=30.0)
+    assert res["status"] == "ERROR"
+    assert res["is_sat"] is False
+    assert res["verified"] is False
+    assert res["runs_total"] == 3
+    assert res["runs_success"] == 0
+    assert res["runs_error"] == 3
+    assert math.isnan(res["solve_time"])
+
+def test_unsat_and_infeasible_statuses():
+    # 3 UNSAT runs with verified=True (e.g. proof verified)
+    recs_unsat = [
+        make_record(status="UNSAT", time_seconds=0.05, is_sat=False, verified=True, solve_time=float('nan')),
+        make_record(status="UNSAT", time_seconds=0.06, is_sat=False, verified=True, solve_time=float('nan')),
+        make_record(status="UNSAT", time_seconds=0.07, is_sat=False, verified=True, solve_time=float('nan')),
+    ]
+    res_unsat = aggregate_repetition_records(recs_unsat, time_limit=30.0)
+    assert res_unsat["status"] == "UNSAT"
+    assert res_unsat["is_sat"] is False
+    assert res_unsat["verified"] is True
+    assert res_unsat["runs_total"] == 3
+    assert res_unsat["runs_success"] == 0
+    assert "3/3 runs proved infeasible (UNSAT)" in res_unsat["error"]
+    assert math.isnan(res_unsat["solve_time"])
+
+    # 2 INFEASIBLE, 1 TIMEOUT
+    recs_inf_to = [
+        make_record(status="INFEASIBLE", time_seconds=0.05, is_sat=False, verified=True, solve_time=float('nan')),
+        make_record(status="INFEASIBLE", time_seconds=0.06, is_sat=False, verified=True, solve_time=float('nan')),
+        make_record(status="TIMEOUT", time_seconds=30.0, is_sat=False, verified=False, solve_time=float('nan')),
+    ]
+    res_inf_to = aggregate_repetition_records(recs_inf_to, time_limit=30.0)
+    assert res_inf_to["status"] == "INFEASIBLE"
+    assert res_inf_to["is_sat"] is False
+    assert res_inf_to["runs_total"] == 3
+    assert res_inf_to["runs_timeout"] == 1
+    assert "2/3 runs proved infeasible (INFEASIBLE)" in res_inf_to["error"]
+    assert "1/3 runs timed out" in res_inf_to["error"]
+
+def test_unknown_and_unrecognized_statuses():
+    recs = [
+        make_record(status="UNKNOWN", time_seconds=1.0, is_sat=False, verified=False, solve_time=float('nan')),
+        make_record(status="UNKNOWN", time_seconds=1.2, is_sat=False, verified=False, solve_time=float('nan')),
+        make_record(status="UNKNOWN", time_seconds=1.1, is_sat=False, verified=False, solve_time=float('nan')),
+    ]
+    res = aggregate_repetition_records(recs, time_limit=30.0)
+    assert res["status"] == "UNKNOWN"
+    assert res["is_sat"] is False
+    assert res["runs_total"] == 3
+    assert res["runs_success"] == 0
+    assert "3/3 runs had unknown status (UNKNOWN)" in res["error"]
+    assert math.isnan(res["solve_time"])
+
+def test_all_zero_failure_counters_never_license_limit():
+    # When records have unclassified / custom statuses, all traditional failure counters
+    # (runs_license, runs_memout, runs_timeout, runs_error) are 0.
+    # Crucially, it must NEVER default or tie-break to LICENSE_LIMIT!
+    recs = [
+        make_record(status="CUSTOM_ABORT", time_seconds=0.5, is_sat=False, verified=False, solve_time=float('nan')),
+        make_record(status="CUSTOM_ABORT", time_seconds=0.6, is_sat=False, verified=False, solve_time=float('nan')),
+        make_record(status="CUSTOM_ABORT", time_seconds=0.7, is_sat=False, verified=False, solve_time=float('nan')),
+    ]
+    res = aggregate_repetition_records(recs, time_limit=30.0)
+    assert res["status"] == "CUSTOM_ABORT"
+    assert res["status"] != "LICENSE_LIMIT"
+    assert res["is_sat"] is False
+    assert res["runs_total"] == 3
+    assert res["runs_success"] == 0
+    assert "3/3 runs had unknown status (CUSTOM_ABORT)" in res["error"]
+
+    # Even number of repetitions R=2 with two different unclassified statuses
+    recs_r2 = [
+        make_record(status="CODE_FOO", time_seconds=0.5, is_sat=False, verified=False, solve_time=float('nan')),
+        make_record(status="CODE_BAR", time_seconds=0.6, is_sat=False, verified=False, solve_time=float('nan')),
+    ]
+    res_r2 = aggregate_repetition_records(recs_r2, time_limit=30.0)
+    assert res_r2["status"] in ("CODE_FOO", "CODE_BAR")
+    assert res_r2["status"] != "LICENSE_LIMIT"
+    assert res_r2["is_sat"] is False
+
+def test_mixed_recognized_and_unrecognized():
+    # 2 SAT, 1 CUSTOM_STATUS (success majority)
+    recs_succ = [
+        make_record(status="SAT", time_seconds=0.10, solve_time=0.08),
+        make_record(status="SAT", time_seconds=0.12, solve_time=0.09),
+        make_record(status="CUSTOM_STATUS", time_seconds=0.5, is_sat=False, verified=False, solve_time=float('nan')),
+    ]
+    res_succ = aggregate_repetition_records(recs_succ, time_limit=30.0)
+    assert res_succ["status"] == "SAT"
+    assert res_succ["is_sat"] is True
+    assert res_succ["runs_total"] == 3
+    assert res_succ["runs_success"] == 2
+    assert "1/3 runs had unknown status" in res_succ["error"]
+
+    # 1 SAT, 2 CUSTOM_STATUS (unrecognized majority)
+    recs_unk = [
+        make_record(status="SAT", time_seconds=0.10, solve_time=0.08),
+        make_record(status="CUSTOM_STATUS", time_seconds=0.5, is_sat=False, verified=False, solve_time=float('nan')),
+        make_record(status="CUSTOM_STATUS", time_seconds=0.6, is_sat=False, verified=False, solve_time=float('nan')),
+    ]
+    res_unk = aggregate_repetition_records(recs_unk, time_limit=30.0)
+    assert res_unk["status"] == "CUSTOM_STATUS"
+    assert res_unk["is_sat"] is False
+    assert res_unk["runs_total"] == 3
+    assert res_unk["runs_success"] == 1
+    assert "2/3 runs had unknown status (CUSTOM_STATUS)" in res_unk["error"]
+    assert "1/3 runs succeeded" in res_unk["error"]
+
+    # 1 TIMEOUT, 1 CUSTOM_STATUS (tied in R=2)
+    # Tie-breaking order: TIMEOUT > UNKNOWN, so TIMEOUT is selected. Neither has runs_license > 0.
+    recs_tie = [
+        make_record(status="TIMEOUT", time_seconds=30.0, is_sat=False, verified=False, solve_time=float('nan')),
+        make_record(status="CUSTOM_STATUS", time_seconds=0.5, is_sat=False, verified=False, solve_time=float('nan')),
+    ]
+    res_tie = aggregate_repetition_records(recs_tie, time_limit=30.0)
+    assert res_tie["status"] == "TIMEOUT"
+    assert res_tie["status"] != "LICENSE_LIMIT"
+    assert res_tie["runs_total"] == 2
+    assert res_tie["runs_timeout"] == 1
+    assert "1/2 runs timed out" in res_tie["error"]
+    assert "1/2 runs had unknown status" in res_tie["error"]
+
