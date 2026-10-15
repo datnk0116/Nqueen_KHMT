@@ -28,7 +28,7 @@ def solve_nqueens(n: int, time_limit: float = None):
     Solves N-Queens using CPLEX CP Optimizer model.
     Returns: (status, time, variables_count, constraints_count, queens, build_time, solve_time)
     """
-    build_start = time.time()
+    build_start = time.perf_counter()
     try:
         m = CpoModel("nqueens_cp")
         q = [m.integer_var(0, n - 1, f"q{i}") for i in range(n)]
@@ -41,16 +41,15 @@ def solve_nqueens(n: int, time_limit: float = None):
             constraints_count = len(m.get_constraint_list())
         except Exception:
             constraints_count = 3
-        build_time = time.time() - build_start
+        build_time = time.perf_counter() - build_start
     except Exception as e:
-        build_time = time.time() - build_start
-        print(f"CPLEX CP build exception: {e}")
+        build_time = time.perf_counter() - build_start
         err_str = str(e).lower()
         if "1016" in err_str or "license" in err_str or "size limit" in err_str:
             return ("LICENSE_LIMIT", build_time, 0, 0, [], build_time, 0.0)
         return ("ERROR", build_time, 0, 0, [], build_time, 0.0)
 
-    solve_start = time.time()
+    solve_start = time.perf_counter()
     try:
         params = {"LogVerbosity": "Quiet"}
         if time_limit is not None:
@@ -59,10 +58,7 @@ def solve_nqueens(n: int, time_limit: float = None):
             params["TimeLimit"] = 60
             
         sol = m.solve(**params)
-        if sol is not None and hasattr(sol, 'get_solve_time'):
-            solve_time = sol.get_solve_time()
-        else:
-            solve_time = time.time() - solve_start
+        solve_time = time.perf_counter() - solve_start
         total_time = build_time + solve_time
         
         if sol is None or not sol.is_solution():
@@ -81,9 +77,8 @@ def solve_nqueens(n: int, time_limit: float = None):
         queens = [(i, sol[q[i]]) for i in range(n)]
         return (status, total_time, variables_count, constraints_count, queens, build_time, solve_time)
     except Exception as e:
-        solve_time = time.time() - solve_start
+        solve_time = time.perf_counter() - solve_start
         total_time = build_time + solve_time
-        print(f"CPLEX CP solve exception: {e}")
         err_str = str(e).lower()
         if "1016" in err_str or "license" in err_str or "size limit" in err_str:
             return ("LICENSE_LIMIT", total_time, variables_count, constraints_count, [], build_time, solve_time)

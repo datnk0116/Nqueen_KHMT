@@ -7,9 +7,9 @@ from docplex.mp.model import Model
 def solve_nqueens(n: int, time_limit: float = None):
     """
     Solves N-Queens using CPLEX MIP model.
-    Returns: (status, time, variables_count, queens, build_time, solve_time)
+    Returns: (status, time, variables_count, constraints_count, queens, build_time, solve_time)
     """
-    build_start = time.time()
+    build_start = time.perf_counter()
     try:
         m = Model("nqueens_mip")
         m.context.solver.log_output = None
@@ -31,18 +31,18 @@ def solve_nqueens(n: int, time_limit: float = None):
                 
         variables_count = m.number_of_variables
         constraints_count = m.number_of_constraints
-        build_time = time.time() - build_start
+        build_time = time.perf_counter() - build_start
     except Exception as e:
-        build_time = time.time() - build_start
+        build_time = time.perf_counter() - build_start
         err_str = str(e).lower()
         if "1016" in err_str or "license" in err_str or "limit" in err_str:
             return ("LICENSE_LIMIT", build_time, 0, 0, [], build_time, 0.0)
         return ("ERROR", build_time, 0, 0, [], build_time, 0.0)
 
-    solve_start = time.time()
+    solve_start = time.perf_counter()
     try:
         sol = m.solve(log_output=False)
-        solve_time = time.time() - solve_start
+        solve_time = time.perf_counter() - solve_start
         total_time = build_time + solve_time
         
         if sol is None:
@@ -60,7 +60,7 @@ def solve_nqueens(n: int, time_limit: float = None):
         queens = [(i, j) for i in range(n) for j in range(n) if sol.get_value(x[i, j]) > 0.5]
         return (status, total_time, variables_count, constraints_count, queens, build_time, solve_time)
     except Exception as e:
-        solve_time = time.time() - solve_start
+        solve_time = time.perf_counter() - solve_start
         total_time = build_time + solve_time
         err_str = str(e).lower()
         if "1016" in err_str or "license" in err_str or "limit" in err_str:

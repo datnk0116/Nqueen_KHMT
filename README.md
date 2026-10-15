@@ -33,6 +33,20 @@ This project provides an exhaustive empirical benchmarking and analysis framewor
 
 ---
 
+## Timing Protocol
+
+The benchmarking framework enforces a unified, rigorous timing protocol across all paradigms:
+- **High-Resolution Clocks**: Time measurements utilize `time.perf_counter()`.
+- **Phase Breakdown**:
+  - `import_time`: Time taken to import and load paradigm/solver modules prior to model construction.
+  - `build_time`: Time taken to construct the model variables and constraints (excluding module import overhead).
+  - `solve_time`: Active solving time (`time.perf_counter()` elapsed around the solver invocation).
+  - `solver_reported_time`: Internal solve time reported by solvers when available (e.g., CPLEX CP via `get_solve_time()`).
+- **Subprocess Hard Timeout**: A strict hard timeout (`--time-limit`, default 30.0 seconds) is applied to the entire child process (`import_time + build_time + solve_time`). If the total time exceeds the limit, the status is recorded as `TIMEOUT`, with `import_time`, `build_time`, and `solve_time` recorded as `NaN`, and `time_seconds` set to the time limit.
+- **Repetitions & Median Reporting**: Each benchmark configuration is executed across 3 repetitions (`--repetitions 3`), and median timing metrics are reported to mitigate system jitter.
+
+---
+
 ## Getting Started & Usage
 
 ### 1. Environment Setup & Requirements
@@ -61,10 +75,11 @@ pytest tests
 ```
 
 ### 4. Running Benchmarks
-Run the full benchmarking suite across all solvers and board sizes up to $N = 128$:
+Run the full benchmarking suite across all solvers and board sizes up to $N = 128$ with customized time limit and repetitions:
 ```bash
-python src/benchmark.py
+python src/benchmark.py --time-limit 30.0 --repetitions 3 --output-dir results
 ```
+*(Note: Commercial solvers Gurobi and CPLEX require valid licenses or trial constraints; ensure license availability before execution).*
 
 ### 5. Generating the Academic Report & Visualizations
 Aggregate results, generate performance scaling charts, and compile the LaTeX report into `report.pdf`:

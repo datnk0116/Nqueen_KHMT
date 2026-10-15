@@ -8,9 +8,9 @@ from gurobipy import GRB
 def solve_nqueens(n: int, time_limit: float = None):
     """
     Solves N-Queens using Gurobi MIP model.
-    Returns: (status, time, variables_count, queens, build_time, solve_time)
+    Returns: (status, time, variables_count, constraints_count, queens, build_time, solve_time)
     """
-    build_start = time.time()
+    build_start = time.perf_counter()
     try:
         m = gp.Model("nqueens_gurobi")
         m.Params.OutputFlag = 0
@@ -33,18 +33,18 @@ def solve_nqueens(n: int, time_limit: float = None):
         m.update()
         variables_count = m.NumVars
         constraints_count = m.NumConstrs
-        build_time = time.time() - build_start
+        build_time = time.perf_counter() - build_start
     except Exception as e:
-        build_time = time.time() - build_start
+        build_time = time.perf_counter() - build_start
         err_str = str(e).lower()
         if "license" in err_str or "limit" in err_str or "size" in err_str:
             return ("LICENSE_LIMIT", build_time, 0, 0, [], build_time, 0.0)
         return ("ERROR", build_time, 0, 0, [], build_time, 0.0)
 
-    solve_start = time.time()
+    solve_start = time.perf_counter()
     try:
         m.optimize()
-        solve_time = time.time() - solve_start
+        solve_time = time.perf_counter() - solve_start
         total_time = build_time + solve_time
         
         status_map = {
@@ -63,13 +63,13 @@ def solve_nqueens(n: int, time_limit: float = None):
             
         return (status, total_time, variables_count, constraints_count, queens, build_time, solve_time)
     except gp.GurobiError as e:
-        solve_time = time.time() - solve_start
+        solve_time = time.perf_counter() - solve_start
         total_time = build_time + solve_time
         err_str = str(e).lower()
         if "license" in err_str or "limit" in err_str or "size" in err_str:
             return ("LICENSE_LIMIT", total_time, variables_count, constraints_count, [], build_time, solve_time)
         return ("ERROR", total_time, variables_count, constraints_count, [], build_time, solve_time)
     except Exception as e:
-        solve_time = time.time() - solve_start
+        solve_time = time.perf_counter() - solve_start
         total_time = build_time + solve_time
         return ("ERROR", total_time, variables_count, constraints_count, [], build_time, solve_time)
