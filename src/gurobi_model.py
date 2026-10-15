@@ -90,7 +90,6 @@ def solve_nqueens(n: int, time_limit: float = None):
             "solver_reported_time": solver_reported_time
         }
     except Exception as e:
-        solve_start = time.perf_counter()
         solve_time = time.perf_counter() - solve_start
         total_time = build_time + solve_time
         err_str = str(e).lower()

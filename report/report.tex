@@ -74,11 +74,11 @@ Benchmarks were executed on macOS Sequoia with Python 3.14, utilizing isolated s
 \section{Empirical Results and Performance Analysis}
 
 \subsection{SAT Solvers Performance}
-Table~\ref{tab:sat} summarizes SAT benchmark results across diverse encodings and solvers (solving time in seconds).
+Table~\ref{tab:sat} summarizes SAT benchmark results across diverse encodings and solvers (total time in seconds: import + build + solve).
 
 \begin{table*}[htbp]
 \centering
-\caption{SAT Solvers Performance Metrics (Solving Time in Seconds)} \label{tab:sat}
+\caption{SAT Solvers Performance Metrics (Total Time in Seconds: Import + Build + Solve)} \label{tab:sat}
 \resizebox{\textwidth}{!}{%
 \begin{tabular}{llrrrrr}
 \toprule
@@ -162,7 +162,7 @@ Table~\ref{tab:cpsat} outlines OR-Tools CP-SAT performance.
 \caption{CP-SAT Performance Metrics} \label{tab:cpsat}
 \begin{tabular}{llrrrr}
 \toprule
-$N$ & Model Variant & Solver & Variables & Constraints & Time (s) \\
+$N$ & Model Variant & Solver & Variables & Constraints & Total Time (s) \\
 \midrule
 8 & allowed & ortools-cpsat & 8 & 29 & 0.183983 \\
 8 & boolean & ortools-cpsat & 64 & 46 & 0.179115 \\
@@ -192,7 +192,7 @@ Table~\ref{tab:mip} summarizes CBC and SCIP performance.
 \caption{MIP (CBC/SCIP) Performance Metrics} \label{tab:mip}
 \begin{tabular}{llrrrr}
 \toprule
-$N$ & Model Variant & Solver & Variables & Constraints & Time (s) \\
+$N$ & Model Variant & Solver & Variables & Constraints & Total Time (s) \\
 \midrule
 8 & binary & cbc & 64 & 46 & 0.038747 \\
 8 & binary & scip & 64 & 46 & 0.039792 \\
@@ -223,7 +223,7 @@ Tables~\ref{tab:gurobi} and \ref{tab:cplex} present Gurobi and CPLEX results.
 \caption{Gurobi Performance Metrics} \label{tab:gurobi}
 \begin{tabular}{llrrrr}
 \toprule
-$N$ & Model Variant & Solver & Variables & Constraints & Time (s) \\
+$N$ & Model Variant & Solver & Variables & Constraints & Total Time (s) \\
 \midrule
 8 & binary & gurobi & 64 & 42 & 0.000948 \\
 16 & binary & gurobi & 256 & 90 & 0.001468 \\
@@ -239,7 +239,7 @@ $N$ & Model Variant & Solver & Variables & Constraints & Time (s) \\
 \caption{CPLEX Performance Metrics} \label{tab:cplex}
 \begin{tabular}{llrrrr}
 \toprule
-$N$ & Model Variant & Solver & Variables & Constraints & Time (s) \\
+$N$ & Model Variant & Solver & Variables & Constraints & Total Time (s) \\
 \midrule
 8 & binary & cplex & 64 & 42 & 0.010834 \\
 8 & integer & cplex-cp & 8 & 3 & 0.000264 \\
@@ -281,14 +281,14 @@ SAT & minisat22 & 128 & 3 \\
 \begin{figure}[htbp]
 \centering
 \includegraphics[width=0.85\textwidth]{sat_time_cadical.png}
-\caption{SAT (CaDiCaL) solving time scaling across board sizes $N$.}
+\caption{SAT (CaDiCaL) total time scaling across board sizes $N$.}
 \label{fig:sat_time}
 \end{figure}
 
 \begin{figure}[htbp]
 \centering
 \includegraphics[width=0.85\textwidth]{paradigm_comparison.png}
-\caption{Comparison of mean solving time across all solver paradigms (log scale; timeouts counted as 30 s, so means are lower bounds).}
+\caption{Comparison of mean model time across all solver paradigms (build + solve; log scale; timeouts counted as 30 s, so means are lower bounds).}
 \label{fig:paradigm_time}
 \end{figure}
 
@@ -309,9 +309,9 @@ SAT & minisat22 & 128 & 3 \\
 \section{Discussion and Comprehensive Solver Comparison}
 The empirical results reveal distinct performance characteristics and limitations across all six solver groups (SAT, CP-SAT, open-source MIP, Gurobi, CPLEX MIP, and CPLEX CP) when scaling across the $N$ range ($N = 8$ to $128$):
 \begin{itemize}
-    \item \textbf{Comparative Performance Across Six Solver Groups}: Across moderate to large scales ($N = 8$ to $128$), commercial engines (CPLEX MIP, CPLEX CP, Gurobi) and high-performance solvers (CP-SAT, CaDiCaL) demonstrate exceptional scalability. At $N = 128$, recorded runtimes range from approximately 10.5 ms for CPLEX CP to 0.713 s for CP-SAT (noting that measurement methodologies differ across solvers, where reported \texttt{time\_seconds} is the median over repetitions of each run's \texttt{build\_time + solve\_time} — with build and solve medians reported separately so they may not sum exactly — excluding parent-side process launch overhead), whereas many SAT combinations take tens of seconds or timeout.
+    \item \textbf{Comparative Performance Across Six Solver Groups}: Across moderate to large scales ($N = 8$ to $128$), commercial engines (CPLEX MIP, CPLEX CP, Gurobi) and high-performance solvers (CP-SAT, CaDiCaL) demonstrate exceptional scalability. At $N = 128$, recorded runtimes range from approximately 10.5 ms for CPLEX CP to 0.713 s for CP-SAT (noting that measurement methodologies differ across solvers, where reported \texttt{time\_seconds} is the median over repetitions of each run's \texttt{import\_time + build\_time + solve\_time} — with build and solve medians reported separately so they may not sum exactly — excluding parent-side process launch overhead). Crucially, \texttt{import\_time} is library-dependent and constant with respect to $N$ (for instance, OR-Tools CP-SAT incurs $\approx 0.3$~s of Python module import overhead regardless of $N$), meaning cross-paradigm runtime comparisons at small $N$ primarily reflect library import latency rather than algorithmic solving speed. To isolate solver efficiency from module import overhead, Figure~\ref{fig:paradigm_time} (Plot~2) evaluates \emph{model time} (\texttt{build\_time + solve\_time}), with timeouts counted as 30~s, whereas many SAT combinations take tens of seconds or timeout.
     \item \textbf{FEASIBLE vs. OPTIMAL Status Semantics}: For pure satisfaction problems (such as $N$-Queens without an objective function), finding any valid non-attacking configuration successfully solves the problem. Solution status labels are solver-specific and API-dependent: CPLEX CP reports \texttt{FEASIBLE}, whereas CP-SAT reports \texttt{OPTIMAL} and MIP solvers may report \texttt{OPTIMAL} for satisfaction models. Solution validity in our framework is independently verified using the benchmark's verification module rather than relying solely on solver status strings.
-    \item \textbf{CP Optimizer Process Startup Overhead}: CP Optimizer relies on an external binary executable (\texttt{cpoptimizer}). Spawning this subprocess incurs inter-process communication and process startup overhead; actual total measured runtimes for CPLEX CP increase from approximately 0.26 ms at $N = 8$ to 10.53 ms at $N = 128$. Note that the \texttt{solve\_time} of CPLEX CP comes from \texttt{get\_solve\_time()}, which in CSV records values of 0.00 and 0.01 (indicating a resolution of ~10 ms); thus, the ~10.5 ms recorded at $N = 128$ appears to be predominantly 10 ms rounding plus ~0.5 ms model build time, and should not be directly compared on equal footing with CP-SAT's ~0.713 s wall-clock measurement.
+    \item \textbf{CP Optimizer Process Startup Overhead}: CP Optimizer relies on an external binary executable (\texttt{cpoptimizer}). Spawning this subprocess incurs inter-process communication and process startup overhead; actual total measured runtimes for CPLEX CP increase from approximately 0.3 ms at $N = 8$ to 10.5 ms at $N = 128$. Note that the \texttt{solve\_time} of CPLEX CP comes from \texttt{get\_solve\_time()}, which in CSV records values of 0.00 and 0.01 (indicating a resolution of ~10 ms); thus, the ~10.5 ms recorded at $N = 128$ appears to be predominantly 10 ms rounding plus ~0.5 ms model build time, and should not be directly compared on equal footing with CP-SAT's ~0.713 s wall-clock measurement.
     \item \textbf{Gurobi Trial License Limitations}: Gurobi's trial license restricts model dimensions for larger instances, capping trials at $N \le 44$. For $N > 44$, full commercial licenses or alternative solvers (CPLEX, CP-SAT, CaDiCaL) are required.
     \item \textbf{SAT Scaling and Encodings}: CaDiCaL and Kissat handle large clause databases efficiently up to $N = 128$ (with maximum recorded runtimes of approximately 8.60 s for CaDiCaL and 6.03 s for Kissat), whereas MapleCM reaches a maximum recorded runtime of approximately 26.22 seconds under product encoding at $N = 128$, and Glucose3, MiniSat22, and MapleCM encounter frequent timeouts (10/25 cases timed out at $N = 128$, specifically Glucose3: 4, MiniSat22: 3, MapleCM: 3). Compact cardinality encodings such as Commander (47,096 clauses at $N = 64$) and Sequential Counter (47,692 clauses at $N = 64$) dramatically reduce clause footprints compared to naive Pairwise encodings.
     \item \textbf{CP-SAT Allowed Assignment Timeout at $N = 128$}: At $N = 128$, the CP-SAT allowed assignment variant timed out within 30 s; the underlying cause has not been isolated.
