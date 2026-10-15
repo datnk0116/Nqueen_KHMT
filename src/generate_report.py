@@ -167,6 +167,9 @@ def build_discussion_stats(combined_df):
         maplecm_max = 26.22
         maplecm_max_variant = "product"
 
+    has_solver_reported_time = not combined_df.empty and 'solver_reported_time' in combined_df.columns
+    cplex_cp_128_reported_s = cplex_cp_128_df['solver_reported_time'].median() if not cplex_cp_128_df.empty and 'solver_reported_time' in cplex_cp_128_df.columns else 0.0
+
     return {
         'cplex_cp_8_ms': cplex_cp_8,
         'cplex_cp_128_ms': cplex_cp_128,
@@ -184,6 +187,8 @@ def build_discussion_stats(combined_df):
         'g3_to': g3_to,
         'm22_to': m22_to,
         'mcm_to': mcm_to,
+        'has_solver_reported_time': has_solver_reported_time,
+        'cplex_cp_128_reported_s': cplex_cp_128_reported_s,
     }
 
 def generate_tex(results_dir="results", out_dir="report"):
@@ -244,10 +249,11 @@ def generate_tex(results_dir="results", out_dir="report"):
             plt.savefig(os.path.join(out_dir, "sat_time_cadical.png"), dpi=300)
             plt.close()
 
-        # Plot 2: Paradigm comparison across all solver groups (timeouts counted as 30 s)
+        # Plot 2: Paradigm comparison across all solver groups (timeouts counted as 30 s, excluding LICENSE_LIMIT/MEMOUT)
         fig, ax = plt.subplots(figsize=(8, 5))
-        for paradigm in combined_df['paradigm'].unique():
-            sub = combined_df[combined_df['paradigm'] == paradigm]
+        valid_paradigm_df = combined_df[~combined_df['status'].isin(['LICENSE_LIMIT', 'MEMOUT'])] if not combined_df.empty else combined_df
+        for paradigm in valid_paradigm_df['paradigm'].unique():
+            sub = valid_paradigm_df[valid_paradigm_df['paradigm'] == paradigm]
             if not sub.empty:
                 grouped = sub.groupby('n')['time_seconds'].mean()
                 ax.plot(grouped.index, grouped.values, marker='s', label=paradigm)
@@ -539,7 +545,7 @@ The empirical results reveal distinct performance characteristics and limitation
 \begin{itemize}
     \item \textbf{Comparative Performance Across Six Solver Groups}: Across moderate to large scales ($N = 8$ to $128$), commercial engines (CPLEX MIP, CPLEX CP, Gurobi) and high-performance solvers (CP-SAT, CaDiCaL) demonstrate exceptional scalability. At $N = 128$, recorded runtimes range from approximately """ + f"{stats['cplex_cp_128_ms']:.1f}" + r""" ms for CPLEX CP to """ + f"{stats['cpsat_int_128_s']:.3f}" + r""" s for CP-SAT (noting that measurement methodologies differ across solvers, where reported \texttt{time\_seconds} is the median over repetitions of each run's \texttt{build\_time + solve\_time} — with build and solve medians reported separately so they may not sum exactly — excluding parent-side process launch overhead), whereas many SAT combinations take tens of seconds or timeout.
     \item \textbf{FEASIBLE vs. OPTIMAL Status Semantics}: For pure satisfaction problems (such as $N$-Queens without an objective function), finding any valid non-attacking configuration successfully solves the problem. Solution status labels are solver-specific and API-dependent: CPLEX CP reports \texttt{FEASIBLE}, whereas CP-SAT reports \texttt{OPTIMAL} and MIP solvers may report \texttt{OPTIMAL} for satisfaction models. Solution validity in our framework is independently verified using the benchmark's verification module rather than relying solely on solver status strings.
-    \item \textbf{CP Optimizer Process Startup Overhead}: CP Optimizer relies on an external binary executable (\texttt{cpoptimizer}). Spawning this subprocess incurs inter-process communication and process startup overhead; actual total measured runtimes for CPLEX CP increase from approximately """ + f"{stats['cplex_cp_8_ms']:.2f}" + r""" ms at $N = 8$ to """ + f"{stats['cplex_cp_128_ms']:.2f}" + r""" ms at $N = 128$. Note that the \texttt{solve\_time} of CPLEX CP comes from \texttt{get\_solve\_time()}, which in CSV records values of """ + stats['cplex_cp_solve_times_str'] + r""" (indicating a resolution of ~10 ms); thus, the ~""" + f"{stats['cplex_cp_128_ms']:.1f}" + r""" ms recorded at $N = 128$ appears to be predominantly 10 ms rounding plus ~""" + f"{stats['cplex_cp_128_build_ms']:.1f}" + r""" ms model build time, and should not be directly compared on equal footing with CP-SAT's ~""" + f"{stats['cpsat_int_128_s']:.3f}" + r""" s wall-clock measurement.
+    {cp_overhead_text}
     \item \textbf{Gurobi Trial License Limitations}: Gurobi's trial license restricts model dimensions for larger instances, capping trials at $N \le 44$. For $N > 44$, full commercial licenses or alternative solvers (CPLEX, CP-SAT, CaDiCaL) are required.
     \item \textbf{SAT Scaling and Encodings}: CaDiCaL and Kissat handle large clause databases efficiently up to $N = 128$ (with maximum recorded runtimes of approximately """ + f"{stats['cadical_max']:.2f}" + r""" s for CaDiCaL and """ + f"{stats['kissat_max']:.2f}" + r""" s for Kissat), whereas MapleCM reaches a maximum recorded runtime of approximately """ + f"{stats['maplecm_max']:.2f}" + r""" seconds under """ + stats['maplecm_max_variant'] + r""" encoding at $N = 128$, and Glucose3, MiniSat22, and MapleCM encounter frequent timeouts (""" + f"{stats['sat_128_timeouts']}/{stats['sat_128_total']}" + r""" cases timed out at $N = 128$, specifically Glucose3: """ + f"{stats['g3_to']}" + r""", MiniSat22: """ + f"{stats['m22_to']}" + r""", MapleCM: """ + f"{stats['mcm_to']}" + r"""). Compact cardinality encodings such as Commander (47,096 clauses at $N = 64$) and Sequential Counter (47,692 clauses at $N = 64$) dramatically reduce clause footprints compared to naive Pairwise encodings.
     \item \textbf{CP-SAT Allowed Assignment Timeout at $N = 128$}: At $N = 128$, the CP-SAT allowed assignment variant timed out within 30 s; the underlying cause has not been isolated.
@@ -578,7 +584,12 @@ The source code, benchmark runners, raw experimental results (CSV files), and re
 \end{document}
 """
 
-    # Replace placeholders with actual table rows
+    has_reported = stats.get('has_solver_reported_time', False)
+    reported_s = stats.get('cplex_cp_128_reported_s', 0.0)
+    if has_reported:
+        cp_overhead_text = r"""\item \textbf{CP Optimizer Process Startup Overhead}: CP Optimizer relies on an external binary executable (\texttt{cpoptimizer}). Spawning this subprocess incurs inter-process communication and process startup overhead; actual total measured runtimes for CPLEX CP increase from approximately """ + f"{stats['cplex_cp_8_ms']:.2f}" + r""" ms at $N = 8$ to """ + f"{stats['cplex_cp_128_ms']:.2f}" + r""" ms at $N = 128$. Here, \texttt{solve\_time} measures the wall-clock duration around the solve call (including cpoptimizer process startup), while \texttt{solver\_reported_time} is the number reported by the solver (median of """ + f"{reported_s:.3f}" + r""" s at $N = 128$); thus, measured runtimes include process startup and inter-process communication, and should not be directly compared on equal footing with CP-SAT's wall-clock measurement."""
+    else:
+        cp_overhead_text = r"""\item \textbf{CP Optimizer Process Startup Overhead}: CP Optimizer relies on an external binary executable (\texttt{cpoptimizer}). Spawning this subprocess incurs inter-process communication and process startup overhead; actual total measured runtimes for CPLEX CP increase from approximately """ + f"{stats['cplex_cp_8_ms']:.2f}" + r""" ms at $N = 8$ to """ + f"{stats['cplex_cp_128_ms']:.2f}" + r""" ms at $N = 128$. Note that the \texttt{solve\_time} of CPLEX CP comes from \texttt{get\_solve\_time()}, which in CSV records values of """ + stats['cplex_cp_solve_times_str'] + r""" (indicating a resolution of ~10 ms); thus, the ~""" + f"{stats['cplex_cp_128_ms']:.1f}" + r""" ms recorded at $N = 128$ appears to be predominantly 10 ms rounding plus ~""" + f"{stats['cplex_cp_128_build_ms']:.1f}" + r""" ms model build time, and should not be directly compared on equal footing with CP-SAT's ~""" + f"{stats['cpsat_int_128_s']:.3f}" + r""" s wall-clock measurement."""
     latex_content = latex_content.replace("% {sat_table_tex}", sat_table_tex)
     latex_content = latex_content.replace("% {sat_size_table_tex}", sat_size_table_tex)
     latex_content = latex_content.replace("% {cpsat_table_tex}", cpsat_table_tex)
@@ -586,6 +597,7 @@ The source code, benchmark runners, raw experimental results (CSV files), and re
     latex_content = latex_content.replace("% {gurobi_table_tex}", gurobi_table_tex)
     latex_content = latex_content.replace("% {cplex_table_tex}", cplex_table_tex)
     latex_content = latex_content.replace("% {timeout_table_tex}", timeout_table_tex)
+    latex_content = latex_content.replace("{cp_overhead_text}", cp_overhead_text)
 
     latex_path = os.path.join(out_dir, "report.tex")
     with open(latex_path, "w") as f:

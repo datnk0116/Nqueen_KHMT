@@ -8,9 +8,12 @@ from gurobipy import GRB
 def solve_nqueens(n: int, time_limit: float = None):
     """
     Solves N-Queens using Gurobi MIP model.
-    Returns: (status, time, variables_count, constraints_count, queens, build_time, solve_time)
+    Returns dict: {"status", "total_time", "variables_count", "constraints_count", "queens", "build_time", "solve_time", "solver_reported_time"}
     """
     build_start = time.perf_counter()
+    variables_count = 0
+    constraints_count = 0
+    m = None
     try:
         m = gp.Model("nqueens_gurobi")
         m.Params.OutputFlag = 0
@@ -37,9 +40,17 @@ def solve_nqueens(n: int, time_limit: float = None):
     except Exception as e:
         build_time = time.perf_counter() - build_start
         err_str = str(e).lower()
-        if "license" in err_str or "limit" in err_str or "size" in err_str:
-            return ("LICENSE_LIMIT", build_time, 0, 0, [], build_time, 0.0)
-        return ("ERROR", build_time, 0, 0, [], build_time, 0.0)
+        status = "LICENSE_LIMIT" if ("license" in err_str or "limit" in err_str or "size" in err_str) else "ERROR"
+        return {
+            "status": status,
+            "total_time": build_time,
+            "variables_count": variables_count,
+            "constraints_count": constraints_count,
+            "queens": [],
+            "build_time": build_time,
+            "solve_time": 0.0,
+            "solver_reported_time": None
+        }
 
     solve_start = time.perf_counter()
     try:
@@ -61,15 +72,42 @@ def solve_nqueens(n: int, time_limit: float = None):
         if m.Status in (GRB.OPTIMAL, GRB.SUBOPTIMAL) or (hasattr(m, 'SolCount') and m.SolCount > 0):
             queens = [(i, j) for i in range(n) for j in range(n) if x[i, j].X > 0.5]
             
-        return (status, total_time, variables_count, constraints_count, queens, build_time, solve_time)
-    except gp.GurobiError as e:
+        solver_reported_time = None
+        if hasattr(m, 'Runtime'):
+            try:
+                solver_reported_time = m.Runtime
+            except Exception:
+                pass
+
+        return {
+            "status": status,
+            "total_time": total_time,
+            "variables_count": variables_count,
+            "constraints_count": constraints_count,
+            "queens": queens,
+            "build_time": build_time,
+            "solve_time": solve_time,
+            "solver_reported_time": solver_reported_time
+        }
+    except Exception as e:
+        solve_start = time.perf_counter()
         solve_time = time.perf_counter() - solve_start
         total_time = build_time + solve_time
         err_str = str(e).lower()
-        if "license" in err_str or "limit" in err_str or "size" in err_str:
-            return ("LICENSE_LIMIT", total_time, variables_count, constraints_count, [], build_time, solve_time)
-        return ("ERROR", total_time, variables_count, constraints_count, [], build_time, solve_time)
-    except Exception as e:
-        solve_time = time.perf_counter() - solve_start
-        total_time = build_time + solve_time
-        return ("ERROR", total_time, variables_count, constraints_count, [], build_time, solve_time)
+        status = "LICENSE_LIMIT" if ("license" in err_str or "limit" in err_str or "size" in err_str) else "ERROR"
+        solver_reported_time = None
+        if m is not None and hasattr(m, 'Runtime'):
+            try:
+                solver_reported_time = m.Runtime
+            except Exception:
+                pass
+        return {
+            "status": status,
+            "total_time": total_time,
+            "variables_count": variables_count,
+            "constraints_count": constraints_count,
+            "queens": [],
+            "build_time": build_time,
+            "solve_time": solve_time,
+            "solver_reported_time": solver_reported_time
+        }

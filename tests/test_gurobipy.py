@@ -9,7 +9,10 @@ from gurobi_model import solve_nqueens
 from board import verify
 
 def test_gurobi_small():
-    status, total_time, variables_count, constraints_count, queens, build_time, solve_time = solve_nqueens(4, time_limit=10.0)
+    res = solve_nqueens(4, time_limit=10.0)
+    status = res["status"]
+    constraints_count = res["constraints_count"]
+    queens = res["queens"]
     assert status in ("OPTIMAL", "SUBOPTIMAL", "LICENSE_LIMIT")
     assert constraints_count >= 0
     if status in ("OPTIMAL", "SUBOPTIMAL"):

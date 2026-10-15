@@ -113,7 +113,15 @@ try:
         import_start = time.perf_counter()
         from gurobi_model import solve_nqueens
         import_time = time.perf_counter() - import_start
-        status, total_time, variables_count, constraints_count, queens, build_time, solve_time, solver_reported_time = solve_nqueens(n, time_limit=time_limit)
+        res = solve_nqueens(n, time_limit=time_limit)
+        status = res["status"]
+        total_time = res["total_time"]
+        variables_count = res["variables_count"]
+        constraints_count = res["constraints_count"]
+        queens = res["queens"]
+        build_time = res["build_time"]
+        solve_time = res["solve_time"]
+        solver_reported_time = res["solver_reported_time"]
         is_sat = status in ("OPTIMAL", "SUBOPTIMAL") or len(queens) > 0
         verified = verify(queens, n) if queens else False
         
@@ -121,7 +129,15 @@ try:
         import_start = time.perf_counter()
         from cplex_mip_model import solve_nqueens
         import_time = time.perf_counter() - import_start
-        status, total_time, variables_count, constraints_count, queens, build_time, solve_time, solver_reported_time = solve_nqueens(n, time_limit=time_limit)
+        res = solve_nqueens(n, time_limit=time_limit)
+        status = res["status"]
+        total_time = res["total_time"]
+        variables_count = res["variables_count"]
+        constraints_count = res["constraints_count"]
+        queens = res["queens"]
+        build_time = res["build_time"]
+        solve_time = res["solve_time"]
+        solver_reported_time = res["solver_reported_time"]
         is_sat = status in ("OPTIMAL", "FEASIBLE") or len(queens) > 0
         verified = verify(queens, n) if queens else False
         
@@ -129,7 +145,15 @@ try:
         import_start = time.perf_counter()
         from cplex_cp_model import solve_nqueens
         import_time = time.perf_counter() - import_start
-        status, total_time, variables_count, constraints_count, queens, build_time, solve_time, solver_reported_time = solve_nqueens(n, time_limit=time_limit)
+        res = solve_nqueens(n, time_limit=time_limit)
+        status = res["status"]
+        total_time = res["total_time"]
+        variables_count = res["variables_count"]
+        constraints_count = res["constraints_count"]
+        queens = res["queens"]
+        build_time = res["build_time"]
+        solve_time = res["solve_time"]
+        solver_reported_time = res["solver_reported_time"]
         is_sat = status in ("OPTIMAL", "FEASIBLE", "Feasible") or len(queens) > 0
         verified = verify(queens, n) if queens else False
         
@@ -169,7 +193,7 @@ except Exception as e:
         "import_time": float('nan'),
         "build_time": float('nan'),
         "solve_time": float('nan'),
-        "time_seconds": time_limit if time_limit is not None else 30.0,
+        "time_seconds": 0.0,
         "solver_reported_time": None,
         "verified": False,
         "error": str(e)

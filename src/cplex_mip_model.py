@@ -7,9 +7,12 @@ from docplex.mp.model import Model
 def solve_nqueens(n: int, time_limit: float = None):
     """
     Solves N-Queens using CPLEX MIP model.
-    Returns: (status, time, variables_count, constraints_count, queens, build_time, solve_time)
+    Returns dict: {"status", "total_time", "variables_count", "constraints_count", "queens", "build_time", "solve_time", "solver_reported_time"}
     """
     build_start = time.perf_counter()
+    variables_count = 0
+    constraints_count = 0
+    m = None
     try:
         m = Model("nqueens_mip")
         m.context.solver.log_output = None
@@ -35,9 +38,17 @@ def solve_nqueens(n: int, time_limit: float = None):
     except Exception as e:
         build_time = time.perf_counter() - build_start
         err_str = str(e).lower()
-        if "1016" in err_str or "license" in err_str or "limit" in err_str:
-            return ("LICENSE_LIMIT", build_time, 0, 0, [], build_time, 0.0)
-        return ("ERROR", build_time, 0, 0, [], build_time, 0.0)
+        status = "LICENSE_LIMIT" if ("1016" in err_str or "license" in err_str or "limit" in err_str) else "ERROR"
+        return {
+            "status": status,
+            "total_time": build_time,
+            "variables_count": variables_count,
+            "constraints_count": constraints_count,
+            "queens": [],
+            "build_time": build_time,
+            "solve_time": 0.0,
+            "solver_reported_time": None
+        }
 
     solve_start = time.perf_counter()
     try:
@@ -45,8 +56,23 @@ def solve_nqueens(n: int, time_limit: float = None):
         solve_time = time.perf_counter() - solve_start
         total_time = build_time + solve_time
         
+        solver_reported_time = None
+        if sol is not None and hasattr(sol, 'solve_details') and hasattr(sol.solve_details, 'time'):
+            solver_reported_time = sol.solve_details.time
+        elif hasattr(m, 'solve_details') and hasattr(m.solve_details, 'time'):
+            solver_reported_time = m.solve_details.time
+
         if sol is None:
-            return ("NO_SOLUTION", total_time, variables_count, constraints_count, [], build_time, solve_time)
+            return {
+                "status": "NO_SOLUTION",
+                "total_time": total_time,
+                "variables_count": variables_count,
+                "constraints_count": constraints_count,
+                "queens": [],
+                "build_time": build_time,
+                "solve_time": solve_time,
+                "solver_reported_time": solver_reported_time
+            }
             
         raw_status = str(sol.solve_details.status) if hasattr(sol, 'solve_details') and hasattr(sol.solve_details, 'status') else "OPTIMAL"
         status_upper = raw_status.upper()
@@ -58,11 +84,32 @@ def solve_nqueens(n: int, time_limit: float = None):
             status = raw_status
             
         queens = [(i, j) for i in range(n) for j in range(n) if sol.get_value(x[i, j]) > 0.5]
-        return (status, total_time, variables_count, constraints_count, queens, build_time, solve_time)
+        return {
+            "status": status,
+            "total_time": total_time,
+            "variables_count": variables_count,
+            "constraints_count": constraints_count,
+            "queens": queens,
+            "build_time": build_time,
+            "solve_time": solve_time,
+            "solver_reported_time": solver_reported_time
+        }
     except Exception as e:
+        solve_start = time.perf_counter()
         solve_time = time.perf_counter() - solve_start
         total_time = build_time + solve_time
         err_str = str(e).lower()
-        if "1016" in err_str or "license" in err_str or "limit" in err_str:
-            return ("LICENSE_LIMIT", total_time, variables_count, constraints_count, [], build_time, solve_time)
-        return ("ERROR", total_time, variables_count, constraints_count, [], build_time, solve_time)
+        status = "LICENSE_LIMIT" if ("1016" in err_str or "license" in err_str or "limit" in err_str) else "ERROR"
+        solver_reported_time = None
+        if m is not None and hasattr(m, 'solve_details') and hasattr(m.solve_details, 'time'):
+            solver_reported_time = m.solve_details.time
+        return {
+            "status": status,
+            "total_time": total_time,
+            "variables_count": variables_count,
+            "constraints_count": constraints_count,
+            "queens": [],
+            "build_time": build_time,
+            "solve_time": solve_time,
+            "solver_reported_time": solver_reported_time
+        }
