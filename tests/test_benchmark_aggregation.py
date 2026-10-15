@@ -5,7 +5,7 @@ sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '../s
 import pytest
 import math
 import pandas as pd
-from benchmark import aggregate_repetition_records, run_benchmarks_with_repetitions
+from benchmark import aggregate_repetition_records, run_benchmarks_with_repetitions, classify_status
 
 def make_record(status="SAT", time_seconds=0.1, is_sat=True, verified=True,
                 import_time=0.01, build_time=0.01, solve_time=0.08,
@@ -622,4 +622,122 @@ def test_mixed_recognized_and_unrecognized():
     assert res_tie["runs_timeout"] == 1
     assert "1/2 runs timed out" in res_tie["error"]
     assert "1/2 runs had unknown status" in res_tie["error"]
+
+def test_single_model_invalid_record_classification():
+    rec = make_record(status="MODEL_INVALID", is_sat=False, verified=False, time_seconds=0.05, solve_time=float('nan'))
+    cat, canonical = classify_status(rec)
+    assert cat == "ERROR"
+    assert canonical == "MODEL_INVALID"
+
+    res = aggregate_repetition_records([rec], time_limit=30.0)
+    assert res["status"] == "ERROR"
+    assert res["status"] != "INFEASIBLE"
+    assert res["is_sat"] is False
+    assert res["verified"] is False
+    assert res["runs_total"] == 1
+    assert res["runs_error"] == 1
+    assert res["runs_success"] == 0
+    assert res["runs_timeout"] == 0
+    assert "1/1 runs errored: MODEL_INVALID" in res["error"]
+    assert math.isnan(res["solve_time"])
+
+def test_three_model_invalid_repetitions_aggregate_to_error():
+    recs = [
+        make_record(status="MODEL_INVALID", is_sat=False, verified=False, time_seconds=0.05, solve_time=float('nan')),
+        make_record(status="MODEL_INVALID", is_sat=False, verified=False, time_seconds=0.06, solve_time=float('nan')),
+        make_record(status="MODEL_INVALID", is_sat=False, verified=False, time_seconds=0.04, solve_time=float('nan')),
+    ]
+    res = aggregate_repetition_records(recs, time_limit=30.0)
+    assert res["status"] == "ERROR"
+    assert res["status"] != "INFEASIBLE"
+    assert res["is_sat"] is False
+    assert res["verified"] is False
+    assert res["runs_total"] == 3
+    assert res["runs_error"] == 3
+    assert res["runs_success"] == 0
+    assert res["runs_timeout"] == 0
+    assert "3/3 runs errored: MODEL_INVALID" in res["error"]
+    assert "infeasible" not in res["error"].lower()
+    assert math.isnan(res["solve_time"])
+    assert math.isnan(res["build_time"])
+    assert math.isnan(res["import_time"])
+    assert math.isnan(res["model_time"])
+
+def test_mixed_model_invalid_and_success_strict_majority():
+    # 2 SAT, 1 MODEL_INVALID (strict majority success)
+    recs_succ = [
+        make_record(status="SAT", time_seconds=0.10, solve_time=0.08),
+        make_record(status="SAT", time_seconds=0.12, solve_time=0.09),
+        make_record(status="MODEL_INVALID", is_sat=False, verified=False, time_seconds=0.05, solve_time=float('nan')),
+    ]
+    res_succ = aggregate_repetition_records(recs_succ, time_limit=30.0)
+    assert res_succ["status"] == "SAT"
+    assert res_succ["is_sat"] is True
+    assert res_succ["verified"] is True
+    assert res_succ["runs_total"] == 3
+    assert res_succ["runs_success"] == 2
+    assert res_succ["runs_error"] == 1
+    assert "1/3 runs errored" in res_succ["error"]
+    assert res_succ["solve_time"] == pytest.approx(0.085)
+
+    # 1 SAT, 2 MODEL_INVALID (error majority)
+    recs_err = [
+        make_record(status="SAT", time_seconds=0.10, solve_time=0.08),
+        make_record(status="MODEL_INVALID", is_sat=False, verified=False, time_seconds=0.05, solve_time=float('nan'),
+                    error="OR-Tools rejected constraints"),
+        make_record(status="MODEL_INVALID", is_sat=False, verified=False, time_seconds=0.05, solve_time=float('nan'),
+                    error="OR-Tools rejected constraints"),
+    ]
+    res_err = aggregate_repetition_records(recs_err, time_limit=30.0)
+    assert res_err["status"] == "ERROR"
+    assert res_err["status"] != "INFEASIBLE"
+    assert res_err["is_sat"] is False
+    assert res_err["verified"] is False
+    assert res_err["runs_total"] == 3
+    assert res_err["runs_success"] == 1
+    assert res_err["runs_error"] == 2
+    assert "2/3 runs errored: OR-Tools rejected constraints" in res_err["error"]
+    assert "1/3 runs succeeded" in res_err["error"]
+    assert math.isnan(res_err["solve_time"])
+
+def test_unsat_and_infeasible_preserved_classification():
+    rec_unsat = make_record(status="UNSAT", is_sat=False, verified=True, solve_time=float('nan'))
+    cat_u, can_u = classify_status(rec_unsat)
+    assert cat_u == "INFEASIBLE"
+    assert can_u == "UNSAT"
+
+    rec_inf = make_record(status="INFEASIBLE", is_sat=False, verified=True, solve_time=float('nan'))
+    cat_i, can_i = classify_status(rec_inf)
+    assert cat_i == "INFEASIBLE"
+    assert can_i == "INFEASIBLE"
+
+    res_unsat = aggregate_repetition_records([rec_unsat] * 3, time_limit=30.0)
+    assert res_unsat["status"] == "UNSAT"
+    assert res_unsat["is_sat"] is False
+    assert res_unsat["verified"] is True
+    assert res_unsat["runs_error"] == 0
+    assert "3/3 runs proved infeasible (UNSAT)" in res_unsat["error"]
+
+    res_inf = aggregate_repetition_records([rec_inf] * 3, time_limit=30.0)
+    assert res_inf["status"] == "INFEASIBLE"
+    assert res_inf["is_sat"] is False
+    assert res_inf["verified"] is True
+    assert res_inf["runs_error"] == 0
+    assert "3/3 runs proved infeasible (INFEASIBLE)" in res_inf["error"]
+
+def test_unknown_and_model_invalid_never_license_limit():
+    # R=2: 1 MODEL_INVALID, 1 UNKNOWN_CUSTOM
+    # Tie-breaker: ERROR > UNKNOWN, runs_license == 0 -> must NEVER be LICENSE_LIMIT!
+    recs = [
+        make_record(status="MODEL_INVALID", is_sat=False, verified=False, solve_time=float('nan')),
+        make_record(status="SOME_UNKNOWN_CODE", is_sat=False, verified=False, solve_time=float('nan')),
+    ]
+    res = aggregate_repetition_records(recs, time_limit=30.0)
+    assert res["status"] == "ERROR"
+    assert res["status"] != "LICENSE_LIMIT"
+    assert res["is_sat"] is False
+    assert res["runs_error"] == 1
+    assert "1/2 runs errored" in res["error"]
+    assert "1/2 runs had unknown status" in res["error"]
+
 

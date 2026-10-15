@@ -51,7 +51,7 @@ The benchmarking framework enforces a unified, rigorous timing and timeout proto
   - **Status Classification Layer**: Employs a dedicated classification layer (`classify_status()`) that cleanly categorizes solver outcomes into `SUCCESS`, `TIMEOUT`, `MEMOUT`, `LICENSE_LIMIT`, `INFEASIBLE`, `ERROR`, and `UNKNOWN`:
     - Successful statuses (`OPTIMAL`, `FEASIBLE`, `SAT`, `SUBOPTIMAL`) are accepted as success only when their solution validity requirements are satisfied (`is_sat = True` and `verified = True`). Unverified or unvalidated outputs degrade to `ERROR`.
     - Normalizes case variations across solvers (e.g. CPLEX CP `Feasible` is normalized to `FEASIBLE`) while preserving solver-specific status semantics (e.g. Gurobi `SUBOPTIMAL`).
-    - Explicitly identifies proven unsatisfiability (`UNSAT`, `INFEASIBLE`, `MODEL_INVALID`) with verified status tracking.
+    - Explicitly identifies proven unsatisfiability (`UNSAT`, `INFEASIBLE`) with verified status tracking, while solver model rejections (`MODEL_INVALID`) are classified under `ERROR` rather than treated as proven mathematical infeasibility.
     - Soft timeouts (`TIME_LIMIT`) are treated as timeouts rather than normal success (`is_sat = False`).
 - **Repetitions & Mixed-Run Resolution**:
   - Each configuration executes 3 repetitions (`--repetitions 3`). For deterministic conditions (`LICENSE_LIMIT`), redundant runs are short-circuited by padding identical records. For non-deterministic conditions (`MEMOUT`, timeouts, errors), all repetitions are executed.

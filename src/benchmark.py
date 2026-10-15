@@ -108,7 +108,7 @@ try:
             status = res.get("status", "UNKNOWN")
             variables_count = res.get("variables_count", 0)
             constraints_count = res.get("constraints_count", 0)
-            verified = verify(queens, n) if is_sat and queens else (status in ("INFEASIBLE", "MODEL_INVALID"))
+            verified = verify(queens, n) if is_sat and queens else (status == "INFEASIBLE")
         
     elif paradigm == "MIP":
         import_start = time.perf_counter()
@@ -327,8 +327,8 @@ def classify_status(rec):
       - 'TIMEOUT': Soft time limit or process hard timeout (TIMEOUT, TIME_LIMIT).
       - 'MEMOUT': Out of memory failure (MEMOUT).
       - 'LICENSE_LIMIT': License or problem size limit exceeded (LICENSE_LIMIT).
-      - 'INFEASIBLE': Proven unsatisfiable or infeasible instance (UNSAT, INFEASIBLE, MODEL_INVALID).
-      - 'ERROR': Execution errors, exceptions, or unverified solutions.
+      - 'INFEASIBLE': Proven unsatisfiable or infeasible instance (UNSAT, INFEASIBLE).
+      - 'ERROR': Execution errors, model invalidity (MODEL_INVALID), or unverified solutions.
       - 'UNKNOWN': Unrecognized or unknown solver statuses.
     """
     raw_status = rec.get("status")
@@ -365,12 +365,12 @@ def classify_status(rec):
         return ("LICENSE_LIMIT", "LICENSE_LIMIT")
 
     # Proven infeasible / unsatisfiable
-    if norm_upper in ("UNSAT", "INFEASIBLE", "MODEL_INVALID"):
+    if norm_upper in ("UNSAT", "INFEASIBLE"):
         return ("INFEASIBLE", norm_upper)
 
-    # Generic error
-    if norm_upper == "ERROR":
-        return ("ERROR", "ERROR")
+    # Generic error / invalid model
+    if norm_upper in ("ERROR", "MODEL_INVALID"):
+        return ("ERROR", norm_upper)
 
     # Unknown or unrecognized status
     return ("UNKNOWN", norm if norm else "UNKNOWN")
@@ -541,8 +541,8 @@ def aggregate_repetition_records(run_records, time_limit):
         elif chosen_cat == "INFEASIBLE":
             notes.append(f"{runs_infeasible}/{runs_total} runs proved infeasible ({status})")
         elif chosen_cat == "ERROR":
-            err_msgs = [r.get("error", "") for r in run_records if r.get("status") == "ERROR" and r.get("error")]
-            first_err = err_msgs[0] if err_msgs else "Error"
+            err_msgs = [r.get("error", "") for r, (c, _) in zip(run_records, classified) if c == "ERROR" and r.get("error")]
+            first_err = err_msgs[0] if err_msgs else ("MODEL_INVALID" if any(r.get("status") == "MODEL_INVALID" for r in run_records) else "Error")
             notes.append(f"{runs_error}/{runs_total} runs errored: {first_err}")
         elif chosen_cat == "UNKNOWN":
             notes.append(f"{runs_unknown}/{runs_total} runs had unknown status ({status})")

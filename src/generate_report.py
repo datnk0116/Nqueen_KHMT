@@ -35,7 +35,7 @@ def format_sat_time(row):
     status = str(raw_status).upper() if (raw_status is not None and not pd.isna(raw_status)) else 'SUCCESS'
     if status in ('TIMEOUT', 'TIME_LIMIT'):
         return "T/O"
-    elif status in ('ERROR', 'MEMOUT', 'LICENSE_LIMIT'):
+    elif status in ('ERROR', 'MEMOUT', 'LICENSE_LIMIT', 'MODEL_INVALID'):
         return "ERR"
     elif status in ('SAT', 'OPTIMAL', 'FEASIBLE', 'SUCCESS', 'SUBOPTIMAL') or (row.get('is_sat') is True and status not in ('TIMEOUT', 'TIME_LIMIT')):
         t = row.get('time_seconds', 0.0)
@@ -96,7 +96,7 @@ def make_sat_size_table_rows(df):
         variant = r['model_variant']
         sub = sat_df[(sat_df['n'] == n) & (sat_df['model_variant'] == variant)]
         if 'variables_count' in sub.columns:
-            valid_sub = sub[~sub['status'].isin(['TIMEOUT', 'TIME_LIMIT', 'ERROR', 'MEMOUT', 'LICENSE_LIMIT']) & (sub['variables_count'] > 0)]
+            valid_sub = sub[~sub['status'].isin(['TIMEOUT', 'TIME_LIMIT', 'ERROR', 'MEMOUT', 'LICENSE_LIMIT', 'MODEL_INVALID']) & (sub['variables_count'] > 0)]
         else:
             valid_sub = pd.DataFrame()
         if valid_sub.empty:
@@ -127,7 +127,7 @@ def make_table_rows(subset_df, max_rows=None):
             v_str = "-"
             c_str = "-"
             t_str = "T/O"
-        elif status in ('ERROR', 'MEMOUT', 'LICENSE_LIMIT'):
+        elif status in ('ERROR', 'MEMOUT', 'LICENSE_LIMIT', 'MODEL_INVALID'):
             v_str = "-"
             c_str = "-"
             t_str = "ERR"
@@ -195,7 +195,7 @@ def build_discussion_stats(combined_df):
     cpsat_bool_128 = cpsat_bool_sub['time_seconds'].median() if (not cpsat_bool_sub.empty and 'time_seconds' in cpsat_bool_sub.columns and not pd.isna(cpsat_bool_sub['time_seconds'].median())) else float('nan')
 
     def non_failure(df):
-        return df[~df['status'].isin(['TIMEOUT', 'TIME_LIMIT', 'ERROR', 'MEMOUT', 'LICENSE_LIMIT'])] if ('status' in df.columns) else df
+        return df[~df['status'].isin(['TIMEOUT', 'TIME_LIMIT', 'ERROR', 'MEMOUT', 'LICENSE_LIMIT', 'MODEL_INVALID'])] if ('status' in df.columns) else df
 
     cadical_sub = non_failure(sat_df[sat_df['solver'] == 'cadical']) if (not sat_df.empty and 'solver' in sat_df.columns) else pd.DataFrame()
     kissat_sub = non_failure(sat_df[sat_df['solver'] == 'kissat']) if (not sat_df.empty and 'solver' in sat_df.columns) else pd.DataFrame()
@@ -301,7 +301,7 @@ def generate_tex(results_dir="results", out_dir="report"):
 
         # Plot 2: Paradigm comparison across all solver groups (model time: build + solve, timeouts counted as 30 s, excluding LICENSE_LIMIT/MEMOUT/ERROR)
         fig, ax = plt.subplots(figsize=(8, 5))
-        valid_paradigm_df = combined_df[~combined_df['status'].isin(['LICENSE_LIMIT', 'MEMOUT', 'ERROR'])].copy() if not combined_df.empty else combined_df
+        valid_paradigm_df = combined_df[~combined_df['status'].isin(['LICENSE_LIMIT', 'MEMOUT', 'ERROR', 'MODEL_INVALID'])].copy() if not combined_df.empty else combined_df
         has_paradigm_lines = False
         if not valid_paradigm_df.empty:
             if 'model_time' in valid_paradigm_df.columns:
@@ -331,7 +331,7 @@ def generate_tex(results_dir="results", out_dir="report"):
 
         # Plot 3: Variable count scaling (exclude TIMEOUT/TIME_LIMIT/MEMOUT/LICENSE_LIMIT/ERROR)
         fig, ax = plt.subplots(figsize=(8, 5))
-        valid_var_df = combined_df[~combined_df['status'].isin(['TIMEOUT', 'TIME_LIMIT', 'MEMOUT', 'LICENSE_LIMIT', 'ERROR'])]
+        valid_var_df = combined_df[~combined_df['status'].isin(['TIMEOUT', 'TIME_LIMIT', 'MEMOUT', 'LICENSE_LIMIT', 'ERROR', 'MODEL_INVALID'])]
         has_var_lines = False
         for paradigm in valid_var_df['paradigm'].unique():
             sub = valid_var_df[valid_var_df['paradigm'] == paradigm]
@@ -353,7 +353,7 @@ def generate_tex(results_dir="results", out_dir="report"):
         # Plot 4: Build vs Solve time (exclude TIMEOUT/TIME_LIMIT/MEMOUT/LICENSE_LIMIT/ERROR, reindex)
         if 'build_time' in combined_df.columns and 'solve_time' in combined_df.columns:
             fig, ax = plt.subplots(figsize=(8, 5))
-            valid_bs_df = combined_df[~combined_df['status'].isin(['TIMEOUT', 'TIME_LIMIT', 'MEMOUT', 'LICENSE_LIMIT', 'ERROR'])]
+            valid_bs_df = combined_df[~combined_df['status'].isin(['TIMEOUT', 'TIME_LIMIT', 'MEMOUT', 'LICENSE_LIMIT', 'ERROR', 'MODEL_INVALID'])]
             build_grouped = valid_bs_df.groupby('paradigm')['build_time'].mean()
             solve_grouped = valid_bs_df.groupby('paradigm')['solve_time'].mean()
             all_paradigms = sorted(list(set(build_grouped.index).union(set(solve_grouped.index))))
