@@ -235,3 +235,51 @@ def test_generate_tex_missing_optional_columns(tmp_path):
     tex_path = generate_tex(str(tmp_path), str(tmp_path / "report"))
     assert os.path.exists(tex_path)
 
+def test_generate_tex_no_timeouts(tmp_path):
+    df = pd.DataFrame([{
+        'n': 8, 'paradigm': 'SAT', 'model_variant': 'pairwise', 'solver': 'cadical',
+        'status': 'SUCCESS', 'time_seconds': 0.05, 'build_time': 0.01, 'solve_time': 0.04,
+        'variables_count': 64, 'clauses_constraints_count': 100
+    }])
+    df.to_csv(tmp_path / "benchmark_results.csv", index=False)
+    tex_path = generate_tex(str(tmp_path), str(tmp_path / "report"))
+    with open(tex_path, "r") as f:
+        content = f.read()
+    assert "No timeouts recorded" in content
+
+def test_generate_tex_missing_cpsat(tmp_path):
+    df = pd.DataFrame([{
+        'n': 8, 'paradigm': 'SAT', 'model_variant': 'pairwise', 'solver': 'cadical',
+        'status': 'SUCCESS', 'time_seconds': 0.05, 'build_time': 0.01, 'solve_time': 0.04,
+        'variables_count': 64, 'clauses_constraints_count': 100
+    }])
+    df.to_csv(tmp_path / "benchmark_results.csv", index=False)
+    tex_path = generate_tex(str(tmp_path), str(tmp_path / "report"))
+    with open(tex_path, "r") as f:
+        content = f.read()
+    assert "CP-SAT Allowed Assignment Timeout" not in content
+
+def test_generate_tex_preserves_error_rows(tmp_path):
+    df = pd.DataFrame([
+        {
+            'n': 8, 'paradigm': 'SAT', 'model_variant': 'pairwise', 'solver': 'cadical',
+            'status': 'ERROR', 'time_seconds': 0.0, 'build_time': float('nan'), 'solve_time': float('nan'),
+            'variables_count': 0, 'clauses_constraints_count': 0
+        },
+        {
+            'n': 8, 'paradigm': 'CP-SAT', 'model_variant': 'integer', 'solver': 'ortools-cpsat',
+            'status': 'ERROR', 'time_seconds': 0.0, 'build_time': float('nan'), 'solve_time': float('nan'),
+            'variables_count': 0, 'clauses_constraints_count': 0
+        }
+    ])
+    df.to_csv(tmp_path / "benchmark_results.csv", index=False)
+    loaded = load_combined(str(tmp_path))
+    assert len(loaded) == 2
+    assert (loaded['status'] == 'ERROR').all()
+    tex_path = generate_tex(str(tmp_path), str(tmp_path / "report"))
+    with open(tex_path, "r") as f:
+        content = f.read()
+    assert "8 & pairwise & ERR & - & - & - & - \\\\" in content
+    assert "- & - & ERR" in content
+
+

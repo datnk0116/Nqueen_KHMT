@@ -1,6 +1,6 @@
 # N-Queens Multi-Paradigm Benchmark Framework
 
-This project provides an exhaustive empirical benchmarking and analysis framework for solving the classic $N$-Queens problem across six major solver groups and modeling paradigms:
+This project provides an empirical benchmarking and analysis framework for solving the classic $N$-Queens problem across six major solver groups and modeling paradigms:
 
 1. **Propositional Satisfiability (SAT)**: Pairwise, Binary, Sequential Counter, Commander, and Product encodings solved with `cadical`, `glucose3`, `minisat22`, `kissat`, and `maplecm`.
 2. **Constraint Programming (CP-SAT)**: OR-Tools CP-SAT (`ortools-cpsat`) using Integer, Boolean, and Allowed assignments formulations with global constraints (`AllDifferent`).
@@ -50,13 +50,18 @@ The benchmarking framework enforces a unified, rigorous timing and timeout proto
   - **Process-Level Hard Timeout (`TIMEOUT`)**: The parent process wraps child execution with `subprocess.run(timeout=time_limit)`. Backends lacking internal interrupt support in PySAT (such as CaDiCaL and Kissat) rely on this parent-side hard timeout. When a hard timeout occurs, status is recorded as `TIMEOUT`, phase times are recorded as `NaN`, and `time_seconds` is set to `time_limit`.
   - **Status Classification**: Cleanly distinguishes `SAT` / `OPTIMAL`, `FEASIBLE`, `UNSAT` / `INFEASIBLE`, `TIME_LIMIT`, `TIMEOUT`, `MEMOUT`, `LICENSE_LIMIT`, and `ERROR`. `TIME_LIMIT` is strictly treated as timeout rather than normal success (`is_sat = False`).
 - **Repetitions & Mixed-Run Resolution**:
-  - Each configuration executes all 3 repetitions (`--repetitions 3`) without early termination (except deterministic license or memory limits).
+  - Each configuration executes 3 repetitions (`--repetitions 3`). For deterministic conditions (`LICENSE_LIMIT`), redundant runs are short-circuited by padding identical records. For non-deterministic conditions (`MEMOUT`, timeouts, errors), all repetitions are executed.
   - Granular repetition metrics are tracked per benchmark:
     - `runs_total`: Total number of repetition runs executed (default: 3).
     - `runs_success`: Count of successful runs (`SAT`, `OPTIMAL`, `FEASIBLE`).
     - `runs_timeout`: Count of timed out runs (`TIMEOUT`, `TIME_LIMIT`).
     - `runs_error`: Count of genuine execution errors (`ERROR`). Non-error failures such as `LICENSE_LIMIT` or `MEMOUT` resolve to their respective aggregate status without inflating `runs_error`.
-  - When mixed outcomes occur (e.g., 1 success and 2 timeouts), if timeouts form the majority (`runs_timeout >= runs_total / 2`), the aggregate status is resolved as `TIMEOUT` (or `TIME_LIMIT`). If successes form the majority, the success status is preserved while recording the timeout count in the `error` column (e.g., `"1/3 runs timed out"`). Timeouts are never silently discarded.
+  - Aggregation Policy:
+    - **Success Majority**: A configuration is classified as successful only if successful runs form a strict majority (`runs_success > runs_total / 2`). The aggregate status is the most common status among successful repetitions (mode), `is_sat = True`, `verified = True`, and non-success occurrences (`TIMEOUT`, `MEMOUT`, `ERROR`, `LICENSE_LIMIT`) are recorded in the `error` column (e.g., `"1/3 runs timed out"`). Phase times (`import_time`, `build_time`, `solve_time`, `model_time`) are medians across successful runs.
+    - **Failure Majority & Indeterminate Outcomes**: If successes do not form a strict majority, the outcome is never classified as successful (`is_sat = False`, `verified = False`).
+      - If a failure category (`TIMEOUT`/`TIME_LIMIT`, `MEMOUT`, `ERROR`, `LICENSE_LIMIT`) forms a strict majority (`count > runs_total / 2`), the aggregate status resolves to that failure mode.
+      - If no category achieves a strict majority (e.g. ties in even repetitions or split failures across modes), the status resolves to the most frequent failure mode, breaking ties deterministically by severity hierarchy (`LICENSE_LIMIT` > `MEMOUT` > `TIMEOUT` > `ERROR`).
+      - Diagnostic notes describe the primary failure and detail all observed outcomes (e.g., `"1/2 runs timed out; 1/2 runs succeeded"`). Phase times are recorded as `NaN` to prevent misleading solve-time metrics on failed or indeterminate configurations.
   - Medians across repetitions are reported for all timing metrics, including `solver_reported_time` and `wall_time`.
 
 > **Note on Benchmark Results Data**:

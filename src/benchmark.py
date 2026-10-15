@@ -315,6 +315,188 @@ except Exception as e:
             "verified": False, "error": str(e)
         }
 
+from collections import Counter
+
+def aggregate_repetition_records(run_records, time_limit):
+    """
+    Aggregates execution records across multiple repetitions of a solver benchmark configuration.
+
+    Aggregation Policy:
+    1. A configuration is classified as successful ('OPTIMAL', 'FEASIBLE', 'SAT') only if successful
+       runs form a strict majority (runs_success > runs_total / 2.0).
+       - Aggregate status is the most common status among successful repetitions (mode).
+       - is_sat is True, verified is True if all successful runs are verified.
+       - Diagnostic notes in 'error' record non-success occurrences (e.g. "1/3 runs timed out",
+         "1/3 runs ran out of memory", "1/3 runs errored", "1/3 runs hit license limits").
+       - Median phase times (import, build, solve, model) are computed across successful repetitions.
+    2. If successful runs do not form a strict majority (runs_success <= runs_total / 2.0):
+       - is_sat is False, verified is False.
+       - The configuration is never classified as success (indeterminate/failure).
+       - If a failure category forms a strict majority (count > runs_total / 2.0), that status is selected:
+         * LICENSE_LIMIT if runs_license > runs_total / 2.0
+         * MEMOUT if runs_memout > runs_total / 2.0
+         * TIMEOUT (or TIME_LIMIT if all timeouts are TIME_LIMIT) if runs_timeout > runs_total / 2.0
+         * ERROR if runs_error > runs_total / 2.0
+       - If no category achieves a strict majority (tied counts in even repetitions or split failures),
+         the failure category with the highest count is selected, breaking ties deterministically
+         by severity/determinism: LICENSE_LIMIT > MEMOUT > TIMEOUT > ERROR.
+       - Diagnostic notes in 'error' describe the primary failure message and all mixed outcomes.
+       - Median phase times (import, build, solve, model) are set to NaN, ensuring timed out / failed
+         configurations do not report misleading solve times.
+    3. time_seconds and wall_time are medians across all valid repetition records.
+    4. Counters runs_total, runs_success, runs_timeout, runs_error accurately represent run records.
+    """
+    if not run_records:
+        raise ValueError("run_records cannot be empty")
+
+    base = run_records[0]
+    n = base.get("n")
+    paradigm = base.get("paradigm")
+    variant = base.get("model_variant")
+    solver = base.get("solver")
+
+    runs_total = len(run_records)
+    successful = [r for r in run_records if r.get("status") in ("OPTIMAL", "FEASIBLE", "SAT")]
+    runs_success = len(successful)
+    runs_timeout = sum(1 for r in run_records if r.get("status") in ("TIMEOUT", "TIME_LIMIT"))
+    runs_license = sum(1 for r in run_records if r.get("status") == "LICENSE_LIMIT")
+    runs_memout = sum(1 for r in run_records if r.get("status") == "MEMOUT")
+    runs_error = sum(1 for r in run_records if r.get("status") == "ERROR")
+
+    majority_threshold = runs_total / 2.0
+
+    if runs_success > majority_threshold:
+        status_counts = Counter(r["status"] for r in successful)
+        status = status_counts.most_common(1)[0][0]
+        is_sat = True
+        verified = all(r.get("verified", False) for r in successful)
+
+        notes = []
+        if runs_timeout > 0:
+            notes.append(f"{runs_timeout}/{runs_total} runs timed out")
+        if runs_memout > 0:
+            notes.append(f"{runs_memout}/{runs_total} runs ran out of memory")
+        if runs_error > 0:
+            notes.append(f"{runs_error}/{runs_total} runs errored")
+        if runs_license > 0:
+            notes.append(f"{runs_license}/{runs_total} runs hit license limits")
+        error = "; ".join(notes)
+    else:
+        is_sat = False
+        verified = False
+
+        if runs_license > majority_threshold:
+            status = "LICENSE_LIMIT"
+        elif runs_memout > majority_threshold:
+            status = "MEMOUT"
+        elif runs_timeout > majority_threshold:
+            soft_timeouts = sum(1 for r in run_records if r.get("status") == "TIME_LIMIT")
+            status = "TIME_LIMIT" if soft_timeouts == runs_timeout else "TIMEOUT"
+        elif runs_error > majority_threshold:
+            status = "ERROR"
+        else:
+            failure_counts = [
+                ("LICENSE_LIMIT", runs_license),
+                ("MEMOUT", runs_memout),
+                ("TIMEOUT", runs_timeout),
+                ("ERROR", runs_error),
+            ]
+            max_status, _ = max(failure_counts, key=lambda x: x[1])
+            if max_status == "TIMEOUT":
+                soft_timeouts = sum(1 for r in run_records if r.get("status") == "TIME_LIMIT")
+                status = "TIME_LIMIT" if (runs_timeout > 0 and soft_timeouts == runs_timeout) else "TIMEOUT"
+            else:
+                status = max_status
+
+        notes = []
+        if status == "LICENSE_LIMIT":
+            lic_errs = [r.get("error", "") for r in run_records if r.get("status") == "LICENSE_LIMIT" and r.get("error")]
+            first_lic = lic_errs[0] if lic_errs else "License/size limit reached"
+            if runs_license == runs_total:
+                notes.append(first_lic)
+            else:
+                notes.append(f"{runs_license}/{runs_total} runs hit license limits: {first_lic}")
+        elif status == "MEMOUT":
+            mem_errs = [r.get("error", "") for r in run_records if r.get("status") == "MEMOUT" and r.get("error")]
+            first_mem = mem_errs[0] if mem_errs else "Memory limit exceeded (MEMOUT)"
+            if runs_memout == runs_total:
+                notes.append(first_mem)
+            else:
+                notes.append(f"{runs_memout}/{runs_total} runs ran out of memory")
+        elif status in ("TIMEOUT", "TIME_LIMIT"):
+            notes.append(f"{runs_timeout}/{runs_total} runs timed out")
+        elif status == "ERROR":
+            err_msgs = [r.get("error", "") for r in run_records if r.get("status") == "ERROR" and r.get("error")]
+            first_err = err_msgs[0] if err_msgs else "Error"
+            notes.append(f"{runs_error}/{runs_total} runs errored: {first_err}")
+
+        if status not in ("TIMEOUT", "TIME_LIMIT") and runs_timeout > 0:
+            notes.append(f"{runs_timeout}/{runs_total} runs timed out")
+        if status != "MEMOUT" and runs_memout > 0:
+            notes.append(f"{runs_memout}/{runs_total} runs ran out of memory")
+        if status != "ERROR" and runs_error > 0:
+            notes.append(f"{runs_error}/{runs_total} runs errored")
+        if status != "LICENSE_LIMIT" and runs_license > 0:
+            notes.append(f"{runs_license}/{runs_total} runs hit license limits")
+        if runs_success > 0:
+            notes.append(f"{runs_success}/{runs_total} runs succeeded")
+
+        error = "; ".join(notes)
+
+    all_times = [r["time_seconds"] for r in run_records if not pd.isna(r.get("time_seconds"))]
+    all_walls = [r["wall_time"] for r in run_records if ("wall_time" in r and not pd.isna(r.get("wall_time")))]
+
+    median_time = statistics.median(all_times) if all_times else time_limit
+    median_wall = statistics.median(all_walls) if all_walls else median_time
+
+    if status in ("TIMEOUT", "TIME_LIMIT", "MEMOUT", "ERROR", "LICENSE_LIMIT"):
+        median_import = float('nan')
+        median_build = float('nan')
+        median_solve = float('nan')
+        median_model = float('nan')
+        reported_times = [r["solver_reported_time"] for r in run_records if r.get("solver_reported_time") is not None and not pd.isna(r.get("solver_reported_time"))]
+        median_reported = statistics.median(reported_times) if reported_times else None
+        variables_count = base.get("variables_count", 0) if status == "LICENSE_LIMIT" else 0
+        constraints_count = base.get("clauses_constraints_count", 0) if status == "LICENSE_LIMIT" else 0
+    else:
+        import_times = [r["import_time"] for r in successful if not pd.isna(r.get("import_time"))]
+        build_times = [r["build_time"] for r in successful if not pd.isna(r.get("build_time"))]
+        solve_times = [r["solve_time"] for r in successful if not pd.isna(r.get("solve_time"))]
+        model_times = [r["model_time"] for r in successful if ("model_time" in r and not pd.isna(r.get("model_time")))]
+        reported_times = [r["solver_reported_time"] for r in successful if r.get("solver_reported_time") is not None and not pd.isna(r.get("solver_reported_time"))]
+
+        median_import = statistics.median(import_times) if import_times else float('nan')
+        median_build = statistics.median(build_times) if build_times else float('nan')
+        median_solve = statistics.median(solve_times) if solve_times else float('nan')
+        median_model = statistics.median(model_times) if model_times else (median_build + median_solve if (not pd.isna(median_build) and not pd.isna(median_solve)) else float('nan'))
+        median_reported = statistics.median(reported_times) if reported_times else None
+        variables_count = successful[0].get("variables_count", 0)
+        constraints_count = successful[0].get("clauses_constraints_count", 0)
+
+    return {
+        "n": n,
+        "paradigm": paradigm,
+        "model_variant": variant,
+        "solver": solver,
+        "status": status,
+        "is_sat": is_sat,
+        "variables_count": variables_count,
+        "clauses_constraints_count": constraints_count,
+        "import_time": median_import,
+        "build_time": median_build,
+        "solve_time": median_solve,
+        "model_time": median_model,
+        "time_seconds": median_time,
+        "solver_reported_time": median_reported,
+        "wall_time": median_wall,
+        "runs_total": runs_total,
+        "runs_success": runs_success,
+        "runs_timeout": runs_timeout,
+        "runs_error": runs_error,
+        "verified": verified,
+        "error": error
+    }
+
 def run_benchmarks_with_repetitions(paradigm, n_values, encodings_or_configs, solvers, time_limit, repetitions=3):
     results = []
     for n in n_values:
@@ -331,116 +513,7 @@ def run_benchmarks_with_repetitions(paradigm, n_values, encodings_or_configs, so
                             run_records.append(rec.copy())
                         break
 
-                runs_total = len(run_records)
-                runs_success = sum(1 for r in run_records if r["status"] in ("OPTIMAL", "FEASIBLE", "SAT"))
-                runs_timeout = sum(1 for r in run_records if r["status"] in ("TIMEOUT", "TIME_LIMIT"))
-                runs_license = sum(1 for r in run_records if r["status"] == "LICENSE_LIMIT")
-                runs_memout = sum(1 for r in run_records if r["status"] == "MEMOUT")
-                runs_error = sum(1 for r in run_records if r["status"] == "ERROR")
-
-                successful = [r for r in run_records if r["status"] in ("OPTIMAL", "FEASIBLE", "SAT")]
-
-                # Determine aggregate status
-                if runs_license > 0:
-                    status = "LICENSE_LIMIT"
-                    is_sat = False
-                    verified = False
-                    err_msgs = [r.get("error", "") for r in run_records if r.get("error")]
-                    error = err_msgs[0] if err_msgs else "License/size limit reached"
-                elif runs_memout > 0:
-                    status = "MEMOUT"
-                    is_sat = False
-                    verified = False
-                    err_msgs = [r.get("error", "") for r in run_records if r.get("error")]
-                    error = err_msgs[0] if err_msgs else "Memory limit exceeded (MEMOUT)"
-                elif runs_error >= (runs_total / 2.0) or (runs_success == 0 and runs_error > 0):
-                    status = "ERROR"
-                    is_sat = False
-                    verified = False
-                    err_msgs = [r.get("error", "") for r in run_records if r["status"] == "ERROR" and r.get("error")]
-                    first_err = err_msgs[0] if err_msgs else "Error"
-                    error = f"{runs_error}/{runs_total} runs errored: {first_err}"
-                elif runs_timeout >= (runs_total / 2.0) or (runs_success == 0 and runs_timeout > 0):
-                    soft_timeouts = sum(1 for r in run_records if r["status"] == "TIME_LIMIT")
-                    status = "TIME_LIMIT" if soft_timeouts == runs_timeout else "TIMEOUT"
-                    is_sat = False
-                    verified = False
-                    error = f"{runs_timeout}/{runs_total} runs timed out"
-                elif runs_success > 0:
-                    status = successful[0]["status"]
-                    is_sat = successful[0]["is_sat"]
-                    verified = successful[0]["verified"]
-                    notes = []
-                    if runs_timeout > 0:
-                        notes.append(f"{runs_timeout}/{runs_total} runs timed out")
-                    if runs_error > 0:
-                        notes.append(f"{runs_error}/{runs_total} runs errored")
-                    if runs_memout > 0:
-                        notes.append(f"{runs_memout}/{runs_total} runs ran out of memory")
-                    if runs_license > 0:
-                        notes.append(f"{runs_license}/{runs_total} runs hit license limits")
-                    error = "; ".join(notes)
-                else:
-                    status = run_records[-1]["status"]
-                    is_sat = False
-                    verified = False
-                    error = run_records[-1].get("error", "")
-
-                all_times = [r["time_seconds"] for r in run_records if not pd.isna(r["time_seconds"])]
-                all_walls = [r["wall_time"] for r in run_records if ("wall_time" in r and not pd.isna(r["wall_time"]))]
-
-                median_time = statistics.median(all_times) if all_times else time_limit
-                median_wall = statistics.median(all_walls) if all_walls else median_time
-
-                if status in ("TIMEOUT", "TIME_LIMIT", "MEMOUT", "ERROR", "LICENSE_LIMIT") and runs_success == 0:
-                    median_import = float('nan')
-                    median_build = float('nan')
-                    median_solve = float('nan')
-                    median_model = float('nan')
-                    reported_times = [r["solver_reported_time"] for r in run_records if r.get("solver_reported_time") is not None and not pd.isna(r.get("solver_reported_time"))]
-                    median_reported = statistics.median(reported_times) if reported_times else None
-                    base_rec = run_records[0]
-                    variables_count = base_rec["variables_count"] if status == "LICENSE_LIMIT" else 0
-                    constraints_count = base_rec["clauses_constraints_count"] if status == "LICENSE_LIMIT" else 0
-                else:
-                    import_times = [r["import_time"] for r in successful if not pd.isna(r["import_time"])]
-                    build_times = [r["build_time"] for r in successful if not pd.isna(r["build_time"])]
-                    solve_times = [r["solve_time"] for r in successful if not pd.isna(r["solve_time"])]
-                    model_times = [r["model_time"] for r in successful if ("model_time" in r and not pd.isna(r["model_time"]))]
-                    reported_times = [r["solver_reported_time"] for r in run_records if r.get("solver_reported_time") is not None and not pd.isna(r.get("solver_reported_time"))]
-
-                    median_import = statistics.median(import_times) if import_times else float('nan')
-                    median_build = statistics.median(build_times) if build_times else float('nan')
-                    median_solve = statistics.median(solve_times) if solve_times else float('nan')
-                    median_model = statistics.median(model_times) if model_times else (median_build + median_solve if (not pd.isna(median_build) and not pd.isna(median_solve)) else float('nan'))
-                    median_reported = statistics.median(reported_times) if reported_times else None
-                    base_rec = successful[0]
-                    variables_count = base_rec["variables_count"]
-                    constraints_count = base_rec["clauses_constraints_count"]
-
-                rep_res = {
-                    "n": n,
-                    "paradigm": paradigm,
-                    "model_variant": variant,
-                    "solver": solver,
-                    "status": status,
-                    "is_sat": is_sat,
-                    "variables_count": variables_count,
-                    "clauses_constraints_count": constraints_count,
-                    "import_time": median_import,
-                    "build_time": median_build,
-                    "solve_time": median_solve,
-                    "model_time": median_model,
-                    "time_seconds": median_time,
-                    "solver_reported_time": median_reported,
-                    "wall_time": median_wall,
-                    "runs_total": runs_total,
-                    "runs_success": runs_success,
-                    "runs_timeout": runs_timeout,
-                    "runs_error": runs_error,
-                    "verified": verified,
-                    "error": error
-                }
+                rep_res = aggregate_repetition_records(run_records, time_limit)
                 results.append(rep_res)
     return results
 

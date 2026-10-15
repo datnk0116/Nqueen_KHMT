@@ -11,8 +11,6 @@ def load_combined(results_dir="results"):
         df = pd.read_csv(path)
     except pd.errors.EmptyDataError:
         df = pd.DataFrame()
-    if not df.empty and 'status' in df.columns:
-        df = df[df['status'] != 'ERROR']
     
     if not df.empty:
         keys = ['n', 'paradigm', 'model_variant', 'solver']
@@ -461,7 +459,7 @@ def generate_tex(results_dir="results", out_dir="report"):
                 country={Vietnam}}
 
 \begin{abstract}
-This report presents an exhaustive empirical evaluation of solving the classic $N$-Queens problem across six major solver groups and modeling paradigms: Propositional Satisfiability (SAT with CaDiCaL, Glucose3, MiniSat22, Kissat, and MapleCM), Constraint Programming via CP-SAT (OR-Tools), Mixed-Integer Programming (MIP with CBC, SCIP), High-Performance Commercial MIP (Gurobi), Commercial CPLEX MIP, and Commercial CPLEX CP. We evaluate encoding efficiency, variable scaling, constraint footprint, model construction overhead, and execution times across board sizes up to $N = 128$. Detailed performance metrics and visualizations highlight the trade-offs between expressive global constraints and low-level clausal representations, alongside comprehensive timeout analyses, CP solve overhead management, and solution status semantics (FEASIBLE vs OPTIMAL).
+This report presents an empirical evaluation of solving the classic $N$-Queens problem across six major solver groups and modeling paradigms: Propositional Satisfiability (SAT with CaDiCaL, Glucose3, MiniSat22, Kissat, and MapleCM), Constraint Programming via CP-SAT (OR-Tools), Mixed-Integer Programming (MIP with CBC, SCIP), High-Performance Commercial MIP (Gurobi), Commercial CPLEX MIP, and Commercial CPLEX CP. We evaluate encoding efficiency, variable scaling, constraint footprint, model construction overhead, and execution times across evaluated board sizes up to $N = 128$ under standardized 3-repetition benchmark runs with hard timeouts. Detailed performance metrics and visualizations highlight the trade-offs between expressive global constraints and low-level clausal representations, alongside timeout analyses across evaluated instances, CP solve overhead management, and solution status semantics (FEASIBLE vs OPTIMAL).
 \end{abstract}
 
 \begin{keywords}
@@ -658,13 +656,13 @@ The empirical results reveal distinct performance characteristics and limitation
     \item \textbf{Comparative Performance Across Six Solver Groups}: Across moderate to large scales ($N = 8$ to $128$), commercial engines (CPLEX MIP, CPLEX CP, Gurobi) and high-performance solvers (CP-SAT, CaDiCaL) demonstrate exceptional scalability. """ + comp_runtime_text + r""" (noting that measurement methodologies differ across solvers, where reported \texttt{time\_seconds} is the median over repetitions of each run's \texttt{import\_time + build\_time + solve\_time} — with build and solve medians reported separately so they may not sum exactly — excluding parent-side process launch overhead; similarly, \texttt{model\_time} represents the median across repetitions of per-run \texttt{build\_time + solve\_time} values, which need not equal \texttt{median(build\_time) + median(solve\_time)}). Crucially, \texttt{import\_time} is library-dependent and constant with respect to $N$ (for instance, OR-Tools CP-SAT incurs $\approx 0.3$~s of Python module import overhead regardless of $N$), meaning cross-paradigm runtime comparisons at small $N$ primarily reflect library import latency rather than algorithmic solving speed. To isolate solver efficiency from module import overhead, Figure~\ref{fig:paradigm_time} (Plot~2) evaluates \emph{model time} (\texttt{build\_time + solve\_time}), with timeouts counted as 30~s, whereas many SAT combinations take tens of seconds or timeout.
     \item \textbf{FEASIBLE vs. OPTIMAL Status Semantics}: For pure satisfaction problems (such as $N$-Queens without an objective function), finding any valid non-attacking configuration successfully solves the problem. Solution status labels are solver-specific and API-dependent: CPLEX CP reports \texttt{FEASIBLE}, whereas CP-SAT reports \texttt{OPTIMAL} and MIP solvers may report \texttt{OPTIMAL} for satisfaction models. Solution validity in our framework is independently verified using the benchmark's verification module rather than relying solely on solver status strings.
     {cp_overhead_text}
-    \item \textbf{Gurobi Trial License Limitations}: Gurobi's trial license restricts model dimensions for larger instances, capping trials at $N \le 44$. For $N > 44$, full commercial licenses or alternative solvers (CPLEX, CP-SAT, CaDiCaL) are required.
+    {gurobi_license_text}
     \item \textbf{SAT Scaling and Encodings}: """ + cadical_kissat_text + maplecm_text + sat_timeout_text + r""". Compact cardinality encodings such as Commander (47,096 clauses at $N = 64$) and Sequential Counter (47,692 clauses at $N = 64$) dramatically reduce clause footprints compared to naive Pairwise encodings.
-    \item \textbf{CP-SAT Allowed Assignment Timeout at $N = 128$}: At $N = 128$, the CP-SAT allowed assignment variant timed out within 30 s; the underlying cause has not been isolated.
+    {cpsat_allowed_text}
 \end{itemize}
 
 \section{Conclusion}
-This comprehensive benchmark demonstrates that while modern SAT, CP-SAT, and commercial CP/MIP engines solve moderate instances efficiently, performance varies significantly at $N = 128$. Performance is heavily dictated by solver sensitivity, global constraint propagation, and encoding efficiency: CaDiCaL, Kissat, CPLEX CP, and CP-SAT handle large scales effectively, whereas clausal blow-up and solver heuristics cause frequent timeouts for older SAT engines.
+This benchmark evaluation demonstrates that while modern SAT, CP-SAT, and commercial CP/MIP engines solve moderate instances efficiently, performance varies significantly at $N = 128$. Performance is heavily dictated by solver sensitivity, global constraint propagation, and encoding efficiency: CaDiCaL, Kissat, CPLEX CP, and CP-SAT handle large scales effectively, whereas clausal blow-up and solver heuristics cause frequent timeouts for older SAT engines.
 
 \section{References}
 \begin{thebibliography}{10}
@@ -696,6 +694,17 @@ The source code, benchmark runners, raw experimental results (CSV files), and re
 \end{document}
 """
 
+    if gurobi_df.empty:
+        gurobi_license_text = r"""\item \textbf{Gurobi Trial License Limitations}: Gurobi optimization benchmark data is not present in the current dataset. When evaluated under trial licenses, Gurobi restricts model dimensions ($N \le 44$)."""
+    else:
+        gurobi_license_text = r"""\item \textbf{Gurobi Trial License Limitations}: Gurobi's trial license restricts model dimensions for larger instances, capping trials at $N \le 44$. For $N > 44$, full commercial licenses or alternative solvers (CPLEX, CP-SAT, CaDiCaL) are required."""
+
+    cpsat_allowed_128 = cpsat_df[(cpsat_df['n'] == 128) & (cpsat_df['model_variant'] == 'allowed')] if (not cpsat_df.empty and 'n' in cpsat_df.columns and 'model_variant' in cpsat_df.columns) else pd.DataFrame()
+    if not cpsat_allowed_128.empty and 'status' in cpsat_allowed_128.columns and cpsat_allowed_128.iloc[0]['status'] in ('TIMEOUT', 'TIME_LIMIT'):
+        cpsat_allowed_text = r"""\item \textbf{CP-SAT Allowed Assignment Timeout at $N = 128$}: At $N = 128$, the CP-SAT allowed assignment variant timed out within 30 s; the underlying cause has not been isolated."""
+    else:
+        cpsat_allowed_text = ""
+
     has_reported = stats.get('has_solver_reported_time', False)
     reported_s = stats.get('cplex_cp_128_reported_s', float('nan'))
     if cplex_cp_df.empty:
@@ -705,7 +714,7 @@ The source code, benchmark runners, raw experimental results (CSV files), and re
     else:
         cpsat_comp = f"~{cpsat_int_128_str} s" if cpsat_int_128_str != "N/A" else "N/A"
         build_comp = f"~{cplex_cp_128_build_str} ms" if cplex_cp_128_build_str != "N/A" else "N/A"
-        cp_overhead_text = r"""\item \textbf{CP Optimizer Process Startup Overhead}: CP Optimizer relies on an external binary executable (\texttt{cpoptimizer}). Spawning this subprocess incurs inter-process communication and process startup overhead; actual total measured runtimes for CPLEX CP increase from approximately """ + cplex_cp_8_str + r""" at $N = 8$ to """ + cplex_cp_128_str + r""" at $N = 128$. Note that the \texttt{solve\_time} of CPLEX CP comes from \texttt{get\_solve\_time()}, which in CSV records values of """ + stats['cplex_cp_solve_times_str'] + r""" (indicating a resolution of ~10 ms); thus, the ~""" + cplex_cp_128_str + r""" recorded at $N = 128$ appears to be predominantly 10 ms rounding plus """ + build_comp + r""" model build time, and should not be directly compared on equal footing with CP-SAT's """ + cpsat_comp + r""" wall-clock measurement."""
+        cp_overhead_text = r"""\item \textbf{CP Optimizer Process Startup Overhead}: CP Optimizer relies on an external binary executable (\texttt{cpoptimizer}). Spawning this subprocess incurs inter-process communication and process startup overhead; actual total measured runtimes for CPLEX CP increase from approximately """ + cplex_cp_8_str + r""" at $N = 8$ to """ + cplex_cp_128_str + r""" at $N = 128$. Note that solver-reported solve time via \texttt{get\_solve\_time()} has a reported resolution of approximately 10 ms, whereas \texttt{solve\_time} measures the wall-clock duration around the solve call (including \texttt{cpoptimizer} process startup and IPC); thus, the ~""" + cplex_cp_128_str + r""" recorded at $N = 128$ includes external process startup plus """ + build_comp + r""" model build time, and should not be directly compared on equal footing with CP-SAT's """ + cpsat_comp + r""" wall-clock measurement."""
     latex_content = latex_content.replace("% {sat_table_tex}", sat_table_tex)
     latex_content = latex_content.replace("% {sat_size_table_tex}", sat_size_table_tex)
     latex_content = latex_content.replace("% {cpsat_table_tex}", cpsat_table_tex)
@@ -714,6 +723,8 @@ The source code, benchmark runners, raw experimental results (CSV files), and re
     latex_content = latex_content.replace("% {cplex_table_tex}", cplex_table_tex)
     latex_content = latex_content.replace("% {timeout_table_tex}", timeout_table_tex)
     latex_content = latex_content.replace("{cp_overhead_text}", cp_overhead_text)
+    latex_content = latex_content.replace("{gurobi_license_text}", gurobi_license_text)
+    latex_content = latex_content.replace("{cpsat_allowed_text}", cpsat_allowed_text)
 
     latex_path = os.path.join(out_dir, "report.tex")
     with open(latex_path, "w") as f:

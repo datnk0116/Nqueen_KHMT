@@ -11,7 +11,7 @@ import ast
 
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '../src')))
 
-from benchmark import run_subprocess_solver, run_benchmarks_with_repetitions
+from benchmark import run_subprocess_solver, run_benchmarks_with_repetitions, aggregate_repetition_records
 from generate_report import (
     load_combined, build_discussion_stats, generate_tex, compile_pdf,
     format_adaptive_time, timeout_table, format_sat_time,
