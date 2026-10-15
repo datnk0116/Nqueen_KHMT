@@ -636,11 +636,8 @@ def compile_pdf(out_dir="report"):
         print("Warning: pdflatex not found in PATH. Skipping PDF compilation.")
         return False
     try:
-        env = dict(os.environ)
-        env.setdefault('VARTEXFONTS', '/tmp/texfonts')
-        env.setdefault('TEXMFVAR', '/tmp/texmf-var')
-        subprocess.run(["pdflatex", "-interaction=nonstopmode", "report.tex"], cwd=out_dir, env=env, check=True)
-        subprocess.run(["pdflatex", "-interaction=nonstopmode", "report.tex"], cwd=out_dir, env=env, check=True)
+        subprocess.run(["pdflatex", "-interaction=nonstopmode", "report.tex"], cwd=out_dir, check=True)
+        subprocess.run(["pdflatex", "-interaction=nonstopmode", "report.tex"], cwd=out_dir, check=True)
         pdf_path = os.path.join(out_dir, "report.pdf")
         if os.path.exists(pdf_path):
             print(f"Successfully compiled {pdf_path}!")

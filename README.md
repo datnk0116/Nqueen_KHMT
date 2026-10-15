@@ -81,7 +81,19 @@ python src/benchmark.py --time-limit 30.0 --repetitions 3 --output-dir results
 ```
 *(Note: Commercial solvers Gurobi and CPLEX require valid licenses or trial constraints; ensure license availability before execution).*
 
-### 5. Generating the Academic Report & Visualizations
+### 5. LaTeX Requirements (for Report Compilation)
+Compiling the academic report (`report/report.tex`) requires a **full TeX Live installation** (or Overleaf) with the following LaTeX packages:
+
+`footmisc`, `makecell`, `moreverb`, `multirow`, `stfloats`, `wrapfig`, `xstring`, `booktabs`, `natbib`, `hyperref`, `amsmath`, `graphicx`, `geometry`, `float`, `xcolor`, `colortbl`, `dcolumn`, `array`
+
+If any package is missing, install it via:
+```bash
+tlmgr install footmisc makecell moreverb multirow stfloats wrapfig xstring
+```
+
+> **Note**: Do not vendor (copy) `.sty` files into `report/`. The `cas-sc.cls` document class loads these packages from the TeX system distribution. Vendored copies from a different TeX Live version can conflict and cause compilation failures.
+
+### 6. Generating the Academic Report & Visualizations
 Aggregate results, generate performance scaling charts, and compile the LaTeX report into `report.pdf`:
 ```bash
 python src/generate_report.py
