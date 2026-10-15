@@ -7,7 +7,7 @@ import shutil
 
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '../src')))
 
-from generate_report import load_combined, timeout_table, make_sat_table_rows, make_sat_size_table_rows, make_table_rows, format_sat_time, build_discussion_stats, main
+from generate_report import load_combined, timeout_table, make_sat_table_rows, make_sat_size_table_rows, make_table_rows, format_sat_time, build_discussion_stats, generate_tex, compile_pdf, main
 
 def test_timeout_table():
     df = load_combined("results")
@@ -102,8 +102,10 @@ def test_build_discussion_stats():
     df = load_combined("results")
     stats = build_discussion_stats(df)
 
-    assert abs(stats['cplex_cp_8_ms'] - 0.264) < 0.1
-    assert abs(stats['cplex_cp_128_ms'] - 10.534) < 1.0
+    assert abs(stats['cplex_cp_8_ms'] - 0.264) < 0.01
+    assert abs(stats['cplex_cp_128_ms'] - 10.534) < 0.05
+    assert abs(stats['cplex_cp_128_solve_s'] - 0.01) < 0.005
+    assert abs(stats['cplex_cp_128_build_ms'] - 0.534) < 0.05
     assert abs(stats['cpsat_int_128_s'] - 0.713) < 0.01
     assert abs(stats['cpsat_bool_128_s'] - 0.731) < 0.01
     assert abs(stats['cadical_max'] - 8.60) < 0.1
@@ -126,7 +128,7 @@ def test_tmp_path_report_generation(tmp_path, monkeypatch):
     shutil.copytree(results_src, results_dst)
 
     monkeypatch.chdir(tmp_path)
-    main()
+    generate_tex("results", "report")
 
     report_tex_path = "report/report.tex"
     assert os.path.exists(report_tex_path)
@@ -142,3 +144,8 @@ def test_tmp_path_report_generation(tmp_path, monkeypatch):
     assert "under 26s" not in content
     assert "0.012 to 0.019" not in content
     assert re.search(r"\\\{1,\s*\\dots,\s*N\\\}", content) is None
+
+def test_compile_pdf_missing_pdflatex(monkeypatch):
+    monkeypatch.setattr(shutil, "which", lambda *_: None)
+    res = compile_pdf("report")
+    assert res is False

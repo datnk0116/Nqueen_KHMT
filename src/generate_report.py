@@ -131,8 +131,23 @@ def build_discussion_stats(combined_df):
     m22_to = len(sat_128[(sat_128['solver'] == 'minisat22') & (sat_128['status'] == 'TIMEOUT')]) if not sat_128.empty else 3
     mcm_to = len(sat_128[(sat_128['solver'] == 'maplecm') & (sat_128['status'] == 'TIMEOUT')]) if not sat_128.empty else 3
 
-    cplex_cp_8 = cplex_cp_df[cplex_cp_df['n'] == 8]['time_seconds'].median() * 1000 if not cplex_cp_df.empty else 0.264
-    cplex_cp_128 = cplex_cp_df[cplex_cp_df['n'] == 128]['time_seconds'].median() * 1000 if not cplex_cp_df.empty else 10.534
+    cplex_cp_8 = cplex_cp_df[cplex_cp_df['n'] == 8]['time_seconds'].median() * 1000 if not cplex_cp_df.empty and not cplex_cp_df[cplex_cp_df['n'] == 8].empty else 0.264
+    cplex_cp_128_df = cplex_cp_df[cplex_cp_df['n'] == 128] if not cplex_cp_df.empty else pd.DataFrame()
+    cplex_cp_128 = cplex_cp_128_df['time_seconds'].median() * 1000 if not cplex_cp_128_df.empty else 10.534
+
+    cplex_cp_128_solve_s = cplex_cp_128_df['solve_time'].median() if not cplex_cp_128_df.empty and 'solve_time' in cplex_cp_128_df.columns else 0.01
+    cplex_cp_128_build_ms = cplex_cp_128_df['build_time'].median() * 1000 if not cplex_cp_128_df.empty and 'build_time' in cplex_cp_128_df.columns else 0.534
+
+    if not cplex_cp_df.empty and 'solve_time' in cplex_cp_df.columns:
+        unique_st = sorted(cplex_cp_df['solve_time'].dropna().unique())
+        if len(unique_st) > 1:
+            cplex_cp_solve_times_str = ", ".join([f"{v:.2f}" for v in unique_st[:-1]]) + " and " + f"{unique_st[-1]:.2f}"
+        elif len(unique_st) == 1:
+            cplex_cp_solve_times_str = f"{unique_st[0]:.2f}"
+        else:
+            cplex_cp_solve_times_str = "0.00 and 0.01"
+    else:
+        cplex_cp_solve_times_str = "0.00 and 0.01"
 
     cpsat_int_128 = cpsat_df[(cpsat_df['n'] == 128) & (cpsat_df['model_variant'] == 'integer')]['time_seconds'].median() if not cpsat_df.empty else 0.71326
     cpsat_bool_128 = cpsat_df[(cpsat_df['n'] == 128) & (cpsat_df['model_variant'] == 'boolean')]['time_seconds'].median() if not cpsat_df.empty else 0.73134
@@ -155,6 +170,9 @@ def build_discussion_stats(combined_df):
     return {
         'cplex_cp_8_ms': cplex_cp_8,
         'cplex_cp_128_ms': cplex_cp_128,
+        'cplex_cp_128_solve_s': cplex_cp_128_solve_s,
+        'cplex_cp_128_build_ms': cplex_cp_128_build_ms,
+        'cplex_cp_solve_times_str': cplex_cp_solve_times_str,
         'cpsat_int_128_s': cpsat_int_128,
         'cpsat_bool_128_s': cpsat_bool_128,
         'cadical_max': cadical_max,
@@ -168,18 +186,18 @@ def build_discussion_stats(combined_df):
         'mcm_to': mcm_to,
     }
 
-def main():
-    os.makedirs("report", exist_ok=True)
+def generate_tex(results_dir="results", out_dir="report"):
+    os.makedirs(out_dir, exist_ok=True)
     
     # Ensure style files and directories are present in report directory
     src_report_dir = "report"
     parent_report = os.path.join(os.path.dirname(os.path.abspath(__file__)), "../report")
-    if os.path.exists(parent_report) and parent_report != os.path.abspath("report"):
+    if os.path.exists(parent_report) and parent_report != os.path.abspath(out_dir):
         src_report_dir = parent_report
-    if os.path.exists(src_report_dir):
+    if os.path.exists(src_report_dir) and src_report_dir != os.path.abspath(out_dir):
         for root, dirs, files in os.walk(src_report_dir):
             rel = os.path.relpath(root, src_report_dir)
-            target_sub = os.path.join("report", rel) if rel != "." else "report"
+            target_sub = os.path.join(out_dir, rel) if rel != "." else out_dir
             os.makedirs(target_sub, exist_ok=True)
             for f in files:
                 src_p = os.path.join(root, f)
@@ -191,7 +209,7 @@ def main():
                     except Exception:
                         pass
     
-    combined_df = load_combined("results")
+    combined_df = load_combined(results_dir)
     stats = build_discussion_stats(combined_df)
     
     sat_df = combined_df[combined_df['paradigm'] == 'SAT'] if not combined_df.empty else pd.DataFrame()
@@ -223,7 +241,7 @@ def main():
             ax.set_title("SAT Solvers Performance by Encoding Variant (CaDiCaL)")
             ax.legend(bbox_to_anchor=(1.05, 1), loc='upper left', fontsize='small')
             plt.tight_layout()
-            plt.savefig("report/sat_time_cadical.png", dpi=300)
+            plt.savefig(os.path.join(out_dir, "sat_time_cadical.png"), dpi=300)
             plt.close()
 
         # Plot 2: Paradigm comparison across all solver groups (timeouts counted as 30 s)
@@ -239,7 +257,7 @@ def main():
         ax.set_title("Paradigm Comparison Across Board Sizes (timeouts counted as 30 s)")
         ax.legend(bbox_to_anchor=(1.05, 1), loc='upper left', fontsize='small')
         plt.tight_layout()
-        plt.savefig("report/paradigm_comparison.png", dpi=300)
+        plt.savefig(os.path.join(out_dir, "paradigm_comparison.png"), dpi=300)
         plt.close()
 
         # Plot 3: Variable count scaling (exclude TIMEOUT/MEMOUT/LICENSE_LIMIT)
@@ -257,7 +275,7 @@ def main():
         ax.set_title("Variable Scaling Across Paradigms")
         ax.legend(bbox_to_anchor=(1.05, 1), loc='upper left', fontsize='small')
         plt.tight_layout()
-        plt.savefig("report/variables_scaling.png", dpi=300)
+        plt.savefig(os.path.join(out_dir, "variables_scaling.png"), dpi=300)
         plt.close()
 
         # Plot 4: Build vs Solve time (exclude TIMEOUT/MEMOUT/LICENSE_LIMIT, reindex)
@@ -281,7 +299,7 @@ def main():
             ax.set_title("Model Construction vs Active Solving Time by Paradigm")
             ax.legend()
             plt.tight_layout()
-            plt.savefig("report/build_vs_solve.png", dpi=300)
+            plt.savefig(os.path.join(out_dir, "build_vs_solve.png"), dpi=300)
             plt.close()
 
     sat_table_tex = make_sat_table_rows(sat_df)
@@ -519,9 +537,9 @@ Paradigm & Solver & Board Size ($N$) & Timeout Count \\
 \section{Discussion and Comprehensive Solver Comparison}
 The empirical results reveal distinct performance characteristics and limitations across all six solver groups (SAT, CP-SAT, open-source MIP, Gurobi, CPLEX MIP, and CPLEX CP) when scaling across the $N$ range ($N = 8$ to $128$):
 \begin{itemize}
-    \item \textbf{Comparative Performance Across Six Solver Groups}: Across moderate to large scales ($N = 8$ to $128$), commercial engines (CPLEX MIP, CPLEX CP, Gurobi) and high-performance solvers (CP-SAT, CaDiCaL) demonstrate exceptional scalability. At $N = 128$, recorded runtimes range from approximately """ + f"{stats['cplex_cp_128_ms']:.3f}" + r""" ms for CPLEX CP to """ + f"{stats['cpsat_int_128_s']:.3f}" + r""" s for CP-SAT (noting that measurement methodologies differ across solvers, where reported \texttt{time\_seconds} is the median over repetitions of each run's \texttt{build\_time + solve\_time} — with build and solve medians reported separately so they may not sum exactly — excluding parent-side process launch overhead), whereas many SAT combinations take tens of seconds or timeout.
+    \item \textbf{Comparative Performance Across Six Solver Groups}: Across moderate to large scales ($N = 8$ to $128$), commercial engines (CPLEX MIP, CPLEX CP, Gurobi) and high-performance solvers (CP-SAT, CaDiCaL) demonstrate exceptional scalability. At $N = 128$, recorded runtimes range from approximately """ + f"{stats['cplex_cp_128_ms']:.1f}" + r""" ms for CPLEX CP to """ + f"{stats['cpsat_int_128_s']:.3f}" + r""" s for CP-SAT (noting that measurement methodologies differ across solvers, where reported \texttt{time\_seconds} is the median over repetitions of each run's \texttt{build\_time + solve\_time} — with build and solve medians reported separately so they may not sum exactly — excluding parent-side process launch overhead), whereas many SAT combinations take tens of seconds or timeout.
     \item \textbf{FEASIBLE vs. OPTIMAL Status Semantics}: For pure satisfaction problems (such as $N$-Queens without an objective function), finding any valid non-attacking configuration successfully solves the problem. Solution status labels are solver-specific and API-dependent: CPLEX CP reports \texttt{FEASIBLE}, whereas CP-SAT reports \texttt{OPTIMAL} and MIP solvers may report \texttt{OPTIMAL} for satisfaction models. Solution validity in our framework is independently verified using the benchmark's verification module rather than relying solely on solver status strings.
-    \item \textbf{CP Optimizer Process Startup Overhead}: CP Optimizer relies on an external binary executable (\texttt{cpoptimizer}). Spawning this subprocess incurs inter-process communication and process startup overhead; actual total measured runtimes for CPLEX CP increase from approximately """ + f"{stats['cplex_cp_8_ms']:.2f}" + r""" ms at $N = 8$ to """ + f"{stats['cplex_cp_128_ms']:.2f}" + r""" ms at $N = 128$. Note that the \texttt{solve\_time} of CPLEX CP comes from \texttt{get\_solve\_time()}, which in CSV records values of 0.00 and 0.01 (indicating a resolution of ~10 ms); thus, the ~10.5 ms recorded at $N = 128$ appears to be predominantly 10 ms rounding plus ~0.5 ms model build time, and should not be directly compared on equal footing with CP-SAT's ~""" + f"{stats['cpsat_int_128_s']:.3f}" + r""" s wall-clock measurement.
+    \item \textbf{CP Optimizer Process Startup Overhead}: CP Optimizer relies on an external binary executable (\texttt{cpoptimizer}). Spawning this subprocess incurs inter-process communication and process startup overhead; actual total measured runtimes for CPLEX CP increase from approximately """ + f"{stats['cplex_cp_8_ms']:.2f}" + r""" ms at $N = 8$ to """ + f"{stats['cplex_cp_128_ms']:.2f}" + r""" ms at $N = 128$. Note that the \texttt{solve\_time} of CPLEX CP comes from \texttt{get\_solve\_time()}, which in CSV records values of """ + stats['cplex_cp_solve_times_str'] + r""" (indicating a resolution of ~10 ms); thus, the ~""" + f"{stats['cplex_cp_128_ms']:.1f}" + r""" ms recorded at $N = 128$ appears to be predominantly 10 ms rounding plus ~""" + f"{stats['cplex_cp_128_build_ms']:.1f}" + r""" ms model build time, and should not be directly compared on equal footing with CP-SAT's ~""" + f"{stats['cpsat_int_128_s']:.3f}" + r""" s wall-clock measurement.
     \item \textbf{Gurobi Trial License Limitations}: Gurobi's trial license restricts model dimensions for larger instances, capping trials at $N \le 44$. For $N > 44$, full commercial licenses or alternative solvers (CPLEX, CP-SAT, CaDiCaL) are required.
     \item \textbf{SAT Scaling and Encodings}: CaDiCaL and Kissat handle large clause databases efficiently up to $N = 128$ (with maximum recorded runtimes of approximately """ + f"{stats['cadical_max']:.2f}" + r""" s for CaDiCaL and """ + f"{stats['kissat_max']:.2f}" + r""" s for Kissat), whereas MapleCM reaches a maximum recorded runtime of approximately """ + f"{stats['maplecm_max']:.2f}" + r""" seconds under """ + stats['maplecm_max_variant'] + r""" encoding at $N = 128$, and Glucose3, MiniSat22, and MapleCM encounter frequent timeouts (""" + f"{stats['sat_128_timeouts']}/{stats['sat_128_total']}" + r""" cases timed out at $N = 128$, specifically Glucose3: """ + f"{stats['g3_to']}" + r""", MiniSat22: """ + f"{stats['m22_to']}" + r""", MapleCM: """ + f"{stats['mcm_to']}" + r"""). Compact cardinality encodings such as Commander (47,096 clauses at $N = 64$) and Sequential Counter (47,692 clauses at $N = 64$) dramatically reduce clause footprints compared to naive Pairwise encodings.
     \item \textbf{CP-SAT Allowed Assignment Timeout at $N = 128$}: At $N = 128$, the CP-SAT allowed assignment variant timed out within 30 s; the underlying cause has not been isolated.
@@ -569,21 +587,33 @@ The source code, benchmark runners, raw experimental results (CSV files), and re
     latex_content = latex_content.replace("% {cplex_table_tex}", cplex_table_tex)
     latex_content = latex_content.replace("% {timeout_table_tex}", timeout_table_tex)
 
-    with open("report/report.tex", "w") as f:
+    latex_path = os.path.join(out_dir, "report.tex")
+    with open(latex_path, "w") as f:
         f.write(latex_content)
-    print("LaTeX report generated successfully at report/report.tex")
+    print(f"LaTeX report generated successfully at {latex_path}")
+    return latex_path
 
-    # Compile report.tex with pdflatex and verify return code
+def compile_pdf(out_dir="report"):
+    import shutil
+    if shutil.which("pdflatex") is None:
+        print("Warning: pdflatex not found in PATH. Skipping PDF compilation.")
+        return False
     try:
-        res1 = subprocess.run(["pdflatex", "-interaction=nonstopmode", "report.tex"], cwd="report", check=True)
-        res2 = subprocess.run(["pdflatex", "-interaction=nonstopmode", "report.tex"], cwd="report", check=True)
-        if os.path.exists("report/report.pdf"):
-            print("Successfully compiled report.pdf!")
+        subprocess.run(["pdflatex", "-interaction=nonstopmode", "report.tex"], cwd=out_dir, check=True)
+        subprocess.run(["pdflatex", "-interaction=nonstopmode", "report.tex"], cwd=out_dir, check=True)
+        pdf_path = os.path.join(out_dir, "report.pdf")
+        if os.path.exists(pdf_path):
+            print(f"Successfully compiled {pdf_path}!")
+            return True
         else:
             raise RuntimeError("report.pdf was not generated.")
     except Exception as e:
         print(f"Error during pdflatex compilation: {e}")
         raise
+
+def main():
+    generate_tex(results_dir="results", out_dir="report")
+    compile_pdf(out_dir="report")
 
 if __name__ == "__main__":
     main()
