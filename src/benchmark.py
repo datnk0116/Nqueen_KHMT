@@ -30,7 +30,7 @@ def run_subprocess_solver(paradigm, n, model_variant, solver, time_limit):
     Returns a dict with benchmark metrics including parent-measured wall_time.
     """
     code = f"""
-import sys, os, time, json
+import sys, os, time, json, math
 import traceback
 current_dir = {repr(current_dir)}
 if current_dir not in sys.path:
@@ -197,11 +197,13 @@ try:
         raise ValueError(f"Unknown paradigm: {{paradigm}}")
 
     total_time = import_time + build_time + solve_time
+    model_time = build_time + solve_time if (not math.isnan(build_time) and not math.isnan(solve_time)) else float('nan')
     if time_limit is not None and total_time > time_limit and status not in ("TIMEOUT", "ERROR", "MEMOUT", "LICENSE_LIMIT"):
         status = "TIMEOUT"
         build_time = float('nan')
         solve_time = float('nan')
         import_time = float('nan')
+        model_time = float('nan')
         total_time = time_limit
 
     out = {{
@@ -212,6 +214,7 @@ try:
         "import_time": import_time,
         "build_time": build_time,
         "solve_time": solve_time,
+        "model_time": model_time,
         "time_seconds": total_time,
         "solver_reported_time": solver_reported_time,
         "verified": verified,
@@ -229,6 +232,7 @@ except Exception as e:
         "import_time": float('nan'),
         "build_time": float('nan'),
         "solve_time": float('nan'),
+        "model_time": float('nan'),
         "time_seconds": 0.0,
         "solver_reported_time": None,
         "verified": False,
@@ -249,6 +253,7 @@ except Exception as e:
                 "n": n, "paradigm": paradigm, "model_variant": model_variant, "solver": solver,
                 "status": "MEMOUT", "is_sat": False, "variables_count": 0, "clauses_constraints_count": 0,
                 "import_time": float('nan'), "build_time": float('nan'), "solve_time": float('nan'),
+                "model_time": float('nan'),
                 "time_seconds": time_limit, "solver_reported_time": None, "wall_time": p_wall,
                 "verified": False, "error": "Memory limit exceeded (MEMOUT)"
             }
@@ -256,6 +261,11 @@ except Exception as e:
         for line in stdout.splitlines():
             if line.startswith("RESULT_JSON:"):
                 data = json.loads(line[len("RESULT_JSON:"):])
+                b_t = data.get("build_time", float('nan'))
+                s_t = data.get("solve_time", float('nan'))
+                m_t = data.get("model_time")
+                if m_t is None or pd.isna(m_t):
+                    m_t = b_t + s_t if (not pd.isna(b_t) and not pd.isna(s_t)) else float('nan')
                 return {
                     "n": n,
                     "paradigm": paradigm,
@@ -266,8 +276,9 @@ except Exception as e:
                     "variables_count": data["variables_count"],
                     "clauses_constraints_count": data["constraints_count"],
                     "import_time": data["import_time"],
-                    "build_time": data["build_time"],
-                    "solve_time": data["solve_time"],
+                    "build_time": b_t,
+                    "solve_time": s_t,
+                    "model_time": m_t,
                     "time_seconds": data["time_seconds"],
                     "solver_reported_time": data["solver_reported_time"],
                     "wall_time": p_wall,
@@ -279,6 +290,7 @@ except Exception as e:
             "n": n, "paradigm": paradigm, "model_variant": model_variant, "solver": solver,
             "status": "ERROR", "is_sat": False, "variables_count": 0, "clauses_constraints_count": 0,
             "import_time": float('nan'), "build_time": float('nan'), "solve_time": float('nan'),
+            "model_time": float('nan'),
             "time_seconds": 0.0, "solver_reported_time": None, "wall_time": p_wall,
             "verified": False, "error": stderr or "No JSON output"
         }
@@ -288,6 +300,7 @@ except Exception as e:
             "n": n, "paradigm": paradigm, "model_variant": model_variant, "solver": solver,
             "status": "TIMEOUT", "is_sat": False, "variables_count": 0, "clauses_constraints_count": 0,
             "import_time": float('nan'), "build_time": float('nan'), "solve_time": float('nan'),
+            "model_time": float('nan'),
             "time_seconds": time_limit, "solver_reported_time": None, "wall_time": p_wall,
             "verified": False, "error": "Hard timeout expired"
         }
@@ -297,6 +310,7 @@ except Exception as e:
             "n": n, "paradigm": paradigm, "model_variant": model_variant, "solver": solver,
             "status": "ERROR", "is_sat": False, "variables_count": 0, "clauses_constraints_count": 0,
             "import_time": float('nan'), "build_time": float('nan'), "solve_time": float('nan'),
+            "model_time": float('nan'),
             "time_seconds": 0.0, "solver_reported_time": None, "wall_time": p_wall,
             "verified": False, "error": str(e)
         }
@@ -320,9 +334,9 @@ def run_benchmarks_with_repetitions(paradigm, n_values, encodings_or_configs, so
                 runs_total = len(run_records)
                 runs_success = sum(1 for r in run_records if r["status"] in ("OPTIMAL", "FEASIBLE", "SAT"))
                 runs_timeout = sum(1 for r in run_records if r["status"] in ("TIMEOUT", "TIME_LIMIT"))
-                runs_memout = sum(1 for r in run_records if r["status"] == "MEMOUT")
                 runs_license = sum(1 for r in run_records if r["status"] == "LICENSE_LIMIT")
-                runs_error = sum(1 for r in run_records if r["status"] == "ERROR")
+                runs_memout = sum(1 for r in run_records if r["status"] == "MEMOUT")
+                runs_error = sum(1 for r in run_records if r["status"] in ("ERROR", "MEMOUT", "LICENSE_LIMIT"))
 
                 successful = [r for r in run_records if r["status"] in ("OPTIMAL", "FEASIBLE", "SAT")]
 
@@ -331,17 +345,21 @@ def run_benchmarks_with_repetitions(paradigm, n_values, encodings_or_configs, so
                     status = "LICENSE_LIMIT"
                     is_sat = False
                     verified = False
-                    error = "License/size limit reached"
+                    err_msgs = [r.get("error", "") for r in run_records if r.get("error")]
+                    error = err_msgs[0] if err_msgs else "License/size limit reached"
                 elif runs_memout > 0:
                     status = "MEMOUT"
                     is_sat = False
                     verified = False
-                    error = "Memory limit exceeded (MEMOUT)"
-                elif runs_error == runs_total:
+                    err_msgs = [r.get("error", "") for r in run_records if r.get("error")]
+                    error = err_msgs[0] if err_msgs else "Memory limit exceeded (MEMOUT)"
+                elif runs_error >= (runs_total / 2.0) or (runs_success == 0 and runs_error > 0):
                     status = "ERROR"
                     is_sat = False
                     verified = False
-                    error = run_records[-1].get("error", "Error")
+                    err_msgs = [r.get("error", "") for r in run_records if r["status"] == "ERROR" and r.get("error")]
+                    first_err = err_msgs[0] if err_msgs else "Error"
+                    error = f"{runs_error}/{runs_total} runs errored: {first_err}"
                 elif runs_timeout >= (runs_total / 2.0) or (runs_success == 0 and runs_timeout > 0):
                     soft_timeouts = sum(1 for r in run_records if r["status"] == "TIME_LIMIT")
                     status = "TIME_LIMIT" if soft_timeouts == runs_timeout else "TIMEOUT"
@@ -352,7 +370,12 @@ def run_benchmarks_with_repetitions(paradigm, n_values, encodings_or_configs, so
                     status = successful[0]["status"]
                     is_sat = successful[0]["is_sat"]
                     verified = successful[0]["verified"]
-                    error = f"{runs_timeout}/{runs_total} runs timed out" if runs_timeout > 0 else ""
+                    notes = []
+                    if runs_timeout > 0:
+                        notes.append(f"{runs_timeout}/{runs_total} runs timed out")
+                    if runs_error > 0:
+                        notes.append(f"{runs_error}/{runs_total} runs errored")
+                    error = "; ".join(notes)
                 else:
                     status = run_records[-1]["status"]
                     is_sat = False
@@ -361,7 +384,7 @@ def run_benchmarks_with_repetitions(paradigm, n_values, encodings_or_configs, so
 
                 all_times = [r["time_seconds"] for r in run_records if not pd.isna(r["time_seconds"])]
                 all_walls = [r["wall_time"] for r in run_records if ("wall_time" in r and not pd.isna(r["wall_time"]))]
-                
+
                 median_time = statistics.median(all_times) if all_times else time_limit
                 median_wall = statistics.median(all_walls) if all_walls else median_time
 
@@ -369,6 +392,7 @@ def run_benchmarks_with_repetitions(paradigm, n_values, encodings_or_configs, so
                     median_import = float('nan')
                     median_build = float('nan')
                     median_solve = float('nan')
+                    median_model = float('nan')
                     reported_times = [r["solver_reported_time"] for r in run_records if r.get("solver_reported_time") is not None and not pd.isna(r.get("solver_reported_time"))]
                     median_reported = statistics.median(reported_times) if reported_times else None
                     base_rec = run_records[0]
@@ -378,11 +402,13 @@ def run_benchmarks_with_repetitions(paradigm, n_values, encodings_or_configs, so
                     import_times = [r["import_time"] for r in successful if not pd.isna(r["import_time"])]
                     build_times = [r["build_time"] for r in successful if not pd.isna(r["build_time"])]
                     solve_times = [r["solve_time"] for r in successful if not pd.isna(r["solve_time"])]
+                    model_times = [r["model_time"] for r in successful if ("model_time" in r and not pd.isna(r["model_time"]))]
                     reported_times = [r["solver_reported_time"] for r in run_records if r.get("solver_reported_time") is not None and not pd.isna(r.get("solver_reported_time"))]
 
                     median_import = statistics.median(import_times) if import_times else float('nan')
                     median_build = statistics.median(build_times) if build_times else float('nan')
                     median_solve = statistics.median(solve_times) if solve_times else float('nan')
+                    median_model = statistics.median(model_times) if model_times else (median_build + median_solve if (not pd.isna(median_build) and not pd.isna(median_solve)) else float('nan'))
                     median_reported = statistics.median(reported_times) if reported_times else None
                     base_rec = successful[0]
                     variables_count = base_rec["variables_count"]
@@ -400,6 +426,7 @@ def run_benchmarks_with_repetitions(paradigm, n_values, encodings_or_configs, so
                     "import_time": median_import,
                     "build_time": median_build,
                     "solve_time": median_solve,
+                    "model_time": median_model,
                     "time_seconds": median_time,
                     "solver_reported_time": median_reported,
                     "wall_time": median_wall,

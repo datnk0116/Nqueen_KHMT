@@ -24,24 +24,29 @@ def load_combined(results_dir="results"):
 def timeout_table(df):
     if df.empty or 'status' not in df.columns:
         return pd.DataFrame(columns=['paradigm', 'solver', 'n', 'timeout_count'])
-    timeouts_df = df[df['status'] == 'TIMEOUT']
+    timeouts_df = df[df['status'].isin(['TIMEOUT', 'TIME_LIMIT'])]
     if timeouts_df.empty:
         return pd.DataFrame(columns=['paradigm', 'solver', 'n', 'timeout_count'])
     grouped_to = timeouts_df.groupby(['paradigm', 'solver', 'n']).size().reset_index(name='timeout_count')
     return grouped_to
 
 def format_sat_time(row):
-    status = row.get('status', 'SUCCESS')
-    if status == 'TIMEOUT':
+    raw_status = row.get('status')
+    status = str(raw_status).upper() if (raw_status is not None and not pd.isna(raw_status)) else 'SUCCESS'
+    if status in ('TIMEOUT', 'TIME_LIMIT'):
         return "T/O"
     elif status in ('ERROR', 'MEMOUT', 'LICENSE_LIMIT'):
         return "ERR"
-    else:
+    elif status in ('SAT', 'OPTIMAL', 'FEASIBLE', 'SUCCESS', 'SUBOPTIMAL') or (row.get('is_sat') is True and status not in ('TIMEOUT', 'TIME_LIMIT')):
         t = row.get('time_seconds', 0.0)
+        if pd.isna(t):
+            return "N/A"
         if t < 0.001:
             return f"{t:.2e}"
         else:
             return f"{t:.3f}"
+    else:
+        return "ERR"
 
 def format_adaptive_time(val_seconds):
     if val_seconds is None or pd.isna(val_seconds):
@@ -91,7 +96,7 @@ def make_sat_size_table_rows(df):
         variant = r['model_variant']
         sub = sat_df[(sat_df['n'] == n) & (sat_df['model_variant'] == variant)]
         if 'variables_count' in sub.columns:
-            valid_sub = sub[~sub['status'].isin(['TIMEOUT', 'ERROR', 'MEMOUT', 'LICENSE_LIMIT']) & (sub['variables_count'] > 0)]
+            valid_sub = sub[~sub['status'].isin(['TIMEOUT', 'TIME_LIMIT', 'ERROR', 'MEMOUT', 'LICENSE_LIMIT']) & (sub['variables_count'] > 0)]
         else:
             valid_sub = pd.DataFrame()
         if valid_sub.empty:
@@ -116,17 +121,26 @@ def make_table_rows(subset_df, max_rows=None):
     for _, row in sorted_df.iterrows():
         if max_rows is not None and count >= max_rows:
             break
-        status = row.get('status', 'SUCCESS')
-        if status in ('TIMEOUT', 'ERROR', 'MEMOUT', 'LICENSE_LIMIT'):
+        raw_status = row.get('status')
+        status = str(raw_status).upper() if (raw_status is not None and not pd.isna(raw_status)) else 'SUCCESS'
+        if status in ('TIMEOUT', 'TIME_LIMIT'):
             v_str = "-"
             c_str = "-"
-            t_str = "T/O" if status == 'TIMEOUT' else "ERR"
-        else:
+            t_str = "T/O"
+        elif status in ('ERROR', 'MEMOUT', 'LICENSE_LIMIT'):
+            v_str = "-"
+            c_str = "-"
+            t_str = "ERR"
+        elif status in ('SAT', 'OPTIMAL', 'FEASIBLE', 'SUCCESS', 'SUBOPTIMAL') or (row.get('is_sat') is True and status not in ('TIMEOUT', 'TIME_LIMIT')):
             v_str = str(row.get('variables_count', 0))
             constraints = row.get('clauses_constraints_count', row.get('constraints_count', 0))
             c_str = str(constraints)
             t_sec = row.get('time_seconds', 0.0)
-            t_str = f"{t_sec:.6f}"
+            t_str = f"{t_sec:.6f}" if not pd.isna(t_sec) else "N/A"
+        else:
+            v_str = "-"
+            c_str = "-"
+            t_str = "ERR"
         rows.append(f"{row.get('n', 0)} & {row.get('model_variant', '')} & {row.get('solver', '')} & {v_str} & {c_str} & {t_str} \\\\")
         count += 1
     return "\n".join(rows)
@@ -137,11 +151,11 @@ def build_discussion_stats(combined_df):
     cplex_cp_df = combined_df[combined_df['paradigm'] == 'CPLEX-CP'] if not combined_df.empty else pd.DataFrame()
 
     sat_128 = sat_df[sat_df['n'] == 128] if not sat_df.empty else pd.DataFrame()
-    sat_128_timeouts = len(sat_128[sat_128['status'] == 'TIMEOUT']) if not sat_128.empty else 10
+    sat_128_timeouts = len(sat_128[sat_128['status'].isin(['TIMEOUT', 'TIME_LIMIT'])]) if not sat_128.empty else 10
     sat_128_total = len(sat_128) if not sat_128.empty else 25
-    g3_to = len(sat_128[(sat_128['solver'] == 'glucose3') & (sat_128['status'] == 'TIMEOUT')]) if not sat_128.empty else 4
-    m22_to = len(sat_128[(sat_128['solver'] == 'minisat22') & (sat_128['status'] == 'TIMEOUT')]) if not sat_128.empty else 3
-    mcm_to = len(sat_128[(sat_128['solver'] == 'maplecm') & (sat_128['status'] == 'TIMEOUT')]) if not sat_128.empty else 3
+    g3_to = len(sat_128[(sat_128['solver'] == 'glucose3') & (sat_128['status'].isin(['TIMEOUT', 'TIME_LIMIT']))]) if not sat_128.empty else 4
+    m22_to = len(sat_128[(sat_128['solver'] == 'minisat22') & (sat_128['status'].isin(['TIMEOUT', 'TIME_LIMIT']))]) if not sat_128.empty else 3
+    mcm_to = len(sat_128[(sat_128['solver'] == 'maplecm') & (sat_128['status'].isin(['TIMEOUT', 'TIME_LIMIT']))]) if not sat_128.empty else 3
 
     med_8 = cplex_cp_df[cplex_cp_df['n'] == 8]['time_seconds'].median() if not cplex_cp_df.empty and not cplex_cp_df[cplex_cp_df['n'] == 8].empty else None
     cplex_cp_8_s = med_8 if (med_8 is not None and not pd.isna(med_8)) else 0.000264
@@ -169,9 +183,9 @@ def build_discussion_stats(combined_df):
     cpsat_int_128 = cpsat_df[(cpsat_df['n'] == 128) & (cpsat_df['model_variant'] == 'integer')]['time_seconds'].median() if not cpsat_df.empty else 0.71326
     cpsat_bool_128 = cpsat_df[(cpsat_df['n'] == 128) & (cpsat_df['model_variant'] == 'boolean')]['time_seconds'].median() if not cpsat_df.empty else 0.73134
 
-    cadical_sub = sat_df[(sat_df['solver'] == 'cadical') & (sat_df['status'] != 'TIMEOUT')]
-    kissat_sub = sat_df[(sat_df['solver'] == 'kissat') & (sat_df['status'] != 'TIMEOUT')]
-    maplecm_sub = sat_df[(sat_df['solver'] == 'maplecm') & (sat_df['status'] != 'TIMEOUT')]
+    cadical_sub = sat_df[(sat_df['solver'] == 'cadical') & (~sat_df['status'].isin(['TIMEOUT', 'TIME_LIMIT', 'ERROR', 'MEMOUT', 'LICENSE_LIMIT']))]
+    kissat_sub = sat_df[(sat_df['solver'] == 'kissat') & (~sat_df['status'].isin(['TIMEOUT', 'TIME_LIMIT', 'ERROR', 'MEMOUT', 'LICENSE_LIMIT']))]
+    maplecm_sub = sat_df[(sat_df['solver'] == 'maplecm') & (~sat_df['status'].isin(['TIMEOUT', 'TIME_LIMIT', 'ERROR', 'MEMOUT', 'LICENSE_LIMIT']))]
 
     cadical_max = cadical_sub['time_seconds'].max() if not cadical_sub.empty else 8.60
     kissat_max = kissat_sub['time_seconds'].max() if not kissat_sub.empty else 6.03
@@ -268,15 +282,19 @@ def generate_tex(results_dir="results", out_dir="report"):
             plt.savefig(os.path.join(out_dir, "sat_time_cadical.png"), dpi=300)
             plt.close()
 
-        # Plot 2: Paradigm comparison across all solver groups (model time: build + solve, timeouts counted as 30 s, excluding LICENSE_LIMIT/MEMOUT)
+        # Plot 2: Paradigm comparison across all solver groups (model time: build + solve, timeouts counted as 30 s, excluding LICENSE_LIMIT/MEMOUT/ERROR)
         fig, ax = plt.subplots(figsize=(8, 5))
-        valid_paradigm_df = combined_df[~combined_df['status'].isin(['LICENSE_LIMIT', 'MEMOUT'])].copy() if not combined_df.empty else combined_df
+        valid_paradigm_df = combined_df[~combined_df['status'].isin(['LICENSE_LIMIT', 'MEMOUT', 'ERROR'])].copy() if not combined_df.empty else combined_df
         if not valid_paradigm_df.empty:
-            if 'build_time' in valid_paradigm_df.columns and 'solve_time' in valid_paradigm_df.columns:
+            if 'model_time' in valid_paradigm_df.columns:
+                # If model_time has NaN but build and solve exist, fill them
+                nan_mask = valid_paradigm_df['model_time'].isna() & valid_paradigm_df['build_time'].notna() & valid_paradigm_df['solve_time'].notna()
+                valid_paradigm_df.loc[nan_mask, 'model_time'] = valid_paradigm_df.loc[nan_mask, 'build_time'] + valid_paradigm_df.loc[nan_mask, 'solve_time']
+            elif 'build_time' in valid_paradigm_df.columns and 'solve_time' in valid_paradigm_df.columns:
                 valid_paradigm_df['model_time'] = valid_paradigm_df['build_time'] + valid_paradigm_df['solve_time']
             else:
                 valid_paradigm_df['model_time'] = valid_paradigm_df['time_seconds']
-            valid_paradigm_df.loc[valid_paradigm_df['status'] == 'TIMEOUT', 'model_time'] = 30.0
+            valid_paradigm_df.loc[valid_paradigm_df['status'].isin(['TIMEOUT', 'TIME_LIMIT']), 'model_time'] = 30.0
             for paradigm in valid_paradigm_df['paradigm'].unique():
                 sub = valid_paradigm_df[valid_paradigm_df['paradigm'] == paradigm]
                 if not sub.empty:
@@ -291,9 +309,9 @@ def generate_tex(results_dir="results", out_dir="report"):
         plt.savefig(os.path.join(out_dir, "paradigm_comparison.png"), dpi=300)
         plt.close()
 
-        # Plot 3: Variable count scaling (exclude TIMEOUT/MEMOUT/LICENSE_LIMIT)
+        # Plot 3: Variable count scaling (exclude TIMEOUT/TIME_LIMIT/MEMOUT/LICENSE_LIMIT/ERROR)
         fig, ax = plt.subplots(figsize=(8, 5))
-        valid_var_df = combined_df[~combined_df['status'].isin(['TIMEOUT', 'MEMOUT', 'LICENSE_LIMIT'])]
+        valid_var_df = combined_df[~combined_df['status'].isin(['TIMEOUT', 'TIME_LIMIT', 'MEMOUT', 'LICENSE_LIMIT', 'ERROR'])]
         for paradigm in valid_var_df['paradigm'].unique():
             sub = valid_var_df[valid_var_df['paradigm'] == paradigm]
             if not sub.empty and 'variables_count' in sub.columns:
@@ -309,10 +327,10 @@ def generate_tex(results_dir="results", out_dir="report"):
         plt.savefig(os.path.join(out_dir, "variables_scaling.png"), dpi=300)
         plt.close()
 
-        # Plot 4: Build vs Solve time (exclude TIMEOUT/MEMOUT/LICENSE_LIMIT, reindex)
+        # Plot 4: Build vs Solve time (exclude TIMEOUT/TIME_LIMIT/MEMOUT/LICENSE_LIMIT/ERROR, reindex)
         if 'build_time' in combined_df.columns and 'solve_time' in combined_df.columns:
             fig, ax = plt.subplots(figsize=(8, 5))
-            valid_bs_df = combined_df[~combined_df['status'].isin(['TIMEOUT', 'MEMOUT', 'LICENSE_LIMIT'])]
+            valid_bs_df = combined_df[~combined_df['status'].isin(['TIMEOUT', 'TIME_LIMIT', 'MEMOUT', 'LICENSE_LIMIT', 'ERROR'])]
             build_grouped = valid_bs_df.groupby('paradigm')['build_time'].mean()
             solve_grouped = valid_bs_df.groupby('paradigm')['solve_time'].mean()
             all_paradigms = sorted(list(set(build_grouped.index).union(set(solve_grouped.index))))

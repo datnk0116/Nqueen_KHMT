@@ -96,26 +96,43 @@ class NQueensSAT:
         is_sat = False
         model = None
         
+        SOLVERS_WITH_INTERRUPT = {"minisat22", "glucose3", "glucose4", "maplecm"}
+
         def _run_solve(solver_instance):
             nonlocal is_sat, model
             timer = None
+            lock = threading.Lock()
+            interrupted = False
+
+            def _interrupt_callback():
+                nonlocal interrupted
+                with lock:
+                    if not interrupted:
+                        interrupted = True
+                        try:
+                            solver_instance.interrupt()
+                        except Exception:
+                            pass
+
             if time_limit is not None and time_limit > 0:
-                try:
-                    timer = threading.Timer(time_limit, solver_instance.interrupt)
-                    timer.daemon = True
-                    timer.start()
-                    is_sat = solver_instance.solve_limited(expect_interrupt=True)
-                except NotImplementedError:
+                if self.solver_name in SOLVERS_WITH_INTERRUPT:
+                    try:
+                        timer = threading.Timer(time_limit, _interrupt_callback)
+                        timer.daemon = True
+                        timer.start()
+                        is_sat = solver_instance.solve_limited(expect_interrupt=True)
+                    except NotImplementedError:
+                        is_sat = solver_instance.solve()
+                    finally:
+                        if timer is not None:
+                            timer.cancel()
+                        with lock:
+                            interrupted = True
+                else:
                     # PySAT backends like CaDiCaL and Kissat do not implement interrupt().
                     # For these backends, cooperative interrupt is unavailable,
                     # and timeout enforcement relies on the parent process hard timeout.
-                    if timer is not None:
-                        timer.cancel()
-                        timer = None
                     is_sat = solver_instance.solve()
-                finally:
-                    if timer is not None:
-                        timer.cancel()
             else:
                 is_sat = solver_instance.solve()
 
@@ -131,8 +148,15 @@ class NQueensSAT:
                     _run_solve(solver)
         except Exception as e:
             elapsed = time.perf_counter() - start_time
+            err_str = str(e).lower()
+            if "out of memory" in err_str or "bad_alloc" in err_str:
+                status = "MEMOUT"
+            elif "license" in err_str or "size limit" in err_str:
+                status = "LICENSE_LIMIT"
+            else:
+                status = "ERROR"
             self.stats = {
-                "status": "ERROR",
+                "status": status,
                 "is_sat": False,
                 "model": None,
                 "queens": [],
