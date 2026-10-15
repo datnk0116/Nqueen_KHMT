@@ -146,28 +146,36 @@ def make_table_rows(subset_df, max_rows=None):
     return "\n".join(rows)
 
 def build_discussion_stats(combined_df):
-    sat_df = combined_df[combined_df['paradigm'] == 'SAT'] if not combined_df.empty else pd.DataFrame()
-    cpsat_df = combined_df[combined_df['paradigm'] == 'CP-SAT'] if not combined_df.empty else pd.DataFrame()
-    cplex_cp_df = combined_df[combined_df['paradigm'] == 'CPLEX-CP'] if not combined_df.empty else pd.DataFrame()
+    sat_df = combined_df[combined_df['paradigm'] == 'SAT'] if (not combined_df.empty and 'paradigm' in combined_df.columns) else pd.DataFrame()
+    cpsat_df = combined_df[combined_df['paradigm'] == 'CP-SAT'] if (not combined_df.empty and 'paradigm' in combined_df.columns) else pd.DataFrame()
+    cplex_cp_df = combined_df[combined_df['paradigm'] == 'CPLEX-CP'] if (not combined_df.empty and 'paradigm' in combined_df.columns) else pd.DataFrame()
 
-    sat_128 = sat_df[sat_df['n'] == 128] if not sat_df.empty else pd.DataFrame()
-    sat_128_timeouts = len(sat_128[sat_128['status'].isin(['TIMEOUT', 'TIME_LIMIT'])]) if not sat_128.empty else 10
-    sat_128_total = len(sat_128) if not sat_128.empty else 25
-    g3_to = len(sat_128[(sat_128['solver'] == 'glucose3') & (sat_128['status'].isin(['TIMEOUT', 'TIME_LIMIT']))]) if not sat_128.empty else 4
-    m22_to = len(sat_128[(sat_128['solver'] == 'minisat22') & (sat_128['status'].isin(['TIMEOUT', 'TIME_LIMIT']))]) if not sat_128.empty else 3
-    mcm_to = len(sat_128[(sat_128['solver'] == 'maplecm') & (sat_128['status'].isin(['TIMEOUT', 'TIME_LIMIT']))]) if not sat_128.empty else 3
+    sat_128 = sat_df[sat_df['n'] == 128] if (not sat_df.empty and 'n' in sat_df.columns) else pd.DataFrame()
+    if not sat_128.empty and 'status' in sat_128.columns:
+        sat_128_timeouts = int(len(sat_128[sat_128['status'].isin(['TIMEOUT', 'TIME_LIMIT'])]))
+        sat_128_total = int(len(sat_128))
+        g3_to = int(len(sat_128[(sat_128['solver'] == 'glucose3') & (sat_128['status'].isin(['TIMEOUT', 'TIME_LIMIT']))])) if 'solver' in sat_128.columns else 0
+        m22_to = int(len(sat_128[(sat_128['solver'] == 'minisat22') & (sat_128['status'].isin(['TIMEOUT', 'TIME_LIMIT']))])) if 'solver' in sat_128.columns else 0
+        mcm_to = int(len(sat_128[(sat_128['solver'] == 'maplecm') & (sat_128['status'].isin(['TIMEOUT', 'TIME_LIMIT']))])) if 'solver' in sat_128.columns else 0
+    else:
+        sat_128_timeouts = 0
+        sat_128_total = 0
+        g3_to = 0
+        m22_to = 0
+        mcm_to = 0
 
-    med_8 = cplex_cp_df[cplex_cp_df['n'] == 8]['time_seconds'].median() if not cplex_cp_df.empty and not cplex_cp_df[cplex_cp_df['n'] == 8].empty else None
-    cplex_cp_8_s = med_8 if (med_8 is not None and not pd.isna(med_8)) else 0.000264
-    cplex_cp_8_ms = cplex_cp_8_s * 1000
+    cplex_cp_8_df = cplex_cp_df[cplex_cp_df['n'] == 8] if (not cplex_cp_df.empty and 'n' in cplex_cp_df.columns) else pd.DataFrame()
+    med_8 = cplex_cp_8_df['time_seconds'].median() if (not cplex_cp_8_df.empty and 'time_seconds' in cplex_cp_8_df.columns) else float('nan')
+    cplex_cp_8_s = med_8 if (med_8 is not None and not pd.isna(med_8)) else float('nan')
+    cplex_cp_8_ms = cplex_cp_8_s * 1000 if not pd.isna(cplex_cp_8_s) else float('nan')
 
-    cplex_cp_128_df = cplex_cp_df[cplex_cp_df['n'] == 128] if not cplex_cp_df.empty else pd.DataFrame()
-    med_128 = cplex_cp_128_df['time_seconds'].median() if not cplex_cp_128_df.empty else None
-    cplex_cp_128_s = med_128 if (med_128 is not None and not pd.isna(med_128)) else 0.010534
-    cplex_cp_128_ms = cplex_cp_128_s * 1000
+    cplex_cp_128_df = cplex_cp_df[cplex_cp_df['n'] == 128] if (not cplex_cp_df.empty and 'n' in cplex_cp_df.columns) else pd.DataFrame()
+    med_128 = cplex_cp_128_df['time_seconds'].median() if (not cplex_cp_128_df.empty and 'time_seconds' in cplex_cp_128_df.columns) else float('nan')
+    cplex_cp_128_s = med_128 if (med_128 is not None and not pd.isna(med_128)) else float('nan')
+    cplex_cp_128_ms = cplex_cp_128_s * 1000 if not pd.isna(cplex_cp_128_s) else float('nan')
 
-    cplex_cp_128_solve_s = cplex_cp_128_df['solve_time'].median() if not cplex_cp_128_df.empty and 'solve_time' in cplex_cp_128_df.columns else 0.01
-    cplex_cp_128_build_ms = cplex_cp_128_df['build_time'].median() * 1000 if not cplex_cp_128_df.empty and 'build_time' in cplex_cp_128_df.columns and not pd.isna(cplex_cp_128_df['build_time'].median()) else 0.534
+    cplex_cp_128_solve_s = cplex_cp_128_df['solve_time'].median() if (not cplex_cp_128_df.empty and 'solve_time' in cplex_cp_128_df.columns and not pd.isna(cplex_cp_128_df['solve_time'].median())) else float('nan')
+    cplex_cp_128_build_ms = cplex_cp_128_df['build_time'].median() * 1000 if (not cplex_cp_128_df.empty and 'build_time' in cplex_cp_128_df.columns and not pd.isna(cplex_cp_128_df['build_time'].median())) else float('nan')
 
     if not cplex_cp_df.empty and 'solve_time' in cplex_cp_df.columns:
         unique_st = sorted(cplex_cp_df['solve_time'].dropna().unique())
@@ -176,30 +184,36 @@ def build_discussion_stats(combined_df):
         elif len(unique_st) == 1:
             cplex_cp_solve_times_str = f"{unique_st[0]:.2f}"
         else:
-            cplex_cp_solve_times_str = "0.00 and 0.01"
+            cplex_cp_solve_times_str = "N/A"
     else:
-        cplex_cp_solve_times_str = "0.00 and 0.01"
+        cplex_cp_solve_times_str = "N/A"
 
-    cpsat_int_128 = cpsat_df[(cpsat_df['n'] == 128) & (cpsat_df['model_variant'] == 'integer')]['time_seconds'].median() if not cpsat_df.empty else 0.71326
-    cpsat_bool_128 = cpsat_df[(cpsat_df['n'] == 128) & (cpsat_df['model_variant'] == 'boolean')]['time_seconds'].median() if not cpsat_df.empty else 0.73134
+    cpsat_int_sub = cpsat_df[(cpsat_df['n'] == 128) & (cpsat_df['model_variant'] == 'integer')] if (not cpsat_df.empty and 'n' in cpsat_df.columns and 'model_variant' in cpsat_df.columns) else pd.DataFrame()
+    cpsat_int_128 = cpsat_int_sub['time_seconds'].median() if (not cpsat_int_sub.empty and 'time_seconds' in cpsat_int_sub.columns and not pd.isna(cpsat_int_sub['time_seconds'].median())) else float('nan')
 
-    cadical_sub = sat_df[(sat_df['solver'] == 'cadical') & (~sat_df['status'].isin(['TIMEOUT', 'TIME_LIMIT', 'ERROR', 'MEMOUT', 'LICENSE_LIMIT']))]
-    kissat_sub = sat_df[(sat_df['solver'] == 'kissat') & (~sat_df['status'].isin(['TIMEOUT', 'TIME_LIMIT', 'ERROR', 'MEMOUT', 'LICENSE_LIMIT']))]
-    maplecm_sub = sat_df[(sat_df['solver'] == 'maplecm') & (~sat_df['status'].isin(['TIMEOUT', 'TIME_LIMIT', 'ERROR', 'MEMOUT', 'LICENSE_LIMIT']))]
+    cpsat_bool_sub = cpsat_df[(cpsat_df['n'] == 128) & (cpsat_df['model_variant'] == 'boolean')] if (not cpsat_df.empty and 'n' in cpsat_df.columns and 'model_variant' in cpsat_df.columns) else pd.DataFrame()
+    cpsat_bool_128 = cpsat_bool_sub['time_seconds'].median() if (not cpsat_bool_sub.empty and 'time_seconds' in cpsat_bool_sub.columns and not pd.isna(cpsat_bool_sub['time_seconds'].median())) else float('nan')
 
-    cadical_max = cadical_sub['time_seconds'].max() if not cadical_sub.empty else 8.60
-    kissat_max = kissat_sub['time_seconds'].max() if not kissat_sub.empty else 6.03
-    
-    if not maplecm_sub.empty:
+    def non_failure(df):
+        return df[~df['status'].isin(['TIMEOUT', 'TIME_LIMIT', 'ERROR', 'MEMOUT', 'LICENSE_LIMIT'])] if ('status' in df.columns) else df
+
+    cadical_sub = non_failure(sat_df[sat_df['solver'] == 'cadical']) if (not sat_df.empty and 'solver' in sat_df.columns) else pd.DataFrame()
+    kissat_sub = non_failure(sat_df[sat_df['solver'] == 'kissat']) if (not sat_df.empty and 'solver' in sat_df.columns) else pd.DataFrame()
+    maplecm_sub = non_failure(sat_df[sat_df['solver'] == 'maplecm']) if (not sat_df.empty and 'solver' in sat_df.columns) else pd.DataFrame()
+
+    cadical_max = cadical_sub['time_seconds'].max() if (not cadical_sub.empty and 'time_seconds' in cadical_sub.columns and not pd.isna(cadical_sub['time_seconds'].max())) else float('nan')
+    kissat_max = kissat_sub['time_seconds'].max() if (not kissat_sub.empty and 'time_seconds' in kissat_sub.columns and not pd.isna(kissat_sub['time_seconds'].max())) else float('nan')
+
+    if not maplecm_sub.empty and 'time_seconds' in maplecm_sub.columns and not maplecm_sub['time_seconds'].dropna().empty:
         max_idx = maplecm_sub['time_seconds'].idxmax()
         maplecm_max = maplecm_sub.loc[max_idx, 'time_seconds']
-        maplecm_max_variant = str(maplecm_sub.loc[max_idx, 'model_variant'])
+        maplecm_max_variant = str(maplecm_sub.loc[max_idx, 'model_variant']) if 'model_variant' in maplecm_sub.columns else "N/A"
     else:
-        maplecm_max = 26.22
-        maplecm_max_variant = "product"
+        maplecm_max = float('nan')
+        maplecm_max_variant = "N/A"
 
-    has_solver_reported_time = not combined_df.empty and 'solver_reported_time' in combined_df.columns
-    cplex_cp_128_reported_s = cplex_cp_128_df['solver_reported_time'].median() if not cplex_cp_128_df.empty and 'solver_reported_time' in cplex_cp_128_df.columns else float('nan')
+    has_solver_reported_time = not combined_df.empty and 'solver_reported_time' in combined_df.columns and combined_df['solver_reported_time'].notna().any()
+    cplex_cp_128_reported_s = cplex_cp_128_df['solver_reported_time'].median() if (not cplex_cp_128_df.empty and 'solver_reported_time' in cplex_cp_128_df.columns and not pd.isna(cplex_cp_128_df['solver_reported_time'].median())) else float('nan')
 
     return {
         'cplex_cp_8_s': cplex_cp_8_s,
@@ -368,6 +382,25 @@ def generate_tex(results_dir="results", out_dir="report"):
         timeout_rows.append("No timeouts recorded & - & - & - \\\\")
     timeout_table_tex = "\n".join(timeout_rows)
 
+    cplex_cp_8_str = format_adaptive_time(stats['cplex_cp_8_s'])
+    cplex_cp_128_str = format_adaptive_time(stats['cplex_cp_128_s'])
+    cpsat_int_128_str = f"{stats['cpsat_int_128_s']:.3f}" if not pd.isna(stats['cpsat_int_128_s']) else "N/A"
+    cadical_max_str = f"{stats['cadical_max']:.2f}" if not pd.isna(stats['cadical_max']) else "N/A"
+    kissat_max_str = f"{stats['kissat_max']:.2f}" if not pd.isna(stats['kissat_max']) else "N/A"
+    maplecm_max_str = f"{stats['maplecm_max']:.2f}" if not pd.isna(stats['maplecm_max']) else "N/A"
+    maplecm_variant_str = stats['maplecm_max_variant']
+    if stats['sat_128_total'] > 0:
+        sat_to_str = f"{stats['sat_128_timeouts']}/{stats['sat_128_total']}"
+        g3_to_str = str(stats['g3_to'])
+        m22_to_str = str(stats['m22_to'])
+        mcm_to_str = str(stats['mcm_to'])
+    else:
+        sat_to_str = "0/0"
+        g3_to_str = "0"
+        m22_to_str = "0"
+        mcm_to_str = "0"
+    cplex_cp_128_build_str = f"{stats['cplex_cp_128_build_ms']:.1f}" if not pd.isna(stats['cplex_cp_128_build_ms']) else "N/A"
+
     latex_content = r"""\documentclass[a4paper,fleqn]{cas-sc}
 \usepackage[utf8]{inputenc}
 \usepackage{booktabs}
@@ -439,7 +472,7 @@ MIP models formulate the problem as linear inequalities over binary variables $x
 $$\sum_{i=1}^N x_{i,j} = 1 \quad (\forall j), \quad \sum_{j=1}^N x_{i,j} = 1 \quad (\forall i), \quad \sum_{(i,j) \in \text{diag}} x_{i,j} \le 1$$
 
 \section{Experimental Setup}
-Benchmarks were executed on macOS Sequoia with Python 3.14, utilizing isolated subprocesses with a strict 30-second hard timeout applied to the entire child process (encompassing library import, model construction, and solving: \texttt{time\_seconds = import\_time + build\_time + solve\_time}). In addition to phase breakdowns, overall subprocess wall-clock duration is measured by the parent process as \texttt{wall\_time} via \texttt{time.perf\_counter()}. Timeouts are handled systematically: inside the subprocess, the remaining budget is forwarded as a solver-level time limit (\texttt{TIME\_LIMIT}) where supported by cooperative interrupts, while the parent process enforces a hard timeout safety net (\texttt{TIMEOUT}) for backends lacking native interrupt support (such as CaDiCaL and Kissat in PySAT). Board sizes ranged from $N = 8$ up to $N = 128$. Each configuration is evaluated over 3 complete repetitions without early abort, tracking \texttt{runs\_total}, \texttt{runs\_success}, \texttt{runs\_timeout}, and \texttt{runs\_error} to resolve mixed runs without masking failure distributions. Reported values in tables reflect preserved historical baseline CSV runs; full re-execution under the standardized runner updates all granular counters. Commercial solver Gurobi operated under trial license limitations ($N \le 44$), while CPLEX operated under full license support allowing scaling up to $N = 128$.
+Benchmarks were executed on macOS Sequoia with Python 3.14, utilizing isolated subprocesses with a strict 30-second hard timeout applied to the entire child process (encompassing library import, model construction, and solving: \texttt{time\_seconds = import\_time + build\_time + solve\_time}). In addition to phase breakdowns, overall subprocess wall-clock duration is measured by the parent process as \texttt{wall\_time} via \texttt{time.perf\_counter()}. Timeouts are handled systematically: inside the subprocess, the remaining budget is forwarded as a solver-level time limit (\texttt{TIME\_LIMIT}) where supported by cooperative interrupts, while the parent process enforces a hard timeout safety net (\texttt{TIMEOUT}) for backends lacking native interrupt support (such as CaDiCaL and Kissat in PySAT). Board sizes ranged from $N = 8$ up to $N = 128$. Each configuration is evaluated over 3 complete repetitions without early abort, tracking \texttt{runs\_total}, \texttt{runs\_success}, \texttt{runs\_timeout}, and \texttt{runs\_error} to resolve mixed runs without masking failure distributions. Reported values in tables reflect the committed benchmark dataset collected under the standardized 3-repetition protocol with subprocess isolation. If optional benchmark reruns are performed via \texttt{src/benchmark.py}, all granular counters and medians are updated dynamically. Commercial solver Gurobi operated under trial license limitations ($N \le 44$), while CPLEX operated under full license support allowing scaling up to $N = 128$.
 
 \section{Empirical Results and Performance Analysis}
 
@@ -586,11 +619,11 @@ Paradigm & Solver & Board Size ($N$) & Timeout Count \\
 \section{Discussion and Comprehensive Solver Comparison}
 The empirical results reveal distinct performance characteristics and limitations across all six solver groups (SAT, CP-SAT, open-source MIP, Gurobi, CPLEX MIP, and CPLEX CP) when scaling across the $N$ range ($N = 8$ to $128$):
 \begin{itemize}
-    \item \textbf{Comparative Performance Across Six Solver Groups}: Across moderate to large scales ($N = 8$ to $128$), commercial engines (CPLEX MIP, CPLEX CP, Gurobi) and high-performance solvers (CP-SAT, CaDiCaL) demonstrate exceptional scalability. At $N = 128$, recorded runtimes range from approximately """ + format_adaptive_time(stats['cplex_cp_128_s']) + r""" for CPLEX CP to """ + f"{stats['cpsat_int_128_s']:.3f}" + r""" s for CP-SAT (noting that measurement methodologies differ across solvers, where reported \texttt{time\_seconds} is the median over repetitions of each run's \texttt{import\_time + build\_time + solve\_time} — with build and solve medians reported separately so they may not sum exactly — excluding parent-side process launch overhead). Crucially, \texttt{import\_time} is library-dependent and constant with respect to $N$ (for instance, OR-Tools CP-SAT incurs $\approx 0.3$~s of Python module import overhead regardless of $N$), meaning cross-paradigm runtime comparisons at small $N$ primarily reflect library import latency rather than algorithmic solving speed. To isolate solver efficiency from module import overhead, Figure~\ref{fig:paradigm_time} (Plot~2) evaluates \emph{model time} (\texttt{build\_time + solve\_time}), with timeouts counted as 30~s, whereas many SAT combinations take tens of seconds or timeout.
+    \item \textbf{Comparative Performance Across Six Solver Groups}: Across moderate to large scales ($N = 8$ to $128$), commercial engines (CPLEX MIP, CPLEX CP, Gurobi) and high-performance solvers (CP-SAT, CaDiCaL) demonstrate exceptional scalability. At $N = 128$, recorded runtimes range from approximately """ + cplex_cp_128_str + r""" for CPLEX CP to """ + (cpsat_int_128_str + (" s" if cpsat_int_128_str != "N/A" else "")) + r""" for CP-SAT (noting that measurement methodologies differ across solvers, where reported \texttt{time\_seconds} is the median over repetitions of each run's \texttt{import\_time + build\_time + solve\_time} — with build and solve medians reported separately so they may not sum exactly — excluding parent-side process launch overhead; similarly, \texttt{model\_time} represents the median across repetitions of per-run \texttt{build\_time + solve\_time} values, which need not equal \texttt{median(build\_time) + median(solve\_time)}). Crucially, \texttt{import\_time} is library-dependent and constant with respect to $N$ (for instance, OR-Tools CP-SAT incurs $\approx 0.3$~s of Python module import overhead regardless of $N$), meaning cross-paradigm runtime comparisons at small $N$ primarily reflect library import latency rather than algorithmic solving speed. To isolate solver efficiency from module import overhead, Figure~\ref{fig:paradigm_time} (Plot~2) evaluates \emph{model time} (\texttt{build\_time + solve\_time}), with timeouts counted as 30~s, whereas many SAT combinations take tens of seconds or timeout.
     \item \textbf{FEASIBLE vs. OPTIMAL Status Semantics}: For pure satisfaction problems (such as $N$-Queens without an objective function), finding any valid non-attacking configuration successfully solves the problem. Solution status labels are solver-specific and API-dependent: CPLEX CP reports \texttt{FEASIBLE}, whereas CP-SAT reports \texttt{OPTIMAL} and MIP solvers may report \texttt{OPTIMAL} for satisfaction models. Solution validity in our framework is independently verified using the benchmark's verification module rather than relying solely on solver status strings.
     {cp_overhead_text}
     \item \textbf{Gurobi Trial License Limitations}: Gurobi's trial license restricts model dimensions for larger instances, capping trials at $N \le 44$. For $N > 44$, full commercial licenses or alternative solvers (CPLEX, CP-SAT, CaDiCaL) are required.
-    \item \textbf{SAT Scaling and Encodings}: CaDiCaL and Kissat handle large clause databases efficiently up to $N = 128$ (with maximum recorded runtimes of approximately """ + f"{stats['cadical_max']:.2f}" + r""" s for CaDiCaL and """ + f"{stats['kissat_max']:.2f}" + r""" s for Kissat), whereas MapleCM reaches a maximum recorded runtime of approximately """ + f"{stats['maplecm_max']:.2f}" + r""" seconds under """ + stats['maplecm_max_variant'] + r""" encoding at $N = 128$, and Glucose3, MiniSat22, and MapleCM encounter frequent timeouts (""" + f"{stats['sat_128_timeouts']}/{stats['sat_128_total']}" + r""" cases timed out at $N = 128$, specifically Glucose3: """ + f"{stats['g3_to']}" + r""", MiniSat22: """ + f"{stats['m22_to']}" + r""", MapleCM: """ + f"{stats['mcm_to']}" + r"""). Compact cardinality encodings such as Commander (47,096 clauses at $N = 64$) and Sequential Counter (47,692 clauses at $N = 64$) dramatically reduce clause footprints compared to naive Pairwise encodings.
+    \item \textbf{SAT Scaling and Encodings}: CaDiCaL and Kissat handle large clause databases efficiently up to $N = 128$ (with maximum recorded runtimes of approximately """ + (cadical_max_str + (" s" if cadical_max_str != "N/A" else "")) + r""" for CaDiCaL and """ + (kissat_max_str + (" s" if kissat_max_str != "N/A" else "")) + r""" for Kissat), whereas MapleCM reaches a maximum recorded runtime of approximately """ + (maplecm_max_str + (" seconds" if maplecm_max_str != "N/A" else "")) + r""" under """ + maplecm_variant_str + r""" encoding at $N = 128$, and Glucose3, MiniSat22, and MapleCM encounter frequent timeouts (""" + sat_to_str + r""" cases timed out at $N = 128$, specifically Glucose3: """ + g3_to_str + r""", MiniSat22: """ + m22_to_str + r""", MapleCM: """ + mcm_to_str + r"""). Compact cardinality encodings such as Commander (47,096 clauses at $N = 64$) and Sequential Counter (47,692 clauses at $N = 64$) dramatically reduce clause footprints compared to naive Pairwise encodings.
     \item \textbf{CP-SAT Allowed Assignment Timeout at $N = 128$}: At $N = 128$, the CP-SAT allowed assignment variant timed out within 30 s; the underlying cause has not been isolated.
 \end{itemize}
 
@@ -630,9 +663,11 @@ The source code, benchmark runners, raw experimental results (CSV files), and re
     has_reported = stats.get('has_solver_reported_time', False)
     reported_s = stats.get('cplex_cp_128_reported_s', float('nan'))
     if has_reported and not pd.isna(reported_s):
-        cp_overhead_text = r"""\item \textbf{CP Optimizer Process Startup Overhead}: CP Optimizer relies on an external binary executable (\texttt{cpoptimizer}). Spawning this subprocess incurs inter-process communication and process startup overhead; actual total measured runtimes for CPLEX CP increase from approximately """ + format_adaptive_time(stats['cplex_cp_8_s']) + r""" at $N = 8$ to """ + format_adaptive_time(stats['cplex_cp_128_s']) + r""" at $N = 128$. Here, \texttt{solve\_time} measures the wall-clock duration around the solve call (including cpoptimizer process startup), while \texttt{solver\_reported\_time} is the number reported by the solver (median of """ + format_adaptive_time(reported_s) + r""" at $N = 128$); thus, measured runtimes include process startup and inter-process communication, and should not be directly compared on equal footing with CP-SAT's wall-clock measurement."""
+        cp_overhead_text = r"""\item \textbf{CP Optimizer Process Startup Overhead}: CP Optimizer relies on an external binary executable (\texttt{cpoptimizer}). Spawning this subprocess incurs inter-process communication and process startup overhead; actual total measured runtimes for CPLEX CP increase from approximately """ + cplex_cp_8_str + r""" at $N = 8$ to """ + cplex_cp_128_str + r""" at $N = 128$. Here, \texttt{solve\_time} measures the wall-clock duration around the solve call (including cpoptimizer process startup), while \texttt{solver\_reported\_time} is the number reported by the solver (median of """ + format_adaptive_time(reported_s) + r""" at $N = 128$); thus, measured runtimes include process startup and inter-process communication, and should not be directly compared on equal footing with CP-SAT's wall-clock measurement."""
     else:
-        cp_overhead_text = r"""\item \textbf{CP Optimizer Process Startup Overhead}: CP Optimizer relies on an external binary executable (\texttt{cpoptimizer}). Spawning this subprocess incurs inter-process communication and process startup overhead; actual total measured runtimes for CPLEX CP increase from approximately """ + format_adaptive_time(stats['cplex_cp_8_s']) + r""" at $N = 8$ to """ + format_adaptive_time(stats['cplex_cp_128_s']) + r""" at $N = 128$. Note that the \texttt{solve\_time} of CPLEX CP comes from \texttt{get\_solve\_time()}, which in CSV records values of """ + stats['cplex_cp_solve_times_str'] + r""" (indicating a resolution of ~10 ms); thus, the ~""" + format_adaptive_time(stats['cplex_cp_128_s']) + r""" recorded at $N = 128$ appears to be predominantly 10 ms rounding plus ~""" + f"{stats['cplex_cp_128_build_ms']:.1f}" + r""" ms model build time, and should not be directly compared on equal footing with CP-SAT's ~""" + f"{stats['cpsat_int_128_s']:.3f}" + r""" s wall-clock measurement."""
+        cpsat_comp = f"~{cpsat_int_128_str} s" if cpsat_int_128_str != "N/A" else "N/A"
+        build_comp = f"~{cplex_cp_128_build_str} ms" if cplex_cp_128_build_str != "N/A" else "N/A"
+        cp_overhead_text = r"""\item \textbf{CP Optimizer Process Startup Overhead}: CP Optimizer relies on an external binary executable (\texttt{cpoptimizer}). Spawning this subprocess incurs inter-process communication and process startup overhead; actual total measured runtimes for CPLEX CP increase from approximately """ + cplex_cp_8_str + r""" at $N = 8$ to """ + cplex_cp_128_str + r""" at $N = 128$. Note that the \texttt{solve\_time} of CPLEX CP comes from \texttt{get\_solve\_time()}, which in CSV records values of """ + stats['cplex_cp_solve_times_str'] + r""" (indicating a resolution of ~10 ms); thus, the ~""" + cplex_cp_128_str + r""" recorded at $N = 128$ appears to be predominantly 10 ms rounding plus """ + build_comp + r""" model build time, and should not be directly compared on equal footing with CP-SAT's """ + cpsat_comp + r""" wall-clock measurement."""
     latex_content = latex_content.replace("% {sat_table_tex}", sat_table_tex)
     latex_content = latex_content.replace("% {sat_size_table_tex}", sat_size_table_tex)
     latex_content = latex_content.replace("% {cpsat_table_tex}", cpsat_table_tex)

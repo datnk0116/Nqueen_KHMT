@@ -336,7 +336,7 @@ def run_benchmarks_with_repetitions(paradigm, n_values, encodings_or_configs, so
                 runs_timeout = sum(1 for r in run_records if r["status"] in ("TIMEOUT", "TIME_LIMIT"))
                 runs_license = sum(1 for r in run_records if r["status"] == "LICENSE_LIMIT")
                 runs_memout = sum(1 for r in run_records if r["status"] == "MEMOUT")
-                runs_error = sum(1 for r in run_records if r["status"] in ("ERROR", "MEMOUT", "LICENSE_LIMIT"))
+                runs_error = sum(1 for r in run_records if r["status"] == "ERROR")
 
                 successful = [r for r in run_records if r["status"] in ("OPTIMAL", "FEASIBLE", "SAT")]
 
@@ -375,6 +375,10 @@ def run_benchmarks_with_repetitions(paradigm, n_values, encodings_or_configs, so
                         notes.append(f"{runs_timeout}/{runs_total} runs timed out")
                     if runs_error > 0:
                         notes.append(f"{runs_error}/{runs_total} runs errored")
+                    if runs_memout > 0:
+                        notes.append(f"{runs_memout}/{runs_total} runs ran out of memory")
+                    if runs_license > 0:
+                        notes.append(f"{runs_license}/{runs_total} runs hit license limits")
                     error = "; ".join(notes)
                 else:
                     status = run_records[-1]["status"]

@@ -266,6 +266,49 @@ def test_sat_model_time_limit_interrupt(monkeypatch):
     assert res["queens"] == []
     assert res["time"] >= 0
 
+def test_sat_model_time_limit_interrupt_mechanism(monkeypatch):
+    """
+    Deterministic, bounded test verifying that threading.Timer triggers
+    solver_instance.interrupt(), which causes solve_limited to return None,
+    sets status to TIME_LIMIT, and cleanly cancels timers without leaking threads.
+    """
+    import threading
+    from sat_model import NQueensSAT
+    from pysat.solvers import Glucose3
+
+    interrupt_called = threading.Event()
+    orig_interrupt = Glucose3.interrupt
+
+    def wrapped_interrupt(self):
+        interrupt_called.set()
+        try:
+            orig_interrupt(self)
+        except Exception:
+            pass
+
+    def bounded_solve_limited(self, expect_interrupt=False):
+        # Wait until the timer triggers interrupt() (bounded wait up to 1.0s)
+        triggered = interrupt_called.wait(timeout=1.0)
+        assert triggered, "threading.Timer failed to trigger solver interrupt callback!"
+        return None
+
+    monkeypatch.setattr(Glucose3, "interrupt", wrapped_interrupt)
+    monkeypatch.setattr(Glucose3, "solve_limited", bounded_solve_limited)
+
+    model = NQueensSAT(8, "sequential", "glucose3")
+    active_threads_before = threading.active_count()
+
+    # Small deterministic time_limit of 50ms
+    res = model.solve(time_limit=0.05)
+
+    assert interrupt_called.is_set(), "interrupt() was not called by threading.Timer"
+    assert res["status"] == "TIME_LIMIT"
+    assert res["is_sat"] is False
+    assert res["queens"] == []
+    assert res["time"] >= 0.04
+    time.sleep(0.06)
+    assert threading.active_count() <= active_threads_before
+
 def test_sat_model_cadical_fallback():
     from sat_model import NQueensSAT
     model = NQueensSAT(8, "sequential", "cadical")
@@ -570,242 +613,49 @@ def test_repetitions_all_scenarios(monkeypatch):
     assert r["status"] == "LICENSE_LIMIT"
     assert r["runs_total"] == 3
     assert r["runs_success"] == 0
-    assert r["runs_error"] == 3
-    assert "Trial license limited" in r["error"]
-
-    # Scenario 6: Mixed majority error (1 success, 2 errors)
-    err_idx = 0
-    def mock_mixed_err(paradigm, n, variant, solver, time_limit):
-        nonlocal err_idx
-        err_idx += 1
-        if err_idx == 1:
-            return {
-                "n": n, "paradigm": paradigm, "model_variant": variant, "solver": solver,
-                "status": "SAT", "is_sat": True, "variables_count": 64, "clauses_constraints_count": 100,
-                "import_time": 0.05, "build_time": 0.02, "solve_time": 0.03, "model_time": 0.05,
-                "time_seconds": 0.1, "solver_reported_time": None, "wall_time": 0.12,
-                "verified": True, "error": ""
-            }
-        else:
-            return {
-                "n": n, "paradigm": paradigm, "model_variant": variant, "solver": solver,
-                "status": "ERROR", "is_sat": False, "variables_count": 0, "clauses_constraints_count": 0,
-                "import_time": float('nan'), "build_time": float('nan'), "solve_time": float('nan'),
-                "model_time": float('nan'), "time_seconds": 0.05, "solver_reported_time": None,
-                "wall_time": 0.06, "verified": False, "error": "Fatal crash"
-            }
-    monkeypatch.setattr(benchmark, "run_subprocess_solver", mock_mixed_err)
-    reps_err = benchmark.run_benchmarks_with_repetitions("SAT", [8], ["sequential"], ["cadical"], 30.0, repetitions=3)
-    assert len(reps_err) == 1
-    r = reps_err[0]
-    assert r["status"] == "ERROR"
-    assert r["runs_total"] == 3
-    assert r["runs_success"] == 1
-    assert r["runs_error"] == 2
-    assert "Fatal crash" in r["error"]
-
-def test_report_timeout_and_time_limit_classification():
-    data = {
-        'n': [8, 8, 8, 8, 8, 8, 8, 128, 128],
-        'paradigm': ['SAT', 'SAT', 'SAT', 'SAT', 'SAT', 'CP-SAT', 'SAT', 'SAT', 'SAT'],
-        'model_variant': ['sequential', 'sequential', 'pairwise', 'commander', 'product', 'integer', 'bitwise', 'sequential', 'sequential'],
-        'solver': ['cadical', 'glucose3', 'minisat22', 'kissat', 'maplecm', 'ortools-cpsat', 'cadical', 'glucose3', 'minisat22'],
-        'status': ['TIMEOUT', 'TIME_LIMIT', 'ERROR', 'MEMOUT', 'LICENSE_LIMIT', 'OPTIMAL', None, 'TIMEOUT', 'TIME_LIMIT'],
-        'variables_count': [64, 64, 64, 64, 64, 8, 64, 16384, 16384],
-        'clauses_constraints_count': [100, 100, 100, 100, 100, 3, 100, 1000, 1000],
-        'build_time': [0.1, 0.1, float('nan'), float('nan'), float('nan'), 0.05, 0.05, float('nan'), float('nan')],
-        'solve_time': [float('nan'), 1.0, float('nan'), float('nan'), float('nan'), 0.02, 0.01, float('nan'), 30.0],
-        'time_seconds': [30.0, 1.1, 0.05, 0.05, 0.05, 0.07, 0.06, 30.0, 30.0],
-        'is_sat': [False, False, False, False, False, True, True, False, False]
-    }
-    df = pd.DataFrame(data)
-
-    # 1. timeout_table
-    to_tbl = timeout_table(df)
-    assert not to_tbl.empty
-    # At n=8, SAT has cadical (TIMEOUT) and glucose3 (TIME_LIMIT)
-    cadical_to = to_tbl[(to_tbl['solver'] == 'cadical') & (to_tbl['n'] == 8)]
-    glucose3_to = to_tbl[(to_tbl['solver'] == 'glucose3') & (to_tbl['n'] == 8)]
-    assert len(cadical_to) == 1 and cadical_to.iloc[0]['timeout_count'] == 1
-    assert len(glucose3_to) == 1 and glucose3_to.iloc[0]['timeout_count'] == 1
-    # Total timeouts in timeout_table should count both TIMEOUT and TIME_LIMIT (4 total)
-    assert to_tbl['timeout_count'].sum() == 4
-
-    # 2. format_sat_time
-    assert format_sat_time(df.iloc[0]) == "T/O"  # TIMEOUT
-    assert format_sat_time(df.iloc[1]) == "T/O"  # TIME_LIMIT
-    assert format_sat_time(df.iloc[2]) == "ERR"  # ERROR
-    assert format_sat_time(df.iloc[3]) == "ERR"  # MEMOUT
-    assert format_sat_time(df.iloc[4]) == "ERR"  # LICENSE_LIMIT
-    assert format_sat_time(df.iloc[5]) == "0.070"  # OPTIMAL
-    assert format_sat_time(df.iloc[6]) == "0.060"  # None status, is_sat=True -> treated as success
-
-    # 3. make_table_rows
-    rows_tex = make_table_rows(df)
-    for line in rows_tex.split('\n'):
-        if 'cadical' in line and '& 8 &' in line:
-            assert 'T/O' in line or '0.060000' in line
-            if 'T/O' in line:
-                assert '- & - & T/O' in line
-        if 'glucose3' in line and '& 8 &' in line:
-            assert '- & - & T/O' in line
-        if 'minisat22' in line and '& 8 &' in line:
-            assert '- & - & ERR' in line
-        if 'ortools-cpsat' in line:
-            assert '8 & 3 & 0.070000' in line
-
-    # 4. make_sat_size_table_rows
-    # For n=8 sequential, glucose3 is TIME_LIMIT and cadical is TIMEOUT -> excluded from size
-    sat_size_tex = make_sat_size_table_rows(df[df['model_variant'] == 'sequential'])
-    assert '8 & sequential & - & - \\\\' in sat_size_tex
-
-    # 5. build_discussion_stats
-    stats = build_discussion_stats(df)
-    assert stats['sat_128_timeouts'] == 2  # 1 TIMEOUT + 1 TIME_LIMIT at n=128
-    assert stats['g3_to'] == 1
-    assert stats['m22_to'] == 1
-
-def test_model_time_contract_and_legacy_handling(tmp_path):
-    # Check computation contract in run_subprocess_solver
-    res = run_subprocess_solver("SAT", 8, "sequential", "cadical", 30.0)
-    assert "model_time" in res
-    assert not pd.isna(res["model_time"])
-    assert res["model_time"] == pytest.approx(res["build_time"] + res["solve_time"])
-
-    # NaN handling
-    from benchmark import run_benchmarks_with_repetitions
-    def mock_run_nan(paradigm, n, variant, solver, time_limit):
-        return {
-            "n": n, "paradigm": paradigm, "model_variant": variant, "solver": solver,
-            "status": "TIMEOUT", "is_sat": False, "variables_count": 0, "clauses_constraints_count": 0,
-            "import_time": float('nan'), "build_time": float('nan'), "solve_time": float('nan'),
-            "model_time": float('nan'), "time_seconds": 30.0, "solver_reported_time": None,
-            "wall_time": 30.05, "verified": False, "error": "Timeout"
-        }
-    monkeypatch = pytest.MonkeyPatch()
-    monkeypatch.setattr("benchmark.run_subprocess_solver", mock_run_nan)
-    reps_nan = run_benchmarks_with_repetitions("SAT", [8], ["sequential"], ["cadical"], 30.0, repetitions=1)
-    monkeypatch.undo()
-    assert len(reps_nan) == 1
-    assert pd.isna(reps_nan[0]["model_time"])
-    assert reps_nan[0]["status"] == "TIMEOUT"
-
-    # Backward compatibility: legacy CSV without model_time
-    legacy_csv = tmp_path / "legacy" / "benchmark_results.csv"
-    legacy_csv.parent.mkdir(parents=True, exist_ok=True)
-    df_legacy = pd.DataFrame({
-        'n': [8], 'paradigm': ['SAT'], 'model_variant': ['sequential'], 'solver': ['cadical'],
-        'status': ['SUCCESS'], 'variables_count': [64], 'clauses_constraints_count': [100],
-        'build_time': [0.12], 'solve_time': [0.08], 'time_seconds': [0.25]
-    })
-    df_legacy.to_csv(legacy_csv, index=False)
-    loaded = load_combined(str(tmp_path / "legacy"))
-    assert 'model_time' not in loaded.columns  # Preserved as-is
-
-    # generate_tex succeeds on legacy CSV without model_time
-    report_dir = tmp_path / "legacy_report"
-    tex_path = generate_tex(str(tmp_path / "legacy"), str(report_dir))
-    assert os.path.exists(tex_path)
-
-def test_sat_model_sat_unsat_and_timeout():
-    from sat_model import NQueensSAT
-
-    # SAT instance: N=4 has valid solutions
-    sat_model = NQueensSAT(4, "sequential", "cadical")
-    res_sat = sat_model.solve(time_limit=10.0)
-    assert res_sat["status"] == "SAT"
-    assert res_sat["is_sat"] is True
-    assert len(res_sat["queens"]) == 4
-
-    # UNSAT instance: N=3 has no solutions
-    unsat_model = NQueensSAT(3, "sequential", "cadical")
-    res_unsat = unsat_model.solve(time_limit=10.0)
-    assert res_unsat["status"] == "UNSAT"
-    assert res_unsat["is_sat"] is False
-    assert res_unsat["queens"] == []
-
-    # Cooperative interrupt with Glucose3:
-    # Trigger interrupt immediately via very small timeout (or mock callback)
-    g3_model = NQueensSAT(8, "sequential", "glucose3")
-    res_g3 = g3_model.solve(time_limit=0.0000001)
-    assert res_g3["status"] in ("TIME_LIMIT", "SAT")
-    if res_g3["status"] == "TIME_LIMIT":
-        assert res_g3["is_sat"] is False
-        assert res_g3["queens"] == []
-
-    # Hard timeout in subprocess
-    res_hard = run_subprocess_solver("SAT", 8, "sequential", "cadical", 0.00001)
-    assert res_hard["status"] == "TIMEOUT"
-    assert res_hard["time_seconds"] == 0.00001
-    assert pd.isna(res_hard["model_time"])
-
-def test_repetitions_all_scenarios(monkeypatch):
-    import benchmark
-
-    # Scenario 1: 3 successes
-    run_idx = 0
-    def mock_3_success(paradigm, n, variant, solver, time_limit):
-        nonlocal run_idx
-        run_idx += 1
-        t = 0.1 * run_idx
-        return {
-            "n": n, "paradigm": paradigm, "model_variant": variant, "solver": solver,
-            "status": "SAT", "is_sat": True, "variables_count": 64, "clauses_constraints_count": 100,
-            "import_time": 0.05, "build_time": 0.02, "solve_time": t, "model_time": 0.02 + t,
-            "time_seconds": 0.07 + t, "solver_reported_time": t, "wall_time": 0.08 + t,
-            "verified": True, "error": ""
-        }
-    monkeypatch.setattr(benchmark, "run_subprocess_solver", mock_3_success)
-    reps_3s = benchmark.run_benchmarks_with_repetitions("SAT", [8], ["sequential"], ["cadical"], 30.0, repetitions=3)
-    assert len(reps_3s) == 1
-    r = reps_3s[0]
-    assert r["status"] == "SAT"
-    assert r["runs_total"] == 3
-    assert r["runs_success"] == 3
     assert r["runs_timeout"] == 0
     assert r["runs_error"] == 0
-    assert r["solve_time"] == pytest.approx(0.2)
-    assert r["model_time"] == pytest.approx(0.22)
+    assert "Trial license limited" in r["error"]
 
-    # Scenario 4: all 3 timeouts
-    def mock_3_to(paradigm, n, variant, solver, time_limit):
+    # Scenario 5b: MEMOUT
+    def mock_mem(paradigm, n, variant, solver, time_limit):
         return {
             "n": n, "paradigm": paradigm, "model_variant": variant, "solver": solver,
-            "status": "TIMEOUT", "is_sat": False, "variables_count": 0, "clauses_constraints_count": 0,
+            "status": "MEMOUT", "is_sat": False, "variables_count": 0, "clauses_constraints_count": 0,
             "import_time": float('nan'), "build_time": float('nan'), "solve_time": float('nan'),
             "model_time": float('nan'), "time_seconds": 30.0, "solver_reported_time": None,
-            "wall_time": 30.02, "verified": False, "error": "Timed out"
+            "wall_time": 30.05, "verified": False, "error": "Memory limit exceeded (MEMOUT)"
         }
-    monkeypatch.setattr(benchmark, "run_subprocess_solver", mock_3_to)
-    reps_3to = benchmark.run_benchmarks_with_repetitions("SAT", [8], ["sequential"], ["cadical"], 30.0, repetitions=3)
-    assert len(reps_3to) == 1
-    r = reps_3to[0]
-    assert r["status"] == "TIMEOUT"
-    assert r["runs_total"] == 3
-    assert r["runs_success"] == 0
-    assert r["runs_timeout"] == 3
-    assert r["runs_error"] == 0
-    assert r["time_seconds"] == 30.0
-    assert pd.isna(r["model_time"])
+    monkeypatch.setattr(benchmark, "run_subprocess_solver", mock_mem)
+    reps_mem = benchmark.run_benchmarks_with_repetitions("SAT", [128], ["pairwise"], ["cadical"], 30.0, repetitions=3)
+    assert len(reps_mem) == 1
+    r_mem = reps_mem[0]
+    assert r_mem["status"] == "MEMOUT"
+    assert r_mem["runs_total"] == 3
+    assert r_mem["runs_success"] == 0
+    assert r_mem["runs_timeout"] == 0
+    assert r_mem["runs_error"] == 0
+    assert "Memory limit exceeded (MEMOUT)" in r_mem["error"]
 
-    # Scenario 5: LICENSE_LIMIT
-    def mock_lic(paradigm, n, variant, solver, time_limit):
+    # Scenario 5c: All 3 runs ERROR
+    def mock_3_err(paradigm, n, variant, solver, time_limit):
         return {
             "n": n, "paradigm": paradigm, "model_variant": variant, "solver": solver,
-            "status": "LICENSE_LIMIT", "is_sat": False, "variables_count": 0, "clauses_constraints_count": 0,
+            "status": "ERROR", "is_sat": False, "variables_count": 0, "clauses_constraints_count": 0,
             "import_time": float('nan'), "build_time": float('nan'), "solve_time": float('nan'),
             "model_time": float('nan'), "time_seconds": 0.05, "solver_reported_time": None,
-            "wall_time": 0.06, "verified": False, "error": "Trial license limited"
+            "wall_time": 0.06, "verified": False, "error": "Fatal crash"
         }
-    monkeypatch.setattr(benchmark, "run_subprocess_solver", mock_lic)
-    reps_lic = benchmark.run_benchmarks_with_repetitions("Gurobi", [128], ["binary"], ["gurobi"], 30.0, repetitions=3)
-    assert len(reps_lic) == 1
-    r = reps_lic[0]
-    assert r["status"] == "LICENSE_LIMIT"
-    assert r["runs_total"] == 3
-    assert r["runs_success"] == 0
-    assert r["runs_error"] == 3
-    assert "Trial license limited" in r["error"]
+    monkeypatch.setattr(benchmark, "run_subprocess_solver", mock_3_err)
+    reps_pure_err = benchmark.run_benchmarks_with_repetitions("SAT", [8], ["sequential"], ["cadical"], 30.0, repetitions=3)
+    assert len(reps_pure_err) == 1
+    r_err = reps_pure_err[0]
+    assert r_err["status"] == "ERROR"
+    assert r_err["runs_total"] == 3
+    assert r_err["runs_success"] == 0
+    assert r_err["runs_timeout"] == 0
+    assert r_err["runs_error"] == 3
+    assert "3/3 runs errored: Fatal crash" in r_err["error"]
 
     # Scenario 6: Mixed majority error (1 success, 2 errors)
     err_idx = 0
@@ -835,6 +685,7 @@ def test_repetitions_all_scenarios(monkeypatch):
     assert r["status"] == "ERROR"
     assert r["runs_total"] == 3
     assert r["runs_success"] == 1
+    assert r["runs_timeout"] == 0
     assert r["runs_error"] == 2
     assert "Fatal crash" in r["error"]
 

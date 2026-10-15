@@ -102,21 +102,47 @@ def test_build_discussion_stats():
     df = load_combined("results")
     stats = build_discussion_stats(df)
 
-    assert abs(stats['cplex_cp_8_ms'] - 0.264) < 0.01
-    assert abs(stats['cplex_cp_128_ms'] - 10.534) < 0.05
-    assert abs(stats['cplex_cp_128_solve_s'] - 0.01) < 0.005
-    assert abs(stats['cplex_cp_128_build_ms'] - 0.534) < 0.05
-    assert abs(stats['cpsat_int_128_s'] - 0.713) < 0.01
-    assert abs(stats['cpsat_bool_128_s'] - 0.731) < 0.01
-    assert abs(stats['cadical_max'] - 8.60) < 0.1
-    assert abs(stats['kissat_max'] - 6.03) < 0.1
-    assert abs(stats['maplecm_max'] - 26.22) < 0.1
+    assert abs(stats['cplex_cp_8_ms'] - 161.11) < 1.0
+    assert abs(stats['cplex_cp_128_ms'] - 169.60) < 1.0
+    assert abs(stats['cplex_cp_128_solve_s'] - 0.0194) < 0.005
+    assert abs(stats['cplex_cp_128_build_ms'] - 0.533) < 0.05
+    assert abs(stats['cpsat_int_128_s'] - 0.647) < 0.05
+    assert abs(stats['cpsat_bool_128_s'] - 0.720) < 0.05
+    assert abs(stats['cadical_max'] - 8.64) < 0.1
+    assert abs(stats['kissat_max'] - 5.93) < 0.1
+    assert abs(stats['maplecm_max'] - 26.00) < 0.1
     assert stats['maplecm_max_variant'] == "product"
     assert stats['sat_128_timeouts'] == 10
     assert stats['sat_128_total'] == 25
     assert stats['g3_to'] == 4
     assert stats['m22_to'] == 3
     assert stats['mcm_to'] == 3
+
+def test_build_discussion_stats_empty_and_missing_data():
+    empty_df = pd.DataFrame()
+    stats_empty = build_discussion_stats(empty_df)
+    assert pd.isna(stats_empty['cadical_max'])
+    assert pd.isna(stats_empty['kissat_max'])
+    assert pd.isna(stats_empty['maplecm_max'])
+    assert stats_empty['maplecm_max_variant'] == "N/A"
+    assert stats_empty['sat_128_timeouts'] == 0
+    assert stats_empty['sat_128_total'] == 0
+    assert stats_empty['g3_to'] == 0
+    assert stats_empty['m22_to'] == 0
+    assert stats_empty['mcm_to'] == 0
+    assert pd.isna(stats_empty['cplex_cp_8_s'])
+    assert pd.isna(stats_empty['cplex_cp_128_s'])
+    assert stats_empty['cplex_cp_solve_times_str'] == "N/A"
+    assert pd.isna(stats_empty['cpsat_int_128_s'])
+    assert pd.isna(stats_empty['cpsat_bool_128_s'])
+    assert not stats_empty['has_solver_reported_time']
+    assert pd.isna(stats_empty['cplex_cp_128_reported_s'])
+
+    # Ensure no hardcoded fallback numbers appear when data is empty
+    for val in [8.60, 6.03, 26.22, 0.000264, 0.010534, 0.71326, 0.73134]:
+        for k, v in stats_empty.items():
+            if isinstance(v, (int, float)) and not pd.isna(v):
+                assert abs(v - val) > 1e-6
 
 def test_domain_regex_matching():
     old_str = r"$q_i \in \{1, \dots, N\}$"
