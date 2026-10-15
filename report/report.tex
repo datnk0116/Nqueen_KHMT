@@ -84,31 +84,31 @@ Table~\ref{tab:sat} summarizes SAT benchmark results across diverse encodings an
 \toprule
 $N$ & Encoding & CaDiCaL & Glucose3 & MiniSat22 & Kissat & MapleCM \\
 \midrule
-8 & binary & 0.011 & 0.010 & 0.010 & 0.015 & 0.010 \\
+8 & binary & 0.011 & 0.011 & 0.011 & 0.015 & 0.011 \\
 8 & commander & 0.010 & 0.010 & 0.010 & 0.013 & 0.010 \\
-8 & pairwise & 0.010 & 0.010 & 0.010 & 0.014 & 0.010 \\
-8 & product & 0.010 & 0.010 & 0.010 & 0.014 & 0.010 \\
-8 & sequential & 0.010 & 0.010 & 0.010 & 0.013 & 0.010 \\
-16 & binary & 0.017 & 0.095 & 0.013 & 0.030 & 0.019 \\
-16 & commander & 0.015 & 0.026 & 0.013 & 0.032 & 0.047 \\
-16 & pairwise & 0.014 & 0.013 & 0.012 & 0.033 & 0.015 \\
-16 & product & 0.017 & 0.077 & 0.013 & 0.030 & 0.031 \\
-16 & sequential & 0.022 & 0.024 & 0.012 & 0.034 & 0.020 \\
-32 & binary & 0.039 & 0.287 & 0.019 & 0.049 & 0.433 \\
-32 & commander & 0.074 & 1.471 & 0.099 & 0.188 & 0.421 \\
-32 & pairwise & 0.036 & 0.031 & 0.022 & 0.078 & 0.057 \\
-32 & product & 0.043 & 0.797 & 0.030 & 0.053 & 0.590 \\
-32 & sequential & 0.054 & 0.183 & 0.021 & 0.094 & 1.301 \\
-64 & binary & 0.320 & 1.549 & 0.098 & 0.901 & 0.639 \\
-64 & commander & 0.328 & T/O & 0.218 & 0.393 & 0.976 \\
-64 & pairwise & 0.186 & 0.224 & 0.110 & 0.651 & 0.725 \\
-64 & product & 0.963 & T/O & 0.265 & 0.412 & 1.121 \\
-64 & sequential & 1.208 & T/O & 0.165 & 0.091 & 9.828 \\
-128 & binary & 1.440 & T/O & 0.193 & 2.314 & T/O \\
-128 & commander & 0.408 & T/O & T/O & 1.458 & T/O \\
-128 & pairwise & 1.532 & 8.100 & 1.098 & 6.027 & 1.783 \\
-128 & product & 2.225 & T/O & T/O & 1.325 & 26.222 \\
-128 & sequential & 8.599 & T/O & T/O & 1.390 & T/O \\
+8 & pairwise & 0.011 & 0.011 & 0.011 & 0.015 & 0.011 \\
+8 & product & 0.011 & 0.011 & 0.011 & 0.014 & 0.011 \\
+8 & sequential & 0.010 & 0.011 & 0.011 & 0.012 & 0.011 \\
+16 & binary & 0.020 & 0.099 & 0.014 & 0.030 & 0.020 \\
+16 & commander & 0.016 & 0.027 & 0.013 & 0.033 & 0.050 \\
+16 & pairwise & 0.015 & 0.013 & 0.020 & 0.033 & 0.016 \\
+16 & product & 0.018 & 0.081 & 0.013 & 0.031 & 0.031 \\
+16 & sequential & 0.022 & 0.025 & 0.013 & 0.035 & 0.021 \\
+32 & binary & 0.040 & 0.288 & 0.019 & 0.049 & 0.416 \\
+32 & commander & 0.073 & 1.390 & 0.095 & 0.187 & 0.406 \\
+32 & pairwise & 0.036 & 0.032 & 0.023 & 0.079 & 0.057 \\
+32 & product & 0.043 & 0.775 & 0.031 & 0.053 & 0.608 \\
+32 & sequential & 0.054 & 0.181 & 0.019 & 0.093 & 1.292 \\
+64 & binary & 0.297 & 1.452 & 0.088 & 0.867 & 0.515 \\
+64 & commander & 0.347 & T/O & 0.241 & 0.403 & 1.006 \\
+64 & pairwise & 0.179 & 0.226 & 0.111 & 0.639 & 0.719 \\
+64 & product & 0.975 & T/O & 0.280 & 0.420 & 1.261 \\
+64 & sequential & 1.214 & T/O & 0.171 & 0.092 & 9.945 \\
+128 & binary & 1.370 & T/O & 0.193 & 2.323 & T/O \\
+128 & commander & 0.399 & T/O & T/O & 1.434 & T/O \\
+128 & pairwise & 1.553 & 8.143 & 1.106 & 5.931 & 1.740 \\
+128 & product & 2.220 & T/O & T/O & 1.356 & 25.999 \\
+128 & sequential & 8.637 & T/O & T/O & 1.385 & T/O \\
 \bottomrule
 \tabularnewline
 \end{tabular}%
@@ -164,21 +164,21 @@ Table~\ref{tab:cpsat} outlines OR-Tools CP-SAT performance.
 \toprule
 $N$ & Model Variant & Solver & Variables & Constraints & Total Time (s) \\
 \midrule
-8 & allowed & ortools-cpsat & 8 & 29 & 0.183983 \\
-8 & boolean & ortools-cpsat & 64 & 46 & 0.179115 \\
-8 & integer & ortools-cpsat & 23 & 3 & 0.178870 \\
-16 & allowed & ortools-cpsat & 16 & 121 & 0.200109 \\
-16 & boolean & ortools-cpsat & 256 & 94 & 0.183922 \\
-16 & integer & ortools-cpsat & 47 & 3 & 0.182438 \\
-32 & allowed & ortools-cpsat & 32 & 497 & 0.394736 \\
-32 & boolean & ortools-cpsat & 1024 & 190 & 0.198667 \\
-32 & integer & ortools-cpsat & 95 & 3 & 0.197633 \\
-64 & allowed & ortools-cpsat & 64 & 2017 & 3.161940 \\
-64 & boolean & ortools-cpsat & 4096 & 382 & 0.270635 \\
-64 & integer & ortools-cpsat & 191 & 3 & 0.269267 \\
+8 & allowed & ortools-cpsat & 8 & 29 & 0.183747 \\
+8 & boolean & ortools-cpsat & 64 & 46 & 0.179495 \\
+8 & integer & ortools-cpsat & 23 & 3 & 0.180548 \\
+16 & allowed & ortools-cpsat & 16 & 121 & 0.214220 \\
+16 & boolean & ortools-cpsat & 256 & 94 & 0.202742 \\
+16 & integer & ortools-cpsat & 47 & 3 & 0.183573 \\
+32 & allowed & ortools-cpsat & 32 & 497 & 0.410215 \\
+32 & boolean & ortools-cpsat & 1024 & 190 & 0.204157 \\
+32 & integer & ortools-cpsat & 95 & 3 & 0.216879 \\
+64 & allowed & ortools-cpsat & 64 & 2017 & 3.249208 \\
+64 & boolean & ortools-cpsat & 4096 & 382 & 0.280460 \\
+64 & integer & ortools-cpsat & 191 & 3 & 0.272827 \\
 128 & allowed & ortools-cpsat & - & - & T/O \\
-128 & boolean & ortools-cpsat & 16384 & 766 & 0.731344 \\
-128 & integer & ortools-cpsat & 383 & 3 & 0.713260 \\
+128 & boolean & ortools-cpsat & 16384 & 766 & 0.720303 \\
+128 & integer & ortools-cpsat & 383 & 3 & 0.647104 \\
 \bottomrule
 \tabularnewline
 \end{tabular}
@@ -194,22 +194,22 @@ Table~\ref{tab:mip} summarizes CBC and SCIP performance.
 \toprule
 $N$ & Model Variant & Solver & Variables & Constraints & Total Time (s) \\
 \midrule
-8 & binary & cbc & 64 & 46 & 0.038747 \\
-8 & binary & scip & 64 & 46 & 0.039792 \\
-8 & integer & cbc & 72 & 54 & 0.037998 \\
-8 & integer & scip & 72 & 54 & 0.040282 \\
-16 & binary & cbc & 256 & 94 & 0.055559 \\
-16 & binary & scip & 256 & 94 & 0.040704 \\
-16 & integer & cbc & 272 & 110 & 0.049471 \\
-16 & integer & scip & 272 & 110 & 0.041553 \\
-32 & binary & cbc & 1024 & 190 & 0.087822 \\
-32 & binary & scip & 1024 & 190 & 0.730311 \\
-32 & integer & cbc & 1056 & 222 & 0.085984 \\
-32 & integer & scip & 1056 & 222 & 0.700315 \\
-64 & binary & cbc & 4096 & 382 & 0.343513 \\
-64 & binary & scip & 4096 & 382 & 1.332685 \\
-64 & integer & cbc & 4160 & 446 & 0.431371 \\
-64 & integer & scip & 4160 & 446 & 3.625789 \\
+8 & binary & cbc & 64 & 46 & 0.038824 \\
+8 & binary & scip & 64 & 46 & 0.040379 \\
+8 & integer & cbc & 72 & 54 & 0.037656 \\
+8 & integer & scip & 72 & 54 & 0.040296 \\
+16 & binary & cbc & 256 & 94 & 0.055535 \\
+16 & binary & scip & 256 & 94 & 0.041167 \\
+16 & integer & cbc & 272 & 110 & 0.049211 \\
+16 & integer & scip & 272 & 110 & 0.041906 \\
+32 & binary & cbc & 1024 & 190 & 0.087756 \\
+32 & binary & scip & 1024 & 190 & 0.727264 \\
+32 & integer & cbc & 1056 & 222 & 0.085858 \\
+32 & integer & scip & 1056 & 222 & 0.702270 \\
+64 & binary & cbc & 4096 & 382 & 0.342792 \\
+64 & binary & scip & 4096 & 382 & 1.336934 \\
+64 & integer & cbc & 4160 & 446 & 0.432027 \\
+64 & integer & scip & 4160 & 446 & 3.569228 \\
 \bottomrule
 \tabularnewline
 \end{tabular}
@@ -225,10 +225,10 @@ Tables~\ref{tab:gurobi} and \ref{tab:cplex} present Gurobi and CPLEX results.
 \toprule
 $N$ & Model Variant & Solver & Variables & Constraints & Total Time (s) \\
 \midrule
-8 & binary & gurobi & 64 & 42 & 0.000948 \\
-16 & binary & gurobi & 256 & 90 & 0.001468 \\
-32 & binary & gurobi & 1024 & 186 & 0.011580 \\
-44 & binary & gurobi & 1936 & 258 & 0.005287 \\
+8 & binary & gurobi & 64 & 42 & 0.008870 \\
+16 & binary & gurobi & 256 & 90 & 0.009543 \\
+32 & binary & gurobi & 1024 & 186 & 0.019588 \\
+44 & binary & gurobi & 1936 & 258 & 0.013442 \\
 \bottomrule
 \tabularnewline
 \end{tabular}
@@ -241,16 +241,16 @@ $N$ & Model Variant & Solver & Variables & Constraints & Total Time (s) \\
 \toprule
 $N$ & Model Variant & Solver & Variables & Constraints & Total Time (s) \\
 \midrule
-8 & binary & cplex & 64 & 42 & 0.010834 \\
-8 & integer & cplex-cp & 8 & 3 & 0.000264 \\
-16 & binary & cplex & 256 & 90 & 0.012104 \\
-16 & integer & cplex-cp & 16 & 3 & 0.000287 \\
-32 & binary & cplex & 1024 & 186 & 0.016284 \\
-32 & integer & cplex-cp & 32 & 3 & 0.000320 \\
-64 & binary & cplex & 4096 & 378 & 0.032064 \\
-64 & integer & cplex-cp & 64 & 3 & 0.000400 \\
-128 & binary & cplex & 16384 & 762 & 0.092598 \\
-128 & integer & cplex-cp & 128 & 3 & 0.010534 \\
+8 & binary & cplex & 64 & 42 & 0.164246 \\
+8 & integer & cplex-cp & 8 & 3 & 0.161112 \\
+16 & binary & cplex & 256 & 90 & 0.163949 \\
+16 & integer & cplex-cp & 16 & 3 & 0.161521 \\
+32 & binary & cplex & 1024 & 186 & 0.167906 \\
+32 & integer & cplex-cp & 32 & 3 & 0.164400 \\
+64 & binary & cplex & 4096 & 378 & 0.183581 \\
+64 & integer & cplex-cp & 64 & 3 & 0.164295 \\
+128 & binary & cplex & 16384 & 762 & 0.244642 \\
+128 & integer & cplex-cp & 128 & 3 & 0.169599 \\
 \bottomrule
 \tabularnewline
 \end{tabular}
@@ -309,11 +309,11 @@ SAT & minisat22 & 128 & 3 \\
 \section{Discussion and Comprehensive Solver Comparison}
 The empirical results reveal distinct performance characteristics and limitations across all six solver groups (SAT, CP-SAT, open-source MIP, Gurobi, CPLEX MIP, and CPLEX CP) when scaling across the $N$ range ($N = 8$ to $128$):
 \begin{itemize}
-    \item \textbf{Comparative Performance Across Six Solver Groups}: Across moderate to large scales ($N = 8$ to $128$), commercial engines (CPLEX MIP, CPLEX CP, Gurobi) and high-performance solvers (CP-SAT, CaDiCaL) demonstrate exceptional scalability. At $N = 128$, recorded runtimes range from approximately 10.5 ms for CPLEX CP to 0.713 s for CP-SAT (noting that measurement methodologies differ across solvers, where reported \texttt{time\_seconds} is the median over repetitions of each run's \texttt{import\_time + build\_time + solve\_time} — with build and solve medians reported separately so they may not sum exactly — excluding parent-side process launch overhead). Crucially, \texttt{import\_time} is library-dependent and constant with respect to $N$ (for instance, OR-Tools CP-SAT incurs $\approx 0.3$~s of Python module import overhead regardless of $N$), meaning cross-paradigm runtime comparisons at small $N$ primarily reflect library import latency rather than algorithmic solving speed. To isolate solver efficiency from module import overhead, Figure~\ref{fig:paradigm_time} (Plot~2) evaluates \emph{model time} (\texttt{build\_time + solve\_time}), with timeouts counted as 30~s, whereas many SAT combinations take tens of seconds or timeout.
+    \item \textbf{Comparative Performance Across Six Solver Groups}: Across moderate to large scales ($N = 8$ to $128$), commercial engines (CPLEX MIP, CPLEX CP, Gurobi) and high-performance solvers (CP-SAT, CaDiCaL) demonstrate exceptional scalability. At $N = 128$, recorded runtimes range from approximately 169.6 ms for CPLEX CP to 0.647 s for CP-SAT (noting that measurement methodologies differ across solvers, where reported \texttt{time\_seconds} is the median over repetitions of each run's \texttt{import\_time + build\_time + solve\_time} — with build and solve medians reported separately so they may not sum exactly — excluding parent-side process launch overhead). Crucially, \texttt{import\_time} is library-dependent and constant with respect to $N$ (for instance, OR-Tools CP-SAT incurs $\approx 0.3$~s of Python module import overhead regardless of $N$), meaning cross-paradigm runtime comparisons at small $N$ primarily reflect library import latency rather than algorithmic solving speed. To isolate solver efficiency from module import overhead, Figure~\ref{fig:paradigm_time} (Plot~2) evaluates \emph{model time} (\texttt{build\_time + solve\_time}), with timeouts counted as 30~s, whereas many SAT combinations take tens of seconds or timeout.
     \item \textbf{FEASIBLE vs. OPTIMAL Status Semantics}: For pure satisfaction problems (such as $N$-Queens without an objective function), finding any valid non-attacking configuration successfully solves the problem. Solution status labels are solver-specific and API-dependent: CPLEX CP reports \texttt{FEASIBLE}, whereas CP-SAT reports \texttt{OPTIMAL} and MIP solvers may report \texttt{OPTIMAL} for satisfaction models. Solution validity in our framework is independently verified using the benchmark's verification module rather than relying solely on solver status strings.
-    \item \textbf{CP Optimizer Process Startup Overhead}: CP Optimizer relies on an external binary executable (\texttt{cpoptimizer}). Spawning this subprocess incurs inter-process communication and process startup overhead; actual total measured runtimes for CPLEX CP increase from approximately 0.3 ms at $N = 8$ to 10.5 ms at $N = 128$. Note that the \texttt{solve\_time} of CPLEX CP comes from \texttt{get\_solve\_time()}, which in CSV records values of 0.00 and 0.01 (indicating a resolution of ~10 ms); thus, the ~10.5 ms recorded at $N = 128$ appears to be predominantly 10 ms rounding plus ~0.5 ms model build time, and should not be directly compared on equal footing with CP-SAT's ~0.713 s wall-clock measurement.
+    \item \textbf{CP Optimizer Process Startup Overhead}: CP Optimizer relies on an external binary executable (\texttt{cpoptimizer}). Spawning this subprocess incurs inter-process communication and process startup overhead; actual total measured runtimes for CPLEX CP increase from approximately 161.1 ms at $N = 8$ to 169.6 ms at $N = 128$. Here, \texttt{solve\_time} measures the wall-clock duration around the solve call (including cpoptimizer process startup), while \texttt{solver\_reported\_time} is the number reported by the solver (median of 10.0 ms at $N = 128$); thus, measured runtimes include process startup and inter-process communication, and should not be directly compared on equal footing with CP-SAT's wall-clock measurement.
     \item \textbf{Gurobi Trial License Limitations}: Gurobi's trial license restricts model dimensions for larger instances, capping trials at $N \le 44$. For $N > 44$, full commercial licenses or alternative solvers (CPLEX, CP-SAT, CaDiCaL) are required.
-    \item \textbf{SAT Scaling and Encodings}: CaDiCaL and Kissat handle large clause databases efficiently up to $N = 128$ (with maximum recorded runtimes of approximately 8.60 s for CaDiCaL and 6.03 s for Kissat), whereas MapleCM reaches a maximum recorded runtime of approximately 26.22 seconds under product encoding at $N = 128$, and Glucose3, MiniSat22, and MapleCM encounter frequent timeouts (10/25 cases timed out at $N = 128$, specifically Glucose3: 4, MiniSat22: 3, MapleCM: 3). Compact cardinality encodings such as Commander (47,096 clauses at $N = 64$) and Sequential Counter (47,692 clauses at $N = 64$) dramatically reduce clause footprints compared to naive Pairwise encodings.
+    \item \textbf{SAT Scaling and Encodings}: CaDiCaL and Kissat handle large clause databases efficiently up to $N = 128$ (with maximum recorded runtimes of approximately 8.64 s for CaDiCaL and 5.93 s for Kissat), whereas MapleCM reaches a maximum recorded runtime of approximately 26.00 seconds under product encoding at $N = 128$, and Glucose3, MiniSat22, and MapleCM encounter frequent timeouts (10/25 cases timed out at $N = 128$, specifically Glucose3: 4, MiniSat22: 3, MapleCM: 3). Compact cardinality encodings such as Commander (47,096 clauses at $N = 64$) and Sequential Counter (47,692 clauses at $N = 64$) dramatically reduce clause footprints compared to naive Pairwise encodings.
     \item \textbf{CP-SAT Allowed Assignment Timeout at $N = 128$}: At $N = 128$, the CP-SAT allowed assignment variant timed out within 30 s; the underlying cause has not been isolated.
 \end{itemize}
 
