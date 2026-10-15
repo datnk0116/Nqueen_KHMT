@@ -5,9 +5,11 @@ import numpy as np
 
 def load_combined(results_dir="results"):
     path = os.path.join(results_dir, "benchmark_results.csv")
+    if not os.path.exists(path):
+        raise FileNotFoundError(f"Required benchmark results file not found: {path}")
     try:
         df = pd.read_csv(path)
-    except Exception:
+    except pd.errors.EmptyDataError:
         df = pd.DataFrame()
     if not df.empty and 'status' in df.columns:
         df = df[df['status'] != 'ERROR']
@@ -262,6 +264,8 @@ def generate_tex(results_dir="results", out_dir="report"):
                         pass
     
     combined_df = load_combined(results_dir)
+    if combined_df.empty:
+        raise ValueError(f"Benchmark results dataset in '{results_dir}' contains no valid records.")
     stats = build_discussion_stats(combined_df)
     
     sat_df = combined_df[combined_df['paradigm'] == 'SAT'] if not combined_df.empty else pd.DataFrame()
@@ -269,6 +273,7 @@ def generate_tex(results_dir="results", out_dir="report"):
     mip_df = combined_df[combined_df['paradigm'] == 'MIP'] if not combined_df.empty else pd.DataFrame()
     gurobi_df = combined_df[combined_df['paradigm'] == 'Gurobi'] if not combined_df.empty else pd.DataFrame()
     cplex_df = combined_df[combined_df['paradigm'].isin(['CPLEX-MIP', 'CPLEX-CP'])] if not combined_df.empty else pd.DataFrame()
+    cplex_cp_df = combined_df[combined_df['paradigm'] == 'CPLEX-CP'] if not combined_df.empty else pd.DataFrame()
 
     has_mpl = False
     try:
@@ -299,6 +304,7 @@ def generate_tex(results_dir="results", out_dir="report"):
         # Plot 2: Paradigm comparison across all solver groups (model time: build + solve, timeouts counted as 30 s, excluding LICENSE_LIMIT/MEMOUT/ERROR)
         fig, ax = plt.subplots(figsize=(8, 5))
         valid_paradigm_df = combined_df[~combined_df['status'].isin(['LICENSE_LIMIT', 'MEMOUT', 'ERROR'])].copy() if not combined_df.empty else combined_df
+        has_paradigm_lines = False
         if not valid_paradigm_df.empty:
             if 'model_time' in valid_paradigm_df.columns:
                 # If model_time has NaN but build and solve exist, fill them
@@ -314,11 +320,13 @@ def generate_tex(results_dir="results", out_dir="report"):
                 if not sub.empty:
                     grouped = sub.groupby('n')['model_time'].mean()
                     ax.plot(grouped.index, grouped.values, marker='s', label=paradigm)
+                    has_paradigm_lines = True
         ax.set_yscale('log')
         ax.set_xlabel("Board Size ($N$)")
         ax.set_ylabel("Mean Model Time (seconds, log scale, build + solve, timeouts counted as 30 s)")
         ax.set_title("Paradigm Comparison Across Board Sizes (model time: build + solve, timeouts counted as 30 s)")
-        ax.legend(bbox_to_anchor=(1.05, 1), loc='upper left', fontsize='small')
+        if has_paradigm_lines:
+            ax.legend(bbox_to_anchor=(1.05, 1), loc='upper left', fontsize='small')
         plt.tight_layout()
         plt.savefig(os.path.join(out_dir, "paradigm_comparison.png"), dpi=300)
         plt.close()
@@ -326,17 +334,20 @@ def generate_tex(results_dir="results", out_dir="report"):
         # Plot 3: Variable count scaling (exclude TIMEOUT/TIME_LIMIT/MEMOUT/LICENSE_LIMIT/ERROR)
         fig, ax = plt.subplots(figsize=(8, 5))
         valid_var_df = combined_df[~combined_df['status'].isin(['TIMEOUT', 'TIME_LIMIT', 'MEMOUT', 'LICENSE_LIMIT', 'ERROR'])]
+        has_var_lines = False
         for paradigm in valid_var_df['paradigm'].unique():
             sub = valid_var_df[valid_var_df['paradigm'] == paradigm]
             if not sub.empty and 'variables_count' in sub.columns:
                 grouped = sub.groupby('n')['variables_count'].mean()
                 if not grouped.empty:
                     ax.plot(grouped.index, grouped.values, marker='^', label=paradigm)
+                    has_var_lines = True
         ax.set_yscale('log')
         ax.set_xlabel("Board Size ($N$)")
         ax.set_ylabel("Variable Count (log scale)")
         ax.set_title("Variable Scaling Across Paradigms")
-        ax.legend(bbox_to_anchor=(1.05, 1), loc='upper left', fontsize='small')
+        if has_var_lines:
+            ax.legend(bbox_to_anchor=(1.05, 1), loc='upper left', fontsize='small')
         plt.tight_layout()
         plt.savefig(os.path.join(out_dir, "variables_scaling.png"), dpi=300)
         plt.close()
@@ -389,17 +400,42 @@ def generate_tex(results_dir="results", out_dir="report"):
     kissat_max_str = f"{stats['kissat_max']:.2f}" if not pd.isna(stats['kissat_max']) else "N/A"
     maplecm_max_str = f"{stats['maplecm_max']:.2f}" if not pd.isna(stats['maplecm_max']) else "N/A"
     maplecm_variant_str = stats['maplecm_max_variant']
-    if stats['sat_128_total'] > 0:
-        sat_to_str = f"{stats['sat_128_timeouts']}/{stats['sat_128_total']}"
-        g3_to_str = str(stats['g3_to'])
-        m22_to_str = str(stats['m22_to'])
-        mcm_to_str = str(stats['mcm_to'])
-    else:
-        sat_to_str = "0/0"
-        g3_to_str = "0"
-        m22_to_str = "0"
-        mcm_to_str = "0"
     cplex_cp_128_build_str = f"{stats['cplex_cp_128_build_ms']:.1f}" if not pd.isna(stats['cplex_cp_128_build_ms']) else "N/A"
+
+    if not pd.isna(stats['cplex_cp_128_s']) and not pd.isna(stats['cpsat_int_128_s']):
+        comp_runtime_text = f"At $N = 128$, recorded runtimes range from approximately {cplex_cp_128_str} for CPLEX CP to {cpsat_int_128_str} s for CP-SAT"
+    elif not pd.isna(stats['cplex_cp_128_s']):
+        comp_runtime_text = f"At $N = 128$, CPLEX CP records a runtime of approximately {cplex_cp_128_str}"
+    elif not pd.isna(stats['cpsat_int_128_s']):
+        comp_runtime_text = f"At $N = 128$, CP-SAT records a runtime of approximately {cpsat_int_128_str} s"
+    else:
+        comp_runtime_text = "At $N = 128$, experimental runtime data for CPLEX CP and CP-SAT is not available"
+
+    if not pd.isna(stats['cadical_max']) and not pd.isna(stats['kissat_max']):
+        cadical_kissat_text = f"CaDiCaL and Kissat handle large clause databases efficiently up to $N = 128$ (with maximum recorded runtimes of approximately {cadical_max_str} s for CaDiCaL and {kissat_max_str} s for Kissat)"
+    elif not pd.isna(stats['cadical_max']):
+        cadical_kissat_text = f"CaDiCaL handles large clause databases efficiently up to $N = 128$ (with a maximum recorded runtime of approximately {cadical_max_str} s)"
+    elif not pd.isna(stats['kissat_max']):
+        cadical_kissat_text = f"Kissat handles large clause databases efficiently up to $N = 128$ (with a maximum recorded runtime of approximately {kissat_max_str} s)"
+    else:
+        cadical_kissat_text = "CaDiCaL and Kissat experimental data is not available at $N = 128$"
+
+    if not pd.isna(stats['maplecm_max']):
+        maplecm_text = f", whereas MapleCM reaches a maximum recorded runtime of approximately {maplecm_max_str} seconds under {maplecm_variant_str} encoding at $N = 128$"
+    else:
+        maplecm_text = ""
+
+    if stats['sat_128_total'] > 0:
+        if stats['sat_128_timeouts'] > 0:
+            sat_timeout_text = (
+                f", and Glucose3, MiniSat22, and MapleCM encounter frequent timeouts "
+                f"({stats['sat_128_timeouts']}/{stats['sat_128_total']} cases timed out at $N = 128$, "
+                f"specifically Glucose3: {stats['g3_to']}, MiniSat22: {stats['m22_to']}, MapleCM: {stats['mcm_to']})"
+            )
+        else:
+            sat_timeout_text = f", and no timeouts were encountered across tested SAT configurations at $N = 128$ (0/{stats['sat_128_total']} timed out)"
+    else:
+        sat_timeout_text = ", whereas no experimental SAT timeout data is available at $N = 128$ (insufficient data)"
 
     latex_content = r"""\documentclass[a4paper,fleqn]{cas-sc}
 \usepackage[utf8]{inputenc}
@@ -619,11 +655,11 @@ Paradigm & Solver & Board Size ($N$) & Timeout Count \\
 \section{Discussion and Comprehensive Solver Comparison}
 The empirical results reveal distinct performance characteristics and limitations across all six solver groups (SAT, CP-SAT, open-source MIP, Gurobi, CPLEX MIP, and CPLEX CP) when scaling across the $N$ range ($N = 8$ to $128$):
 \begin{itemize}
-    \item \textbf{Comparative Performance Across Six Solver Groups}: Across moderate to large scales ($N = 8$ to $128$), commercial engines (CPLEX MIP, CPLEX CP, Gurobi) and high-performance solvers (CP-SAT, CaDiCaL) demonstrate exceptional scalability. At $N = 128$, recorded runtimes range from approximately """ + cplex_cp_128_str + r""" for CPLEX CP to """ + (cpsat_int_128_str + (" s" if cpsat_int_128_str != "N/A" else "")) + r""" for CP-SAT (noting that measurement methodologies differ across solvers, where reported \texttt{time\_seconds} is the median over repetitions of each run's \texttt{import\_time + build\_time + solve\_time} — with build and solve medians reported separately so they may not sum exactly — excluding parent-side process launch overhead; similarly, \texttt{model\_time} represents the median across repetitions of per-run \texttt{build\_time + solve\_time} values, which need not equal \texttt{median(build\_time) + median(solve\_time)}). Crucially, \texttt{import\_time} is library-dependent and constant with respect to $N$ (for instance, OR-Tools CP-SAT incurs $\approx 0.3$~s of Python module import overhead regardless of $N$), meaning cross-paradigm runtime comparisons at small $N$ primarily reflect library import latency rather than algorithmic solving speed. To isolate solver efficiency from module import overhead, Figure~\ref{fig:paradigm_time} (Plot~2) evaluates \emph{model time} (\texttt{build\_time + solve\_time}), with timeouts counted as 30~s, whereas many SAT combinations take tens of seconds or timeout.
+    \item \textbf{Comparative Performance Across Six Solver Groups}: Across moderate to large scales ($N = 8$ to $128$), commercial engines (CPLEX MIP, CPLEX CP, Gurobi) and high-performance solvers (CP-SAT, CaDiCaL) demonstrate exceptional scalability. """ + comp_runtime_text + r""" (noting that measurement methodologies differ across solvers, where reported \texttt{time\_seconds} is the median over repetitions of each run's \texttt{import\_time + build\_time + solve\_time} — with build and solve medians reported separately so they may not sum exactly — excluding parent-side process launch overhead; similarly, \texttt{model\_time} represents the median across repetitions of per-run \texttt{build\_time + solve\_time} values, which need not equal \texttt{median(build\_time) + median(solve\_time)}). Crucially, \texttt{import\_time} is library-dependent and constant with respect to $N$ (for instance, OR-Tools CP-SAT incurs $\approx 0.3$~s of Python module import overhead regardless of $N$), meaning cross-paradigm runtime comparisons at small $N$ primarily reflect library import latency rather than algorithmic solving speed. To isolate solver efficiency from module import overhead, Figure~\ref{fig:paradigm_time} (Plot~2) evaluates \emph{model time} (\texttt{build\_time + solve\_time}), with timeouts counted as 30~s, whereas many SAT combinations take tens of seconds or timeout.
     \item \textbf{FEASIBLE vs. OPTIMAL Status Semantics}: For pure satisfaction problems (such as $N$-Queens without an objective function), finding any valid non-attacking configuration successfully solves the problem. Solution status labels are solver-specific and API-dependent: CPLEX CP reports \texttt{FEASIBLE}, whereas CP-SAT reports \texttt{OPTIMAL} and MIP solvers may report \texttt{OPTIMAL} for satisfaction models. Solution validity in our framework is independently verified using the benchmark's verification module rather than relying solely on solver status strings.
     {cp_overhead_text}
     \item \textbf{Gurobi Trial License Limitations}: Gurobi's trial license restricts model dimensions for larger instances, capping trials at $N \le 44$. For $N > 44$, full commercial licenses or alternative solvers (CPLEX, CP-SAT, CaDiCaL) are required.
-    \item \textbf{SAT Scaling and Encodings}: CaDiCaL and Kissat handle large clause databases efficiently up to $N = 128$ (with maximum recorded runtimes of approximately """ + (cadical_max_str + (" s" if cadical_max_str != "N/A" else "")) + r""" for CaDiCaL and """ + (kissat_max_str + (" s" if kissat_max_str != "N/A" else "")) + r""" for Kissat), whereas MapleCM reaches a maximum recorded runtime of approximately """ + (maplecm_max_str + (" seconds" if maplecm_max_str != "N/A" else "")) + r""" under """ + maplecm_variant_str + r""" encoding at $N = 128$, and Glucose3, MiniSat22, and MapleCM encounter frequent timeouts (""" + sat_to_str + r""" cases timed out at $N = 128$, specifically Glucose3: """ + g3_to_str + r""", MiniSat22: """ + m22_to_str + r""", MapleCM: """ + mcm_to_str + r"""). Compact cardinality encodings such as Commander (47,096 clauses at $N = 64$) and Sequential Counter (47,692 clauses at $N = 64$) dramatically reduce clause footprints compared to naive Pairwise encodings.
+    \item \textbf{SAT Scaling and Encodings}: """ + cadical_kissat_text + maplecm_text + sat_timeout_text + r""". Compact cardinality encodings such as Commander (47,096 clauses at $N = 64$) and Sequential Counter (47,692 clauses at $N = 64$) dramatically reduce clause footprints compared to naive Pairwise encodings.
     \item \textbf{CP-SAT Allowed Assignment Timeout at $N = 128$}: At $N = 128$, the CP-SAT allowed assignment variant timed out within 30 s; the underlying cause has not been isolated.
 \end{itemize}
 
@@ -662,7 +698,9 @@ The source code, benchmark runners, raw experimental results (CSV files), and re
 
     has_reported = stats.get('has_solver_reported_time', False)
     reported_s = stats.get('cplex_cp_128_reported_s', float('nan'))
-    if has_reported and not pd.isna(reported_s):
+    if cplex_cp_df.empty:
+        cp_overhead_text = r"""\item \textbf{CP Optimizer Process Startup Overhead}: CP Optimizer experimental data is not available in the current dataset. When CP Optimizer is evaluated, spawning its external binary executable (\texttt{cpoptimizer}) incurs inter-process communication and process startup overhead which should be distinguished from native API solvers."""
+    elif has_reported and not pd.isna(reported_s):
         cp_overhead_text = r"""\item \textbf{CP Optimizer Process Startup Overhead}: CP Optimizer relies on an external binary executable (\texttt{cpoptimizer}). Spawning this subprocess incurs inter-process communication and process startup overhead; actual total measured runtimes for CPLEX CP increase from approximately """ + cplex_cp_8_str + r""" at $N = 8$ to """ + cplex_cp_128_str + r""" at $N = 128$. Here, \texttt{solve\_time} measures the wall-clock duration around the solve call (including cpoptimizer process startup), while \texttt{solver\_reported\_time} is the number reported by the solver (median of """ + format_adaptive_time(reported_s) + r""" at $N = 128$); thus, measured runtimes include process startup and inter-process communication, and should not be directly compared on equal footing with CP-SAT's wall-clock measurement."""
     else:
         cpsat_comp = f"~{cpsat_int_128_str} s" if cpsat_int_128_str != "N/A" else "N/A"

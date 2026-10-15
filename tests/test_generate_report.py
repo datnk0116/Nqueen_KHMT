@@ -175,3 +175,63 @@ def test_compile_pdf_missing_pdflatex(monkeypatch):
     monkeypatch.setattr(shutil, "which", lambda *_: None)
     res = compile_pdf("report")
     assert res is False
+
+def test_load_combined_missing_file_raises(tmp_path):
+    with pytest.raises(FileNotFoundError, match="Required benchmark results file not found"):
+        load_combined(str(tmp_path))
+
+def test_generate_tex_empty_dataset_raises(tmp_path):
+    empty_csv = tmp_path / "benchmark_results.csv"
+    empty_csv.write_text("")
+    with pytest.raises(ValueError, match="contains no valid records"):
+        generate_tex(str(tmp_path), str(tmp_path / "report"))
+
+def test_generate_tex_missing_sat_128_data(tmp_path):
+    df = pd.DataFrame([{
+        'n': 8, 'paradigm': 'SAT', 'model_variant': 'pairwise', 'solver': 'cadical',
+        'status': 'SUCCESS', 'time_seconds': 0.05, 'build_time': 0.01, 'solve_time': 0.04,
+        'variables_count': 64, 'clauses_constraints_count': 100
+    }])
+    df.to_csv(tmp_path / "benchmark_results.csv", index=False)
+    tex_path = generate_tex(str(tmp_path), str(tmp_path / "report"))
+    with open(tex_path, "r") as f:
+        content = f.read()
+    assert "0/0" not in content
+    assert "insufficient data" in content
+    assert "specifically Glucose3: 0" not in content
+
+def test_generate_tex_sat_128_zero_timeouts(tmp_path):
+    df = pd.DataFrame([{
+        'n': 128, 'paradigm': 'SAT', 'model_variant': 'pairwise', 'solver': 'cadical',
+        'status': 'SUCCESS', 'time_seconds': 0.5, 'build_time': 0.1, 'solve_time': 0.4,
+        'variables_count': 16384, 'clauses_constraints_count': 50000
+    }])
+    df.to_csv(tmp_path / "benchmark_results.csv", index=False)
+    tex_path = generate_tex(str(tmp_path), str(tmp_path / "report"))
+    with open(tex_path, "r") as f:
+        content = f.read()
+    assert "0/0" not in content
+    assert "no timeouts were encountered across tested SAT configurations at $N = 128$ (0/1 timed out)" in content
+
+def test_generate_tex_missing_cplex_cp(tmp_path):
+    df = pd.DataFrame([{
+        'n': 8, 'paradigm': 'SAT', 'model_variant': 'pairwise', 'solver': 'cadical',
+        'status': 'SUCCESS', 'time_seconds': 0.05, 'build_time': 0.01, 'solve_time': 0.04,
+        'variables_count': 64, 'clauses_constraints_count': 100
+    }])
+    df.to_csv(tmp_path / "benchmark_results.csv", index=False)
+    tex_path = generate_tex(str(tmp_path), str(tmp_path / "report"))
+    with open(tex_path, "r") as f:
+        content = f.read()
+    assert "CP Optimizer experimental data is not available" in content
+    assert "N/A to N/A" not in content
+
+def test_generate_tex_missing_optional_columns(tmp_path):
+    df = pd.DataFrame([{
+        'n': 8, 'paradigm': 'SAT', 'model_variant': 'pairwise', 'solver': 'cadical',
+        'status': 'SUCCESS', 'time_seconds': 0.05
+    }])
+    df.to_csv(tmp_path / "benchmark_results.csv", index=False)
+    tex_path = generate_tex(str(tmp_path), str(tmp_path / "report"))
+    assert os.path.exists(tex_path)
+
