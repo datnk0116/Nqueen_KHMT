@@ -170,6 +170,7 @@ def test_tmp_path_report_generation(tmp_path, monkeypatch):
     assert "under 26s" not in content
     assert "0.012 to 0.019" not in content
     assert "has not been isolated" not in content
+    assert "standalone verification" not in content
     assert "130.7~million at $N = 128$" in content
     assert "tab:sat_encodings_complexity" in content
     assert r"\Theta(N^3)" in content
@@ -309,6 +310,8 @@ def test_experimental_setup_content(tmp_path):
     assert "2.32.264" in content
     assert "benchmark.py --time-limit 30.0 --repetitions 3" in content
     assert "gurobi_sizelimit" in content
+    assert "the restricted license supports at most 2,000 variables and 2,000 linear constraints" in content
+    assert "360051597492" in content
 
 
 

@@ -564,7 +564,7 @@ Solver configurations, worker allocations, and timeout parameters are specified 
 \subsection{Benchmark Instances and Scaling}
 Evaluated board sizes span the progression $N \in \{8, 16, 32, 44, 64, 128\}$. The committed benchmark dataset comprises 170 distinct configuration records, where each record represents a unique combination of $(N, \text{model variant}, \text{solver})$ evaluated over 3 complete repetitions, rather than an exhaustive Cartesian product across all solvers and scales. Open-source MIP solvers (CBC, SCIP) were evaluated up to $N = 64$, whereas SAT, CP-SAT, and CPLEX configurations scaled up to $N = 128$.
 
-The intermediate instance size $N = 44$ was evaluated exclusively for Gurobi to analyze solver behavior at the boundary of its license capacity. Gurobi's standard size-limited trial license restricts models to a maximum of 2,000 variables and 2,000 linear constraints \citep{gurobi_sizelimit}. Under the binary matrix formulation with $N^2$ binary decision variables and row, column, and diagonal cuts, $N = 44$ produces $44^2 = 1,936$ variables ($\le 2,000$) and 258 linear constraints ($\le 2,000$). At $N = 45$, the model requires $45^2 = 2,025 > 2,000$ variables, and at $N = 64$ requires 4,096 variables, immediately exceeding trial license capacity and triggering size-limit exceptions.
+The intermediate instance size $N = 44$ was evaluated exclusively for Gurobi to analyze solver behavior at the boundary of its license capacity: the restricted license supports at most 2,000 variables and 2,000 linear constraints \citep{gurobi_sizelimit}. Under the binary matrix formulation with $N^2$ binary decision variables and row, column, and diagonal cuts, $N = 44$ produces $44^2 = 1,936$ variables ($\le 2,000$) and 258 linear constraints ($\le 2,000$). At $N = 45$, the model requires $45^2 = 2,025$ variables, and at $N = 64$ requires 4,096 variables; because both exceed the 2,000-variable limit, these dimensions were not evaluated with Gurobi.
 
 \subsection{Reproducibility and Metric Definitions}
 Each benchmark run executes inside an isolated Python child process with a strict 30.0-second timeout across 3 repetitions without early termination. Benchmarking runs can be reproduced using:
@@ -766,7 +766,7 @@ L. Perron and V. Furnon, ``OR-Tools,'' Google, 2021. Available: \url{https://dev
 A. Biere, M. Heule, H. van Maaren, and T. Walsh, \emph{Handbook of Satisfiability}, 2nd ed. IOS Press, 2021.
 
 \bibitem{gurobi_sizelimit}
-Gurobi Optimization, LLC, ``Size-limited Gurobi License,'' \emph{Gurobi Help Center}, 2024. Available: \url{https://support.gurobi.com}.
+Gurobi Optimization, LLC, ``How do I resolve a `Model too large for size-limited Gurobi license' error?'', \emph{Gurobi Help Center}. Available: \url{https://support.gurobi.com/hc/en-us/articles/360051597492} (accessed 16 October 2026).
 \end{thebibliography}
 
 \section{Data Availability}
@@ -782,7 +782,7 @@ The source code, benchmark runners, raw experimental results (CSV files), and re
 
     cpsat_allowed_128 = cpsat_df[(cpsat_df['n'] == 128) & (cpsat_df['model_variant'] == 'allowed')] if (not cpsat_df.empty and 'n' in cpsat_df.columns and 'model_variant' in cpsat_df.columns) else pd.DataFrame()
     if not cpsat_allowed_128.empty and 'status' in cpsat_allowed_128.columns and cpsat_allowed_128.iloc[0]['status'] in ('TIMEOUT', 'TIME_LIMIT'):
-        cpsat_allowed_text = r"""\item \textbf{CP-SAT Allowed Assignment Timeout at $N = 128$}: The \texttt{allowed} assignment variant posts $\binom{N}{2}$ pairwise binary table constraints whose cumulative allowed tuple count scales as $\mathcal{O}(N^4)$, surging from 7.96~million tuples at $N = 64$ to 130.7~million at $N = 128$. Measured build and solve times at $N = 32$ and $N = 64$ scale by approximately $16\times$ (0.060~s to 0.963~s) and $12\times$ (0.169~s to 2.105~s) per doubling of $N$. Extrapolating these scaling trends from $N = 32$ and $N = 64$ (rather than direct measurement at $N = 128$) projects an estimated build time of $\sim 15.6$~s and solve time of $\sim 26.2$~s (totalling $\sim 41.8$~s, exceeding the 30~s limit), indicating that the timeout is likely driven by table constraint size rather than search difficulty (consistent with standalone verification where model construction alone required $\approx 13.7$~s at $N = 128$)."""
+        cpsat_allowed_text = r"""\item \textbf{CP-SAT Allowed Assignment Timeout at $N = 128$}: The \texttt{allowed} assignment variant posts $\binom{N}{2}$ pairwise binary table constraints whose cumulative allowed tuple count scales as $\mathcal{O}(N^4)$, surging from 7.96~million tuples at $N = 64$ to 130.7~million at $N = 128$. Measured build and solve times at $N = 32$ and $N = 64$ scale by approximately $16\times$ (0.060~s to 0.963~s) and $12\times$ (0.169~s to 2.105~s) per doubling of $N$. Extrapolating these scaling trends from $N = 32$ and $N = 64$ (rather than direct measurement at $N = 128$) projects an estimated build time of $\sim 15.6$~s and solve time of $\sim 26.2$~s (totalling $\sim 41.8$~s, exceeding the 30~s limit), indicating that the timeout is likely driven by table constraint size rather than search difficulty."""
     else:
         cpsat_allowed_text = ""
 
