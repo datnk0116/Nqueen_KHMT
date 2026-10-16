@@ -314,4 +314,38 @@ def test_experimental_setup_content(tmp_path):
     assert "360051597492" in content
 
 
+def test_template_and_submission_metadata(tmp_path):
+    df = pd.DataFrame([{
+        'n': 8, 'paradigm': 'SAT', 'model_variant': 'pairwise', 'solver': 'cadical',
+        'status': 'SUCCESS', 'time_seconds': 0.05, 'build_time': 0.01, 'solve_time': 0.04,
+        'variables_count': 64, 'clauses_constraints_count': 100
+    }])
+    df.to_csv(tmp_path / "benchmark_results.csv", index=False)
+    tex_path = generate_tex(str(tmp_path), str(tmp_path / "report"))
+    with open(tex_path, "r") as f:
+        content = f.read()
+
+    # Font encoding & Latin Modern
+    assert r"\usepackage[T1]{fontenc}" in content
+    assert r"\usepackage{lmodern}" in content
+    assert r"\DeclareUnicodeCharacter{1EC5}{\~{\^e}}" in content
+
+    # Author metadata
+    assert r"\shortauthors{Nguyễn Khả Đạt}" in content
+    assert r"\author[1]{Nguyễn Khả Đạt}" in content
+    assert r"\ead{24021404@vnu.edu.vn}" in content
+    assert "Student ID: 24021404" in content
+
+    # Declarations
+    assert r"\section*{CRediT Authorship Contribution Statement}" in content
+    assert r"Writing - review \& editing." in content
+    assert r"\section*{Declaration of Competing Interest}" in content
+    assert r"\section*{Declaration of Generative AI and AI-Assisted Technologies in the Manuscript Preparation}" in content
+    assert "Claude (Anthropic)" in content
+    assert "Gemini (Google)" in content
+
+    # Footer page count fix
+    assert "\\clearpage\n\\addtocounter{page}{-1}\n\\end{document}" in content
+
+
 

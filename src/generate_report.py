@@ -437,6 +437,8 @@ def generate_tex(results_dir="results", out_dir="report"):
 
     latex_content = r"""\documentclass[a4paper,fleqn]{cas-sc}
 \usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
 \usepackage{booktabs}
 \usepackage{graphicx}
 \usepackage{amsmath}
@@ -445,14 +447,22 @@ def generate_tex(results_dir="results", out_dir="report"):
 \usepackage{float}
 \usepackage[numbers]{natbib}
 
+\ifdefined\DeclareUnicodeCharacter
+  \DeclareUnicodeCharacter{1EC5}{\~{\^e}}
+  \DeclareUnicodeCharacter{1EA3}{\v{a}}
+  \DeclareUnicodeCharacter{0110}{\DJ}
+  \DeclareUnicodeCharacter{1EA1}{\d{a}}
+  \DeclareUnicodeCharacter{0111}{\dj}
+\fi
+
 \begin{document}
 
 \title{\textbf{Comprehensive Benchmark Report: N-Queens Problem Across Six Solver Groups and Paradigms}}
 \shorttitle{N-Queens Benchmark Across Six Solver Groups}
-\shortauthors{DatNK0116}
-\author[1]{DatNK0116}
+\shortauthors{Nguyễn Khả Đạt}
+\author[1]{Nguyễn Khả Đạt}
 \ead{24021404@vnu.edu.vn}
-\fntext[1]{Course: Modern Topics in Computer Science (2627I\_INT3011E\_4)}
+\fntext[1]{Course: Modern Topics in Computer Science (2627I\_INT3011E\_4) -- Student ID: 24021404}
 
 \affiliation[1]{organization={Faculty of Information Technology, University of Engineering and Technology, Vietnam National University},
                 city={Hanoi},
@@ -769,9 +779,20 @@ A. Biere, M. Heule, H. van Maaren, and T. Walsh, \emph{Handbook of Satisfiabilit
 Gurobi Optimization, LLC, ``How do I resolve a `Model too large for size-limited Gurobi license' error?'', \emph{Gurobi Help Center}. Available: \url{https://support.gurobi.com/hc/en-us/articles/360051597492} (accessed 16 October 2026).
 \end{thebibliography}
 
+\section*{CRediT Authorship Contribution Statement}
+\textbf{Nguyễn Khả Đạt}: Conceptualization, Methodology, Software, Validation, Investigation, Data curation, Visualization, Writing - original draft, Writing - review \& editing.
+
+\section*{Declaration of Competing Interest}
+The author declares that they have no known competing financial interests or personal relationships that could have appeared to influence the work reported in this paper.
+
+\section*{Declaration of Generative AI and AI-Assisted Technologies in the Manuscript Preparation}
+During the preparation of this work, the author used Claude (Anthropic) for manuscript review and text editing, and Gemini (Google) for code drafting and testing. All experimental evaluations were executed independently by the author on personal hardware, and the author reviewed, verified, and takes full responsibility for the contents of this publication.
+
 \section{Data Availability}
 The source code, benchmark runners, raw experimental results (CSV files), and reporting utilities supporting the findings of this study are openly available in the GitHub repository at \url{https://github.com/datnk0116/Nqueen_KHMT}.
 
+\clearpage
+\addtocounter{page}{-1}
 \end{document}
 """
 
@@ -819,6 +840,7 @@ def compile_pdf(out_dir="report"):
         print("Warning: pdflatex not found in PATH. Skipping PDF compilation.")
         return False
     try:
+        subprocess.run(["pdflatex", "-interaction=nonstopmode", "report.tex"], cwd=out_dir, check=True)
         subprocess.run(["pdflatex", "-interaction=nonstopmode", "report.tex"], cwd=out_dir, check=True)
         subprocess.run(["pdflatex", "-interaction=nonstopmode", "report.tex"], cwd=out_dir, check=True)
         pdf_path = os.path.join(out_dir, "report.pdf")
