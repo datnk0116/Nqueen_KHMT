@@ -76,9 +76,13 @@ The benchmarking framework enforces a unified, rigorous timing and timeout proto
 ## Getting Started & Usage
 
 ### 1. Environment Setup & Requirements
+The reference benchmarking environment was executed on **Python 3.14.7** (macOS 15.7.4 Sequoia, Apple M4, 16 GB RAM) within a dedicated virtual environment (`SAT`).
+
+Exact dependencies are pinned in [`requirements.txt`](requirements.txt) (`python-sat==1.9.dev15`, `ortools==9.15.6755`, `gurobipy==13.0.3`, `docplex==2.32.264`, `cplex==22.2.0.1`, `pandas==3.0.6`, `numpy==2.5.3`, `matplotlib==3.11.2`, `pytest==9.1.1`).
+
 Create and activate the virtual environment, then install required dependencies:
 ```bash
-python -m venv SAT
+python3.14 -m venv SAT
 source SAT/bin/activate
 pip install -r requirements.txt
 ```

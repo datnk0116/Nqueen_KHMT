@@ -169,6 +169,11 @@ def test_tmp_path_report_generation(tmp_path, monkeypatch):
     assert "0.02 to 1.3" not in content
     assert "under 26s" not in content
     assert "0.012 to 0.019" not in content
+    assert "has not been isolated" not in content
+    assert "130.7~million at $N = 128$" in content
+    assert "tab:sat_encodings_complexity" in content
+    assert r"\Theta(N^3)" in content
+    assert "428,800 clauses at $N = 64$" in content
     assert re.search(r"\\\{1,\s*\\dots,\s*N\\\}", content) is None
 
 def test_compile_pdf_missing_pdflatex(monkeypatch):
@@ -281,5 +286,29 @@ def test_generate_tex_preserves_error_rows(tmp_path):
         content = f.read()
     assert "8 & pairwise & ERR & - & - & - & - \\\\" in content
     assert "- & - & ERR" in content
+
+def test_experimental_setup_content(tmp_path):
+    df = pd.DataFrame([{
+        'n': 8, 'paradigm': 'SAT', 'model_variant': 'pairwise', 'solver': 'cadical',
+        'status': 'SUCCESS', 'time_seconds': 0.05, 'build_time': 0.01, 'solve_time': 0.04,
+        'variables_count': 64, 'clauses_constraints_count': 100
+    }])
+    df.to_csv(tmp_path / "benchmark_results.csv", index=False)
+    tex_path = generate_tex(str(tmp_path), str(tmp_path / "report"))
+    with open(tex_path, "r") as f:
+        content = f.read()
+
+    assert "Apple M4" in content
+    assert "macOS 15.7.4" in content
+    assert "Python 3.14.7" in content
+    assert "tab:software_versions" in content
+    assert "1.9.dev15" in content
+    assert "9.15.6755" in content
+    assert "13.0.3" in content
+    assert "22.2.0.1" in content
+    assert "2.32.264" in content
+    assert "benchmark.py --time-limit 30.0 --repetitions 3" in content
+    assert "gurobi_sizelimit" in content
+
 
 

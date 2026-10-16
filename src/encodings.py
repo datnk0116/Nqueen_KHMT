@@ -83,7 +83,12 @@ def amo_commander(lits: list[int], pool: IDPool) -> list[list[int]]:
 
 def amo_product(lits: list[int], pool: IDPool) -> list[list[int]]:
     """
-    Product AMO encoding (Bailleux & Boufkhad).
+    Product AMO encoding (Chen, 2010).
+
+    Partitions n literals into a 2D grid of size p x q, where p = ceil(sqrt(n))
+    and q = ceil(n / p). Introduces p row variables and q column variables,
+    enforces binary AMO encodings on row and column variables, and posts 2 assignment
+    clauses [-lit, row] and [-lit, col] for each literal.
     """
     clauses = []
     n = len(lits)

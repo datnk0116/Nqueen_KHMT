@@ -48,12 +48,37 @@ This study expands the evaluation framework to cover six distinct solver groups:
 Different paradigms map the combinatorial structure of the $N$-Queens problem into mathematical constraints in distinct ways:
 
 \subsection{Propositional Satisfiability (SAT) Encodings}
-Boolean variables $x_{i,j}$ denote whether a queen is placed at row $i$, column $j$ ($1 \le i, j \le N$).
+Boolean decision variables $x_{i,j}$ denote whether a queen is placed at row $i$, column $j$ ($1 \le i, j \le N$), requiring $N^2$ primary decision variables. As implemented in \texttt{nqueens\_encoding} (\texttt{src/encodings.py}), the problem is formulated via four distinct constraint families:
+\begin{enumerate}
+    \item \textbf{At-Least-One (ALO) per row}: $\bigvee_{j=1}^N x_{i,j}$ for each row $1 \le i \le N$, contributing $N$ clauses.
+    \item \textbf{At-Most-One (AMO) per row}: $\text{AMO}(x_{i,1}, \dots, x_{i,N})$ for each row $1 \le i \le N$ ($N$ groups of size $N$).
+    \item \textbf{At-Most-One (AMO) per column}: $\text{AMO}(x_{1,j}, \dots, x_{N,j})$ for each column $1 \le j \le N$ ($N$ groups of size $N$).
+    \item \textbf{At-Most-One (AMO) per diagonal}: $\text{AMO}(x_{i,j} : (i,j) \in \text{diag})$ for each major and minor diagonal of length $k \ge 2$, comprising $2(2N - 3)$ groups of sizes $k \in \{2, \dots, N\}$.
+\end{enumerate}
+Crucially, all three AMO constraint families (rows, columns, and diagonals) invoke the identical modular AMO encoding function. Five representative AMO encodings are evaluated:
 \begin{itemize}
-    \item \textbf{At-Least-One (ALO)} per row: $\bigvee_{j=1}^N x_{i,j}$ for all $i$.
-    \item \textbf{At-Most-One (AMO)} per row: Pairwise encoding $\bigwedge_{1 \le j < k \le N} (\neg x_{i,j} \lor \neg x_{i,k})$ yielding $\Theta(N^2)$ clauses; advanced encodings including Klieber \& Kwon's Commander encoding \citep{klieber2007efficient} and Chen's Product encoding \citep{chen2010new}.
-    \item \textbf{Binary and Sequential Counter Encodings}: Encodes cardinality constraints using $\lceil \log_2 n \rceil$ auxiliary boolean variables or Sinz's sequential counter networks \citep{sinz2005}.
+    \item \textbf{Pairwise}: Adds negative binary clauses $(\neg u \lor \neg v)$ for each distinct pair. Per AMO group of size $n$, it generates $\binom{n}{2} = \frac{n(n-1)}{2}$ clauses without auxiliary variables. Summed over all rows, columns, and diagonals, the total clause count is $2N\binom{N}{2} + 2\left(2\binom{N}{3} + \binom{N}{2}\right) + N = \frac{5}{3}N^3 - 2N^2 + \frac{4}{3}N = \Theta(N^3)$ (yielding 428,800 clauses at $N = 64$ and 3,462,656 at $N = 128$).
+    \item \textbf{Binary (Bitwise)}: Assigns binary index vectors to literals using $\lceil \log_2 n \rceil$ auxiliary variables and $n \lceil \log_2 n \rceil$ clauses per group of size $n$, resulting in $\Theta(N^2 \log N)$ total clauses and $\Theta(N \log N)$ auxiliary variables.
+    \item \textbf{Sequential Counter (Sinz)} \citep{sinz2005}: Chains partial sums with $n - 1$ auxiliary variables and $3n - 4$ clauses per group ($n \ge 2$), achieving $\Theta(N^2)$ total clauses and $\Theta(N^2)$ auxiliary variables.
+    \item \textbf{Commander (Klieber \& Kwon)} \citep{klieber2007efficient}: Recursively partitions literals into blocks of size 3 and elects commander variables, posting $\Theta(n)$ clauses and $\Theta(n)$ auxiliary variables per group, yielding $\Theta(N^2)$ total clauses and $\Theta(N^2)$ auxiliary variables.
+    \item \textbf{Product (Chen)} \citep{chen2010new}: Embeds literals into a 2D grid of size $p \times q$ with $p = \lceil \sqrt{n} \rceil$ and $q = \lceil n/p \rceil$, enforcing binary AMO on row and column variables alongside $2n$ assignment clauses, yielding $\Theta(n)$ clauses and $\Theta(\sqrt{n})$ auxiliary variables per group ($\Theta(N^2)$ total clauses and $\Theta(N^{1.5})$ auxiliary variables).
 \end{itemize}
+
+\begin{table}[htbp]
+\centering
+\caption{Asymptotic Size of the SAT Encodings} \label{tab:sat_encodings_complexity}
+\begin{tabular}{lllll}
+\toprule
+Encoding & Clauses per Group (Size $n$) & Aux. Variables per Group & Total Clauses & Total Aux. Variables \\
+\midrule
+Pairwise & $\binom{n}{2} = \frac{n(n-1)}{2}$ & $0$ & $\Theta(N^3)$ & $0$ \\
+Binary & $n \lceil \log_2 n \rceil$ & $\lceil \log_2 n \rceil$ & $\Theta(N^2 \log N)$ & $\Theta(N \log N)$ \\
+Sequential & $3n - 4$ & $n - 1$ & $\Theta(N^2)$ & $\Theta(N^2)$ \\
+Commander & $\Theta(n)$ & $\Theta(n)$ & $\Theta(N^2)$ & $\Theta(N^2)$ \\
+Product & $\Theta(n)$ & $\Theta(\sqrt{n})$ & $\Theta(N^2)$ & $\Theta(N^{1.5})$ \\
+\bottomrule
+\end{tabular}
+\end{table}
 
 \subsection{Constraint Programming (CP-SAT) \& Global Constraints}
 OR-Tools CP-SAT utilizes integer decision variables $q_i \in \{0, 1, \dots, N-1\}$ representing the column of the queen in row $i$. Global constraints enforce:
@@ -69,7 +94,60 @@ MIP models formulate the problem as linear inequalities over binary variables $x
 $$\sum_{i=1}^N x_{i,j} = 1 \quad (\forall j), \quad \sum_{j=1}^N x_{i,j} = 1 \quad (\forall i), \quad \sum_{(i,j) \in \text{diag}} x_{i,j} \le 1$$
 
 \section{Experimental Setup}
-Benchmarks were executed on macOS Sequoia with Python 3.14, utilizing isolated subprocesses with a strict 30-second hard timeout applied to the entire child process (encompassing library import, model construction, and solving: \texttt{time\_seconds = import\_time + build\_time + solve\_time}). In addition to phase breakdowns, overall subprocess wall-clock duration is measured by the parent process as \texttt{wall\_time} via \texttt{time.perf\_counter()}. Timeouts are handled systematically: inside the subprocess, the remaining budget is forwarded as a solver-level time limit (\texttt{TIME\_LIMIT}) where supported by cooperative interrupts, while the parent process enforces a hard timeout safety net (\texttt{TIMEOUT}) for backends lacking native interrupt support (such as CaDiCaL and Kissat in PySAT). Board sizes ranged from $N = 8$ up to $N = 128$. Each configuration is evaluated over 3 complete repetitions without early abort, tracking \texttt{runs\_total}, \texttt{runs\_success}, \texttt{runs\_timeout}, and \texttt{runs\_error} to resolve mixed runs without masking failure distributions. Reported values in tables reflect the committed benchmark dataset collected under the standardized 3-repetition protocol with subprocess isolation. If optional benchmark reruns are performed via \texttt{src/benchmark.py}, all granular counters and medians are updated dynamically. Commercial solver Gurobi operated under trial license limitations ($N \le 44$), while CPLEX operated under full license support allowing scaling up to $N = 128$.
+
+\subsection{Hardware and Software Environment}
+All benchmarks were conducted on a MacBook Air equipped with an Apple M4 processor and 16~GB of unified memory, operating under macOS 15.7.4 (Sequoia). The evaluation runtime was isolated within a dedicated Python 3.14.7 virtual environment (\texttt{SAT}). Table~\ref{tab:software_versions} lists the exact software library and solver package versions employed in the reference benchmark. The SAT solvers are directly bundled within PySAT 1.9.dev15 as compiled C/C++ libraries, corresponding to the concrete solver classes instantiated in \texttt{src/sat\_model.py}: CaDiCaL 1.5.3 (\texttt{Cadical153}), Kissat 4.0.4 (\texttt{Kissat404}), Glucose 3.0 (\texttt{Glucose3}), MiniSat 2.2 (\texttt{Minisat22}), and MapleCOMSPS/MapleCM (\texttt{MapleCM}).
+
+\begin{table}[htbp]
+\centering
+\caption{Software and Solver Package Versions} \label{tab:software_versions}
+\begin{tabular}{lll}
+\toprule
+Package / Tool & Version & Solvers / Modules Included \\
+\midrule
+PySAT & 1.9.dev15 & CaDiCaL 1.5.3, Kissat 4.0.4, Glucose 3.0, MiniSat 2.2, MapleCM \\
+OR-Tools & 9.15.6755 & CP-SAT solver, Linear Solver (CBC, SCIP interfaces) \\
+Gurobi (\texttt{gurobipy}) & 13.0.3 & Gurobi Optimizer (size-limited trial license) \\
+IBM ILOG CPLEX (\texttt{cplex}) & 22.2.0.1 & CPLEX Mathematical Programming (MIP) engine \\
+DOcplex (\texttt{docplex}) & 2.32.264 & CPLEX CP Optimizer API (\texttt{cpoptimizer}) \\
+Python & 3.14.7 & Execution runtime (virtualenv \texttt{SAT}, macOS 15.7.4) \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Solver configurations, worker allocations, and timeout parameters are specified as follows:
+\begin{itemize}
+    \item \textbf{SAT Solvers (PySAT)}: Solvers run as single-threaded C++ processes using deterministic default search heuristics without explicit random seeds. For solvers with cooperative interrupt support (\texttt{Glucose3}, \texttt{Minisat22}, \texttt{MapleCM}), internal soft timeouts are handled via a Python \texttt{threading.Timer} invoking \texttt{solve\_limited(expect\_interrupt=True)}. Solvers without native interrupt mechanisms in PySAT (\texttt{Cadical153}, \texttt{Kissat404}) rely on parent process hard timeouts.
+    \item \textbf{OR-Tools CP-SAT}: Executes with default multithreaded worker allocation (the number of search workers is not explicitly pinned in code, adhering to OR-Tools heuristics based on host hardware; thus solving efficiency reflects available CPU cores), default random seed, and remaining time budget passed via \texttt{parameters.max\_time\_in\_seconds}.
+    \item \textbf{MIP Solvers (CBC, SCIP)}: Invoked through OR-Tools \texttt{pywraplp.Solver} with default single-threaded parameters and time limits specified via \texttt{set\_time\_limit()} in milliseconds.
+    \item \textbf{Gurobi}: Commercial solver Gurobi operated under trial license limitations ($N \le 44$) with default multithreading (\texttt{Threads = 0}), default random seed (\texttt{Seed = 0}), and remaining time budget forwarded via \texttt{Params.TimeLimit}.
+    \item \textbf{CPLEX MIP and CP Optimizer}: CPLEX operated under full license support allowing scaling up to $N = 128$. CPLEX MIP uses default thread allocation and random seeds, with time limits passed via \texttt{set\_time\_limit()}. CP Optimizer (\texttt{cplex-cp}) executes via the external \texttt{cpoptimizer} binary with default worker allocation, default seed, \texttt{LogVerbosity = Quiet}, and time limits configured via \texttt{params["TimeLimit"]}.
+\end{itemize}
+
+\subsection{Benchmark Instances and Scaling}
+Evaluated board sizes span the progression $N \in \{8, 16, 32, 44, 64, 128\}$. The committed benchmark dataset comprises 170 distinct configuration records, where each record represents a unique combination of $(N, \text{model variant}, \text{solver})$ evaluated over 3 complete repetitions, rather than an exhaustive Cartesian product across all solvers and scales. Open-source MIP solvers (CBC, SCIP) were evaluated up to $N = 64$, whereas SAT, CP-SAT, and CPLEX configurations scaled up to $N = 128$.
+
+The intermediate instance size $N = 44$ was evaluated exclusively for Gurobi to analyze solver behavior at the boundary of its license capacity. Gurobi's standard size-limited trial license restricts models to a maximum of 2,000 variables and 2,000 linear constraints \citep{gurobi_sizelimit}. Under the binary matrix formulation with $N^2$ binary decision variables and row, column, and diagonal cuts, $N = 44$ produces $44^2 = 1,936$ variables ($\le 2,000$) and 258 linear constraints ($\le 2,000$). At $N = 45$, the model requires $45^2 = 2,025 > 2,000$ variables, and at $N = 64$ requires 4,096 variables, immediately exceeding trial license capacity and triggering size-limit exceptions.
+
+\subsection{Reproducibility and Metric Definitions}
+Each benchmark run executes inside an isolated Python child process with a strict 30.0-second timeout across 3 repetitions without early termination. Benchmarking runs can be reproduced using:
+\begin{quote}
+\texttt{python src/benchmark.py --time-limit 30.0 --repetitions 3 --output-dir results}
+\end{quote}
+Aggregated metrics, comparison tables, and report figures are generated via:
+\begin{quote}
+\texttt{python src/generate\_report.py}
+\end{quote}
+Because multithreaded solvers (CP-SAT, Gurobi, CPLEX) utilize host-dependent thread pools, exact execution runtimes depend on host CPU architecture, clock frequencies, and core availability. The benchmark records the following primary metrics:
+\begin{itemize}
+    \item \texttt{import\_time}: Duration (seconds) to load paradigm and solver modules in the child process prior to model building.
+    \item \texttt{build\_time}: Time (seconds) elapsed during variable instantiation and constraint posting.
+    \item \texttt{solve\_time}: Active execution duration (seconds) spent inside the solver's solve method.
+    \item \texttt{model\_time}: Sum of \texttt{build\_time + solve\_time} per repetition (reported as the median of per-run sums), isolating model construction and solving performance from module import latency.
+    \item \texttt{time\_seconds}: Total child process phase duration (\texttt{import\_time + build\_time + solve\_time}), capped at 30.0~s upon timeout.
+    \item \texttt{wall\_time}: Parent-measured wall-clock elapsed time (via \texttt{time.perf\_counter()}) spanning child process launch, IPC, and termination.
+    \item \texttt{runs\_total}, \texttt{runs\_success}, \texttt{runs\_timeout}, \texttt{runs\_error}: Granular counters tracking outcomes across all 3 repetitions to ensure failure and timeout distributions are captured without masking.
+\end{itemize}
 
 \section{Empirical Results and Performance Analysis}
 
@@ -313,8 +391,8 @@ The empirical results reveal distinct performance characteristics and limitation
     \item \textbf{FEASIBLE vs. OPTIMAL Status Semantics}: For pure satisfaction problems (such as $N$-Queens without an objective function), finding any valid non-attacking configuration successfully solves the problem. Solution status labels are solver-specific and API-dependent: CPLEX CP reports \texttt{FEASIBLE}, whereas CP-SAT reports \texttt{OPTIMAL} and MIP solvers may report \texttt{OPTIMAL} for satisfaction models. Solution validity in our framework is independently verified using the benchmark's verification module rather than relying solely on solver status strings.
     \item \textbf{CP Optimizer Process Startup Overhead}: CP Optimizer relies on an external binary executable (\texttt{cpoptimizer}). Spawning this subprocess incurs inter-process communication and process startup overhead; actual total measured runtimes for CPLEX CP increase from approximately 161.1 ms at $N = 8$ to 169.6 ms at $N = 128$. Here, \texttt{solve\_time} measures the wall-clock duration around the solve call (including cpoptimizer process startup), while \texttt{solver\_reported\_time} is the number reported by the solver (median of 10.0 ms at $N = 128$); thus, measured runtimes include process startup and inter-process communication, and should not be directly compared on equal footing with CP-SAT's wall-clock measurement.
     \item \textbf{Gurobi Trial License Limitations}: Gurobi's trial license restricts model dimensions for larger instances, capping trials at $N \le 44$. For $N > 44$, full commercial licenses or alternative solvers (CPLEX, CP-SAT, CaDiCaL) are required.
-    \item \textbf{SAT Scaling and Encodings}: CaDiCaL and Kissat handle large clause databases efficiently up to $N = 128$ (with maximum recorded runtimes of approximately 8.64 s for CaDiCaL and 5.93 s for Kissat), whereas MapleCM reaches a maximum recorded runtime of approximately 26.00 seconds under product encoding at $N = 128$, and Glucose3, MiniSat22, and MapleCM encounter frequent timeouts (10/25 cases timed out at $N = 128$, specifically Glucose3: 4, MiniSat22: 3, MapleCM: 3). Compact cardinality encodings such as Commander (47,096 clauses at $N = 64$) and Sequential Counter (47,692 clauses at $N = 64$) dramatically reduce clause footprints compared to naive Pairwise encodings.
-    \item \textbf{CP-SAT Allowed Assignment Timeout at $N = 128$}: At $N = 128$, the CP-SAT allowed assignment variant timed out within 30 s; the underlying cause has not been isolated.
+    \item \textbf{SAT Scaling and Encodings}: CaDiCaL and Kissat handle large clause databases efficiently up to $N = 128$ (with maximum recorded runtimes of approximately 8.64 s for CaDiCaL and 5.93 s for Kissat), whereas MapleCM reaches a maximum recorded runtime of approximately 26.00 seconds under product encoding at $N = 128$, and Glucose3, MiniSat22, and MapleCM encounter frequent timeouts (10/25 cases timed out at $N = 128$, specifically Glucose3: 4, MiniSat22: 3, MapleCM: 3). Compact cardinality encodings such as Commander (47,096 clauses at $N = 64$) and Sequential Counter (47,692 clauses at $N = 64$) dramatically reduce clause footprints compared to naive Pairwise encodings (428,800 clauses at $N = 64$).
+    \item \textbf{CP-SAT Allowed Assignment Timeout at $N = 128$}: The \texttt{allowed} assignment variant posts $\binom{N}{2}$ pairwise binary table constraints whose cumulative allowed tuple count scales as $\mathcal{O}(N^4)$, surging from 7.96~million tuples at $N = 64$ to 130.7~million at $N = 128$. Measured build and solve times at $N = 32$ and $N = 64$ scale by approximately $16\times$ (0.060~s to 0.963~s) and $12\times$ (0.169~s to 2.105~s) per doubling of $N$. Extrapolating these scaling trends from $N = 32$ and $N = 64$ (rather than direct measurement at $N = 128$) projects an estimated build time of $\sim 15.6$~s and solve time of $\sim 26.2$~s (totalling $\sim 41.8$~s, exceeding the 30~s limit), indicating that the timeout is likely driven by table constraint size rather than search difficulty (consistent with standalone verification where model construction alone required $\approx 13.7$~s at $N = 128$).
 \end{itemize}
 
 \section{Conclusion}
@@ -342,6 +420,9 @@ L. Perron and V. Furnon, ``OR-Tools,'' Google, 2021. Available: \url{https://dev
 
 \bibitem{biere2021handbook}
 A. Biere, M. Heule, H. van Maaren, and T. Walsh, \emph{Handbook of Satisfiability}, 2nd ed. IOS Press, 2021.
+
+\bibitem{gurobi_sizelimit}
+Gurobi Optimization, LLC, ``Size-limited Gurobi License,'' \emph{Gurobi Help Center}, 2024. Available: \url{https://support.gurobi.com}.
 \end{thebibliography}
 
 \section{Data Availability}

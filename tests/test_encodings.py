@@ -11,9 +11,10 @@ encodings = importlib.util.module_from_spec(spec)
 sys.modules["custom_encodings"] = encodings
 spec.loader.exec_module(encodings)
 
-# Add parent dir to python path for board
+# Add src dir and parent dir to python path
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '../src')))
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
-from src.board import verify
+from board import verify
 
 from pysat.formula import IDPool
 from pysat.solvers import Minisat22
@@ -77,3 +78,40 @@ def test_nqueens_encoding(name, amo_func, n):
         assert solver.solve() is True, f"N-Queens n={n} with {name} encoding should be SAT"
         model = solver.get_model()
         assert verify(model, n=n) is True, f"N-Queens n={n} model verification failed for {name}"
+
+def test_pairwise_formula_and_single_group_counts():
+    """
+    Validates:
+    1. Pairwise total clause formula: 2*N*C(N,2) + 2*(2*C(N,3) + C(N,2)) + N for N in {8, 16, 64}.
+    2. Single-group formulas for binary (n*ceil(log2 n) clauses, ceil(log2 n) aux vars)
+       and sequential counter (3n - 4 clauses, n - 1 aux vars).
+    """
+    import math
+
+    def c(n, k):
+        return math.comb(n, k)
+
+    # 1. Pairwise N-Queens total clauses
+    for n in [8, 16, 64]:
+        expected_clauses = 2 * n * c(n, 2) + 2 * (2 * c(n, 3) + c(n, 2)) + n
+        pool = IDPool()
+        clauses = nqueens_encoding(n, amo_pairwise, pool)
+        assert len(clauses) == expected_clauses, f"Pairwise N={n}: got {len(clauses)}, expected {expected_clauses}"
+
+    # 2. Single-group binary and sequential formulas
+    for k in [2, 3, 5, 8, 10, 16]:
+        # Binary
+        pool_bin = IDPool()
+        lits_bin = [pool_bin.id() for _ in range(k)]
+        clauses_bin = amo_binary(lits_bin, pool_bin)
+        m = math.ceil(math.log2(k))
+        assert len(clauses_bin) == k * m
+        assert pool_bin.top - k == m
+
+        # Sequential
+        pool_seq = IDPool()
+        lits_seq = [pool_seq.id() for _ in range(k)]
+        clauses_seq = amo_sequential(lits_seq, pool_seq)
+        assert len(clauses_seq) == 3 * k - 4
+        assert pool_seq.top - k == k - 1
+
