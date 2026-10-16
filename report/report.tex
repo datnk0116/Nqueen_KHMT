@@ -1,22 +1,18 @@
 \documentclass[a4paper,fleqn]{cas-sc}
 \usepackage[utf8]{inputenc}
-\usepackage[T1]{fontenc}
+\usepackage[T1,T5]{fontenc}
 \usepackage{lmodern}
 \usepackage{booktabs}
 \usepackage{graphicx}
 \usepackage{amsmath}
 \usepackage{amsfonts}
 \usepackage{hyperref}
+\hypersetup{
+  pdfauthor={Nguyễn Khả Đạt},
+  pdftitle={Comprehensive Benchmark Report: N-Queens Problem Across Six Solver Groups and Paradigms}
+}
 \usepackage{float}
 \usepackage[numbers]{natbib}
-
-\ifdefined\DeclareUnicodeCharacter
-  \DeclareUnicodeCharacter{1EC5}{\~{\^e}}
-  \DeclareUnicodeCharacter{1EA3}{\v{a}}
-  \DeclareUnicodeCharacter{0110}{\DJ}
-  \DeclareUnicodeCharacter{1EA1}{\d{a}}
-  \DeclareUnicodeCharacter{0111}{\dj}
-\fi
 
 \begin{document}
 
@@ -40,6 +36,7 @@ N-Queens \sep Propositional Satisfiability \sep Constraint Programming \sep Mixe
 \end{keywords}
 
 \maketitle
+\hypersetup{pdfauthor={Nguyễn Khả Đạt}}
 
 \section{Introduction}
 The $N$-Queens problem serves as a canonical benchmark in artificial intelligence, automated reasoning, constraint satisfaction, and combinatorial optimization. Placing $N$ non-attacking queens on an $N \times N$ chessboard tests the scalability, constraint propagation, and search pruning power of modern discrete solvers. 
@@ -366,34 +363,35 @@ SAT & minisat22 & 128 & 3 \\
 
 \section{Visualizations}
 
-\begin{figure}[htbp]
+\begin{figure}[!htbp]
 \centering
-\includegraphics[width=0.85\textwidth]{sat_time_cadical.png}
+\includegraphics[width=0.65\textwidth]{sat_time_cadical.png}
 \caption{SAT (CaDiCaL) total time scaling across board sizes $N$.}
 \label{fig:sat_time}
 \end{figure}
 
-\begin{figure}[htbp]
+\begin{figure}[!htbp]
 \centering
-\includegraphics[width=0.85\textwidth]{paradigm_comparison.png}
+\includegraphics[width=0.65\textwidth]{paradigm_comparison.png}
 \caption{Comparison of mean model time across all solver paradigms (build + solve; log scale; timeouts counted as 30 s, so means are lower bounds).}
 \label{fig:paradigm_time}
 \end{figure}
 
-\begin{figure}[htbp]
+\begin{figure}[!htbp]
 \centering
-\includegraphics[width=0.85\textwidth]{variables_scaling.png}
+\includegraphics[width=0.65\textwidth]{variables_scaling.png}
 \caption{Variable count scaling across different solving paradigms and solvers.}
 \label{fig:var_scaling}
 \end{figure}
 
-\begin{figure}[htbp]
+\begin{figure}[!htbp]
 \centering
-\includegraphics[width=0.85\textwidth]{build_vs_solve.png}
+\includegraphics[width=0.65\textwidth]{build_vs_solve.png}
 \caption{Model construction overhead versus active solving time by paradigm.}
 \label{fig:build_solve}
 \end{figure}
 
+\clearpage
 \section{Discussion and Comprehensive Solver Comparison}
 The empirical results reveal distinct performance characteristics and limitations across all six solver groups (SAT, CP-SAT, open-source MIP, Gurobi, CPLEX MIP, and CPLEX CP) when scaling across the $N$ range ($N = 8$ to $128$):
 \begin{itemize}
@@ -408,7 +406,6 @@ The empirical results reveal distinct performance characteristics and limitation
 \section{Conclusion}
 This benchmark evaluation demonstrates that while modern SAT, CP-SAT, and commercial CP/MIP engines solve moderate instances efficiently, performance varies significantly at $N = 128$. Performance is heavily dictated by solver sensitivity, global constraint propagation, and encoding efficiency: CaDiCaL, Kissat, CPLEX CP, and CP-SAT handle large scales effectively, whereas clausal blow-up and solver heuristics cause frequent timeouts for older SAT engines.
 
-\section{References}
 \begin{thebibliography}{10}
 \bibitem{biere2020cadical}
 A. Biere, ``CaDiCaL at SAT Race 2019,'' in \emph{Proceedings of SAT Race 2019} (Pragmatics of SAT, Vol. B), pp. 1--2, Department of Computer Science, University of Helsinki, 2019. Available: \url{http://www.satcompetition.org/2019/proceedings.pdf}
@@ -444,7 +441,7 @@ The author declares that they have no known competing financial interests or per
 \section*{Declaration of Generative AI and AI-Assisted Technologies in the Manuscript Preparation}
 During the preparation of this work, the author used Claude (Anthropic) for manuscript review and text editing, and Gemini (Google) for code drafting and testing. All experimental evaluations were executed independently by the author on personal hardware, and the author reviewed, verified, and takes full responsibility for the contents of this publication.
 
-\section{Data Availability}
+\section*{Data Availability}
 The source code, benchmark runners, raw experimental results (CSV files), and reporting utilities supporting the findings of this study are openly available in the GitHub repository at \url{https://github.com/datnk0116/Nqueen_KHMT}.
 
 \clearpage

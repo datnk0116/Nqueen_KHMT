@@ -326,9 +326,9 @@ def test_template_and_submission_metadata(tmp_path):
         content = f.read()
 
     # Font encoding & Latin Modern
-    assert r"\usepackage[T1]{fontenc}" in content
+    assert r"\usepackage[T1,T5]{fontenc}" in content
     assert r"\usepackage{lmodern}" in content
-    assert r"\DeclareUnicodeCharacter{1EC5}{\~{\^e}}" in content
+    assert r"pdfauthor={Nguyễn Khả Đạt}" in content
 
     # Author metadata
     assert r"\shortauthors{Nguyễn Khả Đạt}" in content
@@ -336,13 +336,18 @@ def test_template_and_submission_metadata(tmp_path):
     assert r"\ead{24021404@vnu.edu.vn}" in content
     assert "Student ID: 24021404" in content
 
-    # Declarations
+    # Visualizations figures
+    assert r"\begin{figure}[!htbp]" in content
+    assert r"\section{References}" not in content
+
+    # Declarations and Data Availability
     assert r"\section*{CRediT Authorship Contribution Statement}" in content
     assert r"Writing - review \& editing." in content
     assert r"\section*{Declaration of Competing Interest}" in content
     assert r"\section*{Declaration of Generative AI and AI-Assisted Technologies in the Manuscript Preparation}" in content
     assert "Claude (Anthropic)" in content
     assert "Gemini (Google)" in content
+    assert r"\section*{Data Availability}" in content
 
     # Footer page count fix
     assert "\\clearpage\n\\addtocounter{page}{-1}\n\\end{document}" in content

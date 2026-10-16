@@ -114,11 +114,11 @@ python src/benchmark.py --time-limit 30.0 --repetitions 3 --output-dir results
 ### 5. LaTeX Requirements (for Report Compilation)
 Compiling the academic report (`report/report.tex`) requires a **full TeX Live installation** (or Overleaf) with the following LaTeX packages:
 
-`footmisc`, `makecell`, `moreverb`, `multirow`, `stfloats`, `wrapfig`, `xstring`, `booktabs`, `natbib`, `hyperref`, `amsmath`, `graphicx`, `geometry`, `float`, `xcolor`, `colortbl`, `dcolumn`, `array`
+`footmisc`, `makecell`, `moreverb`, `multirow`, `stfloats`, `wrapfig`, `xstring`, `booktabs`, `natbib`, `hyperref`, `amsmath`, `graphicx`, `geometry`, `float`, `xcolor`, `colortbl`, `dcolumn`, `array`, `lmodern`, `vntex`
 
 If any package is missing, install it via:
 ```bash
-tlmgr install footmisc makecell moreverb multirow stfloats wrapfig xstring
+tlmgr install footmisc makecell moreverb multirow stfloats wrapfig xstring lmodern vntex
 ```
 
 > **Note**: Do not vendor (copy) `.sty` files into `report/`. The `cas-sc.cls` document class loads these packages from the TeX system distribution. Vendored copies from a different TeX Live version can conflict and cause compilation failures.
