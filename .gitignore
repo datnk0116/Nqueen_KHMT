@@ -17,3 +17,4 @@ cplex.lic
 *.bak
 !results/
 !results/*.csv
+*.abs
