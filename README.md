@@ -97,6 +97,18 @@ To enable Gurobi and CPLEX benchmarking, ensure valid licenses are configured:
   ```bash
   python scripts/check_cplex.py
   ```
+- **CPLEX CP Optimizer binary** (`cplex-cp`): the CP model launches the external `cpoptimizer` executable. It is located in this order:
+  1. The environment variable `CPLEX_CP_EXECUTABLE` (full path to the `cpoptimizer` binary).
+  2. The environment variable `CPLEX_STUDIO_DIR` (CPLEX Studio install directory; the path `cpoptimizer/bin/arm64_osx/cpoptimizer` is appended, so this works for Apple Silicon macOS only; on other platforms use `CPLEX_CP_EXECUTABLE`).
+  3. Fallback paths: `SAT/bin/cpoptimizer`, `/Applications/CPLEX_Studio222/...`, `/Applications/CPLEX_Studio221/...`, then `cpoptimizer` on the system `PATH`.
+
+  Example:
+
+```
+  export CPLEX_CP_EXECUTABLE=/path/to/cpoptimizer
+```
+
+  If no binary is found, the CPLEX CP unit test is skipped and CPLEX CP benchmark runs cannot execute.
 
 ### 3. Running Unit Tests
 Execute pytest across the test suite:
