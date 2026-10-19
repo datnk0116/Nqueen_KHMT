@@ -480,19 +480,19 @@ The $N$-Queens problem serves as a canonical benchmark in artificial intelligenc
 
 This study expands the evaluation framework to cover six distinct solver groups:
 \begin{itemize}
-    \item \textbf{SAT Solvers}: CaDiCaL \citep{biere2020cadical}, Glucose3, MiniSat22, Kissat, and MapleCM evaluated across Pairwise, Binary, Sequential Counter, Commander, and Product cardinality encodings (implemented using the PySAT toolkit \citep{ignatiev2018pysat}).
+    \item \textbf{SAT Solvers}: CaDiCaL and Kissat \citep{biere2020cadical}, Glucose3 \citep{audemard2009glucose}, MiniSat22 \citep{een2003minisat}, and MapleCM \citep{liang2016maple} evaluated across Pairwise, Binary, Sequential Counter, Commander, and Product cardinality encodings (implemented using the PySAT toolkit \citep{ignatiev2018pysat}).
     \item \textbf{Constraint Programming (CP-SAT)}: OR-Tools CP-SAT using Integer, Boolean, and Allowed assignments configurations \citep{perron2021ortools}.
-    \item \textbf{Open-Source MIP}: CBC and SCIP solvers using Binary and Integer linear formulations.
-    \item \textbf{Commercial MIP (Gurobi)}: High-performance Gurobi optimization engine with advanced presolve and branch-and-cut routines (noting trial license bounds at $N \le 44$).
-    \item \textbf{Commercial CPLEX MIP}: IBM ILOG CPLEX Optimizer using the Mathematical Programming (MIP) engine.
-    \item \textbf{Commercial CPLEX CP}: IBM ILOG CPLEX Optimizer using the Constraint Programming (CP) engine, scaling up to $N = 128$.
+    \item \textbf{Open-Source MIP}: CBC \citep{forrest2005cbc} and SCIP \citep{bestuzheva2021scip} solvers using Binary and Integer linear formulations.
+    \item \textbf{Commercial MIP (Gurobi)}: High-performance Gurobi optimization engine \citep{gurobi2026} with advanced presolve and branch-and-cut routines (noting size-limited (restricted) license bounds at $N \le 44$).
+    \item \textbf{Commercial CPLEX MIP}: IBM ILOG CPLEX Optimizer using the Mathematical Programming (MIP) engine \citep{cplex2026}.
+    \item \textbf{Commercial CPLEX CP}: IBM ILOG CPLEX Optimizer using the Constraint Programming (CP) engine \citep{laborie2018cpoptimizer}, scaling up to $N = 128$.
 \end{itemize}
 
 \section{Encodings and Mathematical Formulations}
 Different paradigms map the combinatorial structure of the $N$-Queens problem into mathematical constraints in distinct ways:
 
 \subsection{Propositional Satisfiability (SAT) Encodings}
-Boolean decision variables $x_{i,j}$ denote whether a queen is placed at row $i$, column $j$ ($1 \le i, j \le N$), requiring $N^2$ primary decision variables. As implemented in \texttt{nqueens\_encoding} (\texttt{src/encodings.py}), the problem is formulated via four distinct constraint families:
+Cardinality and at-most-one encodings into CNF are surveyed in \citep{biere2021handbook}. Boolean decision variables $x_{i,j}$ denote whether a queen is placed at row $i$, column $j$ ($1 \le i, j \le N$), requiring $N^2$ primary decision variables. As implemented in \texttt{nqueens\_encoding} (\texttt{src/encodings.py}), the problem is formulated via four distinct constraint families:
 \begin{enumerate}
     \item \textbf{At-Least-One (ALO) per row}: $\bigvee_{j=1}^N x_{i,j}$ for each row $1 \le i \le N$, contributing $N$ clauses.
     \item \textbf{At-Most-One (AMO) per row}: $\text{AMO}(x_{i,1}, \dots, x_{i,N})$ for each row $1 \le i \le N$ ($N$ groups of size $N$).
@@ -551,7 +551,7 @@ Package / Tool & Version & Solvers / Modules Included \\
 \midrule
 PySAT & 1.9.dev15 & CaDiCaL 1.5.3, Kissat 4.0.4, Glucose 3.0, MiniSat 2.2, MapleCM \\
 OR-Tools & 9.15.6755 & CP-SAT solver, Linear Solver (CBC, SCIP interfaces) \\
-Gurobi (\texttt{gurobipy}) & 13.0.3 & Gurobi Optimizer (size-limited trial license) \\
+Gurobi (\texttt{gurobipy}) & 13.0.3 & Gurobi Optimizer (size-limited (restricted) license) \\
 IBM ILOG CPLEX (\texttt{cplex}) & 22.2.0.1 & CPLEX Mathematical Programming (MIP) engine \\
 DOcplex (\texttt{docplex}) & 2.32.264 & CPLEX CP Optimizer API (\texttt{cpoptimizer}) \\
 Python & 3.14.7 & Execution runtime (virtualenv \texttt{SAT}, macOS 15.7.4) \\
@@ -564,7 +564,7 @@ Solver configurations, worker allocations, and timeout parameters are specified 
     \item \textbf{SAT Solvers (PySAT)}: Solvers run as single-threaded C++ processes using deterministic default search heuristics without explicit random seeds. For solvers with cooperative interrupt support (\texttt{Glucose3}, \texttt{Minisat22}, \texttt{MapleCM}), internal soft timeouts are handled via a Python \texttt{threading.Timer} invoking \texttt{solve\_limited(expect\_interrupt=True)}. Solvers without native interrupt mechanisms in PySAT (\texttt{Cadical153}, \texttt{Kissat404}) rely on parent process hard timeouts.
     \item \textbf{OR-Tools CP-SAT}: Executes with default multithreaded worker allocation (the number of search workers is not explicitly pinned in code, adhering to OR-Tools heuristics based on host hardware; thus solving efficiency reflects available CPU cores), default random seed, and remaining time budget passed via \texttt{parameters.max\_time\_in\_seconds}.
     \item \textbf{MIP Solvers (CBC, SCIP)}: Invoked through OR-Tools \texttt{pywraplp.Solver} with default single-threaded parameters and time limits specified via \texttt{set\_time\_limit()} in milliseconds.
-    \item \textbf{Gurobi}: Commercial solver Gurobi operated under trial license limitations ($N \le 44$) with default multithreading (\texttt{Threads = 0}), default random seed (\texttt{Seed = 0}), and remaining time budget forwarded via \texttt{Params.TimeLimit}.
+    \item \textbf{Gurobi}: Commercial solver Gurobi operated under size-limited (restricted) license limitations ($N \le 44$) with default multithreading (\texttt{Threads = 0}), default random seed (\texttt{Seed = 0}), and remaining time budget forwarded via \texttt{Params.TimeLimit}.
     \item \textbf{CPLEX MIP and CP Optimizer}: CPLEX operated under full license support allowing scaling up to $N = 128$. CPLEX MIP uses default thread allocation and random seeds, with time limits passed via \texttt{set\_time\_limit()}. CP Optimizer (\texttt{cplex-cp}) executes via the external \texttt{cpoptimizer} binary with default worker allocation, default seed, \texttt{LogVerbosity = Quiet}, and time limits configured via \texttt{params["TimeLimit"]}.
 \end{itemize}
 
@@ -750,24 +750,48 @@ The empirical results reveal distinct performance characteristics and limitation
 \section{Conclusion}
 This benchmark evaluation demonstrates that while modern SAT, CP-SAT, and commercial CP/MIP engines solve moderate instances efficiently, performance varies significantly at $N = 128$. Performance is heavily dictated by solver sensitivity, global constraint propagation, and encoding efficiency: CaDiCaL, Kissat, CPLEX CP, and CP-SAT handle large scales effectively, whereas clausal blow-up and solver heuristics cause frequent timeouts for older SAT engines.
 
-\begin{thebibliography}{10}
+\begin{thebibliography}{16}
 \bibitem{biere2020cadical}
-A. Biere, ``CaDiCaL at SAT Race 2019,'' in \emph{Proceedings of SAT Race 2019} (Pragmatics of SAT, Vol. B), pp. 1--2, Department of Computer Science, University of Helsinki, 2019. Available: \url{http://www.satcompetition.org/2019/proceedings.pdf}
+A. Biere, K. Fazekas, M. Fleury, and M. Heisinger, ``CaDiCaL, Kissat, Paracooba, Plingeling and Treengeling Entering the SAT Competition 2020,'' in \emph{Proceedings of SAT Competition 2020 -- Solver and Benchmark Descriptions}, T. Balyo, N. Froleyks, M. Heule, M. Iser, M. J\"arvisalo, and M. Suda, Eds., Department of Computer Science Report Series B, vol. B-2020-1, pp. 51--53, University of Helsinki, 2020.
 
-\bibitem{sinz2005}
-C. Sinz, ``Towards an Optimal CNF Encoding of Boolean Cardinality Constraints,'' In \emph{Principles and Practice of Constraint Programming (CP 2005)}, pp. 827--831, 2005.
+\bibitem{audemard2009glucose}
+G. Audemard and L. Simon, ``Predicting Learnt Clauses Quality in Modern SAT Solvers,'' in \emph{Proceedings of the 21st International Joint Conference on Artificial Intelligence (IJCAI 2009)}, pp. 399--404, 2009.
 
-\bibitem{klieber2007efficient}
-W. Klieber and G. Kwon, ``Efficient CNF Encoding for Selecting 1 from n Objects,'' In \emph{Constraints in Formal Verification (CFV)}, 2007.
+\bibitem{een2003minisat}
+N. E\'en and N. S\"orensson, ``An Extensible SAT-solver,'' in \emph{Theory and Applications of Satisfiability Testing (SAT 2003)}, Lecture Notes in Computer Science, vol. 2919, pp. 502--518, Springer, 2004.
+
+\bibitem{liang2016maple}
+J. H. Liang, V. Ganesh, P. Poupart, and K. Czarnecki, ``Learning Rate Based Branching Heuristic for SAT Solvers,'' in \emph{Theory and Applications of Satisfiability Testing -- SAT 2016}, Lecture Notes in Computer Science, vol. 9710, pp. 123--140, Springer, 2016.
 
 \bibitem{ignatiev2018pysat}
-A. Ignatiev, A. Morgado, and J. Marques-Silva, ``PySAT: A Python Toolkit for Prototyping with SAT Oracles,'' In \emph{International Conference on Theory and Applications of Satisfiability Testing (SAT)}, pp. 428--437, 2018.
+A. Ignatiev, A. Morgado, and J. Marques-Silva, ``PySAT: A Python Toolkit for Prototyping with SAT Oracles,'' in \emph{International Conference on Theory and Applications of Satisfiability Testing (SAT)}, pp. 428--437, 2018.
+
+\bibitem{sinz2005}
+C. Sinz, ``Towards an Optimal CNF Encoding of Boolean Cardinality Constraints,'' in \emph{Principles and Practice of Constraint Programming (CP 2005)}, pp. 827--831, 2005.
+
+\bibitem{klieber2007efficient}
+W. Klieber and G. Kwon, ``Efficient CNF Encoding for Selecting 1 from n Objects,'' in \emph{Fourth Workshop on Constraints in Formal Verification (CFV)}, 2007.
 
 \bibitem{chen2010new}
-J. Chen, ``A New SAT Encoding for the At-Most-One Constraint,'' In \emph{International Workshop on Modelling and Reformulation (ModRef)}, 2010.
+J. Chen, ``A New SAT Encoding for the At-Most-One Constraint,'' in \emph{Proceedings of the 9th International Workshop on Constraint Modelling and Reformulation (ModRef)}, 2010.
 
 \bibitem{perron2021ortools}
-L. Perron and V. Furnon, ``OR-Tools,'' Google, 2021. Available: \url{https://developers.google.com/optimization}.
+L. Perron and V. Furnon, ``OR-Tools,'' version 9.15, Google. Available: \url{https://developers.google.com/optimization} (accessed 19 October 2026).
+
+\bibitem{forrest2005cbc}
+J. Forrest and R. Lougee-Heimer, ``CBC User Guide,'' in \emph{Emerging Theory, Methods, and Applications}, INFORMS, pp. 257--277, 2005. Available: \url{https://github.com/coin-or/Cbc} (accessed 19 October 2026).
+
+\bibitem{bestuzheva2021scip}
+K. Bestuzheva et al., ``The SCIP Optimization Suite 8.0,'' Technical Report, ZIB-Report 21-41, Zuse Institute Berlin, 2021.
+
+\bibitem{gurobi2026}
+Gurobi Optimization, LLC, ``Gurobi Optimizer Reference Manual,'' version 13.0.3, 2026. Available: \url{https://docs.gurobi.com/} (accessed 19 October 2026).
+
+\bibitem{cplex2026}
+IBM Corp., ``IBM ILOG CPLEX Optimization Studio CPLEX User's Manual,'' version 22.2.0.1, 2026. Available: \url{https://www.ibm.com/docs/en/icos} (accessed 19 October 2026).
+
+\bibitem{laborie2018cpoptimizer}
+P. Laborie, J. Rogerie, P. Shaw, and P. Vil\'{\i}m, ``IBM ILOG CP Optimizer for Scheduling,'' \emph{Constraints}, vol. 23, no. 2, pp. 210--250, 2018.
 
 \bibitem{biere2021handbook}
 A. Biere, M. Heule, H. van Maaren, and T. Walsh, \emph{Handbook of Satisfiability}, 2nd ed. IOS Press, 2021.
@@ -794,9 +818,9 @@ The source code, benchmark runners, raw experimental results (CSV files), and re
 """
 
     if gurobi_df.empty:
-        gurobi_license_text = r"""\item \textbf{Gurobi Trial License Limitations}: Gurobi optimization benchmark data is not present in the current dataset. When evaluated under trial licenses, Gurobi restricts model dimensions ($N \le 44$)."""
+        gurobi_license_text = r"""\item \textbf{Gurobi Size-Limited (Restricted) License Limitations}: Gurobi optimization benchmark data is not present in the current dataset. When evaluated under size-limited (restricted) licenses, Gurobi restricts model dimensions ($N \le 44$)."""
     else:
-        gurobi_license_text = r"""\item \textbf{Gurobi Trial License Limitations}: Gurobi's trial license restricts model dimensions for larger instances, capping trials at $N \le 44$. For $N > 44$, full commercial licenses or alternative solvers (CPLEX, CP-SAT, CaDiCaL) are required."""
+        gurobi_license_text = r"""\item \textbf{Gurobi Size-Limited (Restricted) License Limitations}: Gurobi's size-limited (restricted) license restricts model dimensions for larger instances, capping instances at $N \le 44$. For $N > 44$, full commercial licenses or alternative solvers (CPLEX, CP-SAT, CaDiCaL) are required."""
 
     cpsat_allowed_128 = cpsat_df[(cpsat_df['n'] == 128) & (cpsat_df['model_variant'] == 'allowed')] if (not cpsat_df.empty and 'n' in cpsat_df.columns and 'model_variant' in cpsat_df.columns) else pd.DataFrame()
     if not cpsat_allowed_128.empty and 'status' in cpsat_allowed_128.columns and cpsat_allowed_128.iloc[0]['status'] in ('TIMEOUT', 'TIME_LIMIT'):
