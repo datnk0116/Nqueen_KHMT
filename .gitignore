@@ -1,4 +1,5 @@
 .venv/
+SAT/
 __pycache__/
 .idea/
 *.lic
@@ -10,9 +11,13 @@ cplex.lic
 *.log
 *.out
 *.pdf
+!report/report.pdf
 *.toc
 *.synctex.gz
 *.fls
 *.fdb_latexmk
+*.bak
 !results/
 !results/*.csv
+*.abs
+live.main.tex
