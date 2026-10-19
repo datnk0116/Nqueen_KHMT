@@ -103,6 +103,7 @@ Execute pytest across the test suite:
 ```bash
 pytest tests
 ```
+*(Note: CPLEX CP tests automatically skip when the `cpoptimizer` binary is not found in the local environment, so the count of passed/skipped tests may vary across machines).*
 
 ### 4. Running Benchmarks
 Run the full benchmarking suite across all solvers and board sizes up to $N = 128$ with customized time limit and repetitions:

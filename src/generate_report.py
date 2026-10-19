@@ -480,7 +480,7 @@ The $N$-Queens problem serves as a canonical benchmark in artificial intelligenc
 
 This study expands the evaluation framework to cover six distinct solver groups:
 \begin{itemize}
-    \item \textbf{SAT Solvers}: CaDiCaL and Kissat \citep{biere2020cadical}, Glucose3 \citep{audemard2009glucose}, MiniSat22 \citep{een2003minisat}, and MapleCM \citep{liang2016maple} evaluated across Pairwise, Binary, Sequential Counter, Commander, and Product cardinality encodings (implemented using the PySAT toolkit \citep{ignatiev2018pysat}).
+    \item \textbf{SAT Solvers}: CaDiCaL and Kissat \citep{biere2020cadical}, Glucose3 \citep{audemard2009glucose}, MiniSat22 \citep{een2003minisat}, and MapleCM (based on MapleCOMSPS \citep{liang2016maple}) evaluated across Pairwise, Binary, Sequential Counter, Commander, and Product cardinality encodings (implemented using the PySAT toolkit \citep{ignatiev2018pysat}).
     \item \textbf{Constraint Programming (CP-SAT)}: OR-Tools CP-SAT using Integer, Boolean, and Allowed assignments configurations \citep{perron2021ortools}.
     \item \textbf{Open-Source MIP}: CBC \citep{forrest2005cbc} and SCIP \citep{bestuzheva2021scip} solvers using Binary and Integer linear formulations.
     \item \textbf{Commercial MIP (Gurobi)}: High-performance Gurobi optimization engine \citep{gurobi2026} with advanced presolve and branch-and-cut routines (noting size-limited (restricted) license bounds at $N \le 44$).
